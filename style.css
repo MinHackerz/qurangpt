@@ -1,0 +1,211 @@
+/* Import Montserrat font */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.description {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+}
+
+.input-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+textarea {
+    width: 100%;
+    max-width: auto;
+    height: 170px;
+    padding: 10px;
+    font-size: 1rem;
+    font-family: 'Montserrat', sans-serif;
+    background-color: #f2f2f2;
+    border: none;
+    border-radius: 5px;
+    resize: vertical;
+    margin: 0 auto 20px;
+    display: block;
+}
+
+.suggested-questions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.suggested-question {
+    background-color: #e0e0e0;
+    border: none;
+    cursor: pointer;
+    padding: 10px 20px;
+    margin-right: 20px;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #333;
+    transition: background-color 0.3s ease;
+}
+
+.suggested-question:hover {
+    background-color: #d0d0d0;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.buttons button {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    margin: 0 10px;
+    margin-bottom: 150px;
+}
+
+.buttons button i {
+    margin-right: 10px;
+}
+
+.buttons #askQuranBtn {
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+.buttons #resetBtn {
+    background-color: #f44336;
+    color: #fff;
+}
+
+.processing {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.processing span {
+    font-size: 4rem;
+    animation: spin 1s infinite linear;
+}
+
+.summary {
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: none;
+    text-align: left;
+    position: relative;
+    background-color: #f8f8f8;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.summary p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.summary h3 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.summary blockquote {
+    background-color: #e0e0e0;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.summary a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.summary a:hover {
+    text-decoration: underline;
+}
+
+.copy-container {
+    display: none;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.copy-button {
+    background-color: #9C27B0;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+}
+
+.copy-button i {
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+footer {
+    background-color: #f8f8f8;
+    padding: 10px 0;
+    text-align: center;
+    --position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.footer-container {
+    font-size: 14px;
+    color: #333;
+}
+
+.love-icon {
+    color: #e74c3c;
+}
+
+.buy-me-a-coffee-container {
+    position: fixed;
+    bottom: 35px;
+    right: 10px;
+}
