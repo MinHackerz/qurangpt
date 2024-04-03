@@ -1,3 +1,16 @@
-"scripts": {
-  "build": "mkdir -p dist && echo 'const API_KEY = undefined;' > dist/api-key.js && cat api-key.js >> dist/api-key.js && cp index.html dist/"
+{
+  "name": "quran-gpt",
+  "version": "1.0.0",
+  "description": "Quran GPT web application using HTML, CSS, and JavaScript",
+  "main": "index.html",
+  "scripts": {
+    "build": "mkdir -p dist && echo 'const API_KEY = undefined;' > dist/api-key.js && cat api-key.js >> dist/api-key.js && cp index.html dist/"
+  },
+  "keywords": [
+    "quran_gpt",
+    "api",
+    "muslims"
+  ],
+  "author": "Menajul Hoque",
+  "license": "MIT"
 }
