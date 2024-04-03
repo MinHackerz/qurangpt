@@ -4,7 +4,7 @@
   "description": "Quran GPT web application using HTML, CSS, and JavaScript",
   "main": "index.html",
   "scripts": {
-    "build": "mkdir -p dist && echo 'const API_KEY = undefined;' > dist/api-key.js && cat api-key.js >> dist/api-key.js && cp -r * dist/"
+    "build": "mkdir -p dist && cp index.html dist && node obfuscate.js"
   },
   "keywords": [
     "quran_gpt",
