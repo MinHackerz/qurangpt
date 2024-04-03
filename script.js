@@ -113,7 +113,7 @@ function copyContent() {
 }
 
 async function generate_response_with_gemini(prompt) {
-    const apiKey = 'AIzaSyBq6CK24S5pm6mPdc_dfdbbPBpiSb_kvYo'; // Replace with your actual API key
+    const apiKey = process.env.API_KEY; // Replace with your actual API key
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
     const headers = {
