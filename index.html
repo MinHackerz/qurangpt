@@ -256,6 +256,7 @@
    </div>
 
     <script>
+        require('dotenv').config();
         const contentInput = document.getElementById('contentInput');
         const askQuranBtn = document.getElementById('askQuranBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -263,7 +264,6 @@
         const processingDiv = document.querySelector('.processing');
         const copyBtn = document.getElementById('copyBtn');
         const copyContainer = document.querySelector('.copy-container');
-        require('dotenv').config();
 
         askQuranBtn.addEventListener('click', askQuran);
         resetBtn.addEventListener('click', resetForm);
