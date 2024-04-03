@@ -408,20 +408,6 @@ Answer:`;
             throw error;
         }
     }
-  async function getApiKey() {
-    try {
-      const response = await fetch('/.netlify/functions/get-api-key');
-      const data = await response.json();
-      return data.apiKey;
-    } catch (error) {
-      console.error('Error fetching API key:', error);
-      return null;
-    }
-  }
-
-  getApiKey().then((apiKey) => {
-    window.API_KEY = apiKey;
-  });
     </script>
     <footer>
     <div class="buy-me-a-coffee-container">
