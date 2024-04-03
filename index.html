@@ -256,6 +256,7 @@
    </div>
 
     <script>
+       'use strict';
         const contentInput = document.getElementById('contentInput');
         const askQuranBtn = document.getElementById('askQuranBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -267,6 +268,13 @@
         askQuranBtn.addEventListener('click', askQuran);
         resetBtn.addEventListener('click', resetForm);
         copyBtn.addEventListener('click', copyContent);
+       
+        const suggestedQuestions = document.querySelectorAll('.suggested-question');
+        suggestedQuestions.forEach(button => {
+          button.addEventListener('click', () => {
+            insertQuestion(button.textContent);
+          });
+        });
 
         function askQuran() {
             const question = contentInput.value.trim();
