@@ -256,7 +256,6 @@
    </div>
 
     <script>
-        require('dotenv').config();
         const contentInput = document.getElementById('contentInput');
         const askQuranBtn = document.getElementById('askQuranBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -372,7 +371,7 @@ Answer:`;
         }
 
         async function generate_response_with_gemini(prompt) {
-            const apiKey = process.env.API_KEY; // Replace with your actual API key
+            const apiKey = window.NETLIFY_ENV.API_KEY; // Replace with your actual API key
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
             const headers = {
