@@ -371,7 +371,7 @@ Answer:`;
         }
 
         async function generate_response_with_gemini(prompt) {
-            const apiKey = window.NETLIFY_ENV.API_KEY; // Replace with your actual API key
+            const apiKey = window.API_KEY; // Replace with your actual API key
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
             const headers = {
@@ -408,6 +408,20 @@ Answer:`;
             throw error;
         }
     }
+  async function getApiKey() {
+    try {
+      const response = await fetch('/.netlify/functions/get-api-key');
+      const data = await response.json();
+      return data.apiKey;
+    } catch (error) {
+      console.error('Error fetching API key:', error);
+      return null;
+    }
+  }
+
+  getApiKey().then((apiKey) => {
+    window.API_KEY = apiKey;
+  });
     </script>
     <footer>
     <div class="buy-me-a-coffee-container">
