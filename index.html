@@ -371,7 +371,7 @@ Answer:`;
         }
 
         async function generate_response_with_gemini(prompt) {
-            const apiKey = window.API_KEY; // Replace with your actual API key
+            const apiKey = API_KEY; // Replace with your actual API key
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
             const headers = {
@@ -408,6 +408,7 @@ Answer:`;
             throw error;
         }
     }
+    <script src="api-key.js"></script>
     </script>
     <footer>
     <div class="buy-me-a-coffee-container">
