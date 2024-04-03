@@ -1,0 +1,19 @@
+{
+  "name": "module1.0",
+  "version": "1.0.0",
+  "description": "This is the first version of Quran GPT using HTML, CSS and JAVASCRIPT with Gemini Pro API",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "quran gpt",
+    "api",
+    "muslims"
+  ],
+  "author": "Menajul Hoque",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^8.0.0"
+  }
+}
