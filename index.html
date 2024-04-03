@@ -323,8 +323,8 @@ Question: ${question}
 
 Answer:`;
 
-            generate_response_with_gemini(prompt)
-                .then(response => {
+generate_response_with_gemini(prompt)
+    .then(response => {
                     const formattedResponse = response.replace(/###/g, '\n\n###')
                                                     .replace(/\*\*\*\*\*\*/g, '**')
                                                     .replace(/\*\*\*/g, '***')
@@ -333,15 +333,14 @@ Answer:`;
                     summaryOutput.textContent = formattedResponse;
                     summaryOutput.style.display = 'block';
                     copyContainer.style.display = 'flex';
-                })
-                .catch(error => {
-                    console.error('Error generating response:', error);
-                })
-                .finally(() => {
-                    askQuranBtn.disabled = false;
-                    processingDiv.style.display = 'none';
-                });
-        }
+    })
+    .catch(error => {
+        console.error('Error generating response:', error);
+    })
+    .finally(() => {
+        askQuranBtn.disabled = false;
+        processingDiv.style.display = 'none';
+    });
 
         function resetForm() {
             contentInput.value = '';
@@ -367,45 +366,7 @@ Answer:`;
                     console.error('Failed to copy summary:', error);
                 });
         }
-
-        async function generate_response_with_gemini(prompt) {
-            const apiKey = window.NETLIFY_ENV.API_KEY; // Replace with your actual API key
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
-            const body = {
-                'contents': [
-                    {
-                        'parts': [
-                            { 'text': prompt }
-                        ]
-                    }
-                ]
-            };
-
-            const options = {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(body)
-            };
-
-            try {
-              const response = await fetch(apiUrl, options);
-              const data = await response.json();
-              if (response.ok) {
-                const extractedText = data.candidates[0].content.parts[0].text;
-                return extractedText;
-            } else {
-                throw new Error('Error generating response from Gemini API');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            throw error;
-        }
-    }
+    <script src="api.js"></script>
     </script>
     <footer>
     <div class="buy-me-a-coffee-container">
