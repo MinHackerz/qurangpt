@@ -1,5 +1,3 @@
-{
-  "scripts": {
-    "build": "echo 'const API_KEY = undefined;' > dist/api-key.js && cat api-key.js >> dist/api-key.js"
-  }
+"scripts": {
+  "build": "mkdir -p dist && echo 'const API_KEY = undefined;' > dist/api-key.js && cat api-key.js >> dist/api-key.js && cp index.html dist/"
 }
