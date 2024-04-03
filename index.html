@@ -263,6 +263,9 @@
         const processingDiv = document.querySelector('.processing');
         const copyBtn = document.getElementById('copyBtn');
         const copyContainer = document.querySelector('.copy-container');
+        require('dotenv').config();
+
+        console.log(process.env);
 
         askQuranBtn.addEventListener('click', askQuran);
         resetBtn.addEventListener('click', resetForm);
@@ -371,7 +374,7 @@ Answer:`;
         }
 
         async function generate_response_with_gemini(prompt) {
-            const apiKey = 'AIzaSyBq6CK24S5pm6mPdc_dfdbbPBpiSb_kvYo'; // Replace with your actual API key
+            const apiKey = process.env.API_KEY; // Replace with your actual API key
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
             const headers = {
