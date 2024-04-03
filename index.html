@@ -4,9 +4,7 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Quran GPT</title>
-   <meta name="description" content="Quran GPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. Get insightful and accurate responses supported by relevant verses and interpretations from the Quran.">
-   <link rel="icon" type="image/png" href="https://qurangpt.life/wp-content/uploads/2023/04/Quran-GPT-Favicon.png">
-   <style>
+      <style>
        /* Import Montserrat font */
        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 
@@ -213,9 +211,9 @@
           color: #e74c3c;
       }
       .buy-me-a-coffee-container {
-          position: fixed;
-          bottom: 50px;
-          right: 10px;
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
       }
    </style>
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -256,7 +254,6 @@
    </div>
 
     <script>
-       'use strict';
         const contentInput = document.getElementById('contentInput');
         const askQuranBtn = document.getElementById('askQuranBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -268,13 +265,6 @@
         askQuranBtn.addEventListener('click', askQuran);
         resetBtn.addEventListener('click', resetForm);
         copyBtn.addEventListener('click', copyContent);
-       
-        const suggestedQuestions = document.querySelectorAll('.suggested-question');
-        suggestedQuestions.forEach(button => {
-          button.addEventListener('click', () => {
-            insertQuestion(button.textContent);
-          });
-        });
 
         function askQuran() {
             const question = contentInput.value.trim();
@@ -379,7 +369,7 @@ Answer:`;
         }
 
         async function generate_response_with_gemini(prompt) {
-            const apiKey = API_KEY; // Replace with your actual API key
+            const apiKey = window.NETLIFY_ENV.API_KEY; // Replace with your actual API key
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
             const headers = {
@@ -416,7 +406,6 @@ Answer:`;
             throw error;
         }
     }
-    <script src="obfuscate.js"></script>
     </script>
     <footer>
     <div class="buy-me-a-coffee-container">
@@ -426,5 +415,5 @@ Answer:`;
         Made with <span class="love-icon">&#10084;</span> by <a href="https://www.linkedin.com/in/menajul-hoque/" target="_blank">Menajul Hoque</a>
     </div>
     </footer>
-</body>
+  </body>
 </html>
