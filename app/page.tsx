@@ -325,8 +325,6 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
               <span>Made with <span className="text-red-500">❤</span> by <a href="https://www.linkedin.com/in/menajul-hoque/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Menajul Hoque</a></span>
-              <span>•</span>
-              <span>Powered by Gemini AI</span>
             </div>
             <a href="https://www.buymeacoffee.com/qurangptlik" target="_blank" rel="noopener noreferrer" className="transform hover:scale-105 transition-all duration-300">
               <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" className="h-8" />
