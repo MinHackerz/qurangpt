@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+Allow: /$
+
+Sitemap: https://quran-gpt.netlify.app/sitemap.xml 

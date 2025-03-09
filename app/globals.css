@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #059669;
+  --secondary-color: #064e3b;
+  --accent-color: #10b981;
+  --light-bg: #f0fdf4;
+  --dark-bg: #1a2e35;
+  --light-text: #e5e7eb;
+  --dark-text: #0f172a;
+  --quote-bg: #ecfdf5;
+  --quote-border: #10b981;
+  --quote-dark-bg: rgba(16, 185, 129, 0.15);
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  }
+}
+
+@layer components {
+  .prose {
+    @apply max-w-none;
+  }
+
+  .prose a {
+    @apply text-emerald-600 dark:text-emerald-400 no-underline hover:underline transition-all duration-200;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-6 py-4 my-6 rounded-r-lg;
+  }
+
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    @apply text-emerald-800 dark:text-emerald-300 font-semibold;
+  }
+  
+  /* New enhanced styling */
+  .divine-quote-heading {
+    @apply text-lg md:text-xl font-semibold text-emerald-700 dark:text-emerald-300 mt-8 mb-3;
+  }
+  
+  .divine-quote {
+    @apply border-none relative pl-8 pr-6 py-6 my-6 bg-emerald-50 dark:bg-emerald-900/20 text-gray-800 dark:text-gray-200 rounded-lg shadow-sm font-['Amiri'] text-lg md:text-xl leading-relaxed italic;
+  }
+  
+  .divine-quote::before {
+    content: '"';
+    @apply absolute left-3 top-0 text-5xl text-emerald-400 dark:text-emerald-600 font-serif opacity-50;
+  }
+  
+  .section-heading {
+    @apply text-lg font-semibold text-emerald-700 dark:text-emerald-400 mt-8 mb-3 pb-2 border-b border-emerald-200 dark:border-emerald-800;
+  }
+  
+  .quran-link, .surah-reference {
+    @apply inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-all duration-200 no-underline;
+  }
+  
+  .surah-name {
+    @apply font-medium;
+  }
+  
+  .link-icon {
+    @apply text-xs opacity-70;
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.btn {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500;
+}
+
+.btn-secondary {
+  @apply bg-gray-600 hover:bg-gray-700 focus:ring-gray-500;
+}
+
+.input-field {
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500;
+}
+
+.error-message {
+  @apply bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 rounded-lg font-medium;
+}
+
+.copy-button {
+  @apply absolute top-4 right-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500;
+}
+
+.copy-button.copied {
+  @apply bg-emerald-500 text-white;
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  .prose {
+    @apply text-gray-300;
+  }
+  
+  .prose strong {
+    @apply text-gray-100;
+  }
+  
+  .prose blockquote {
+    @apply border-emerald-500 bg-emerald-900/30 text-gray-300;
+  }
+}
