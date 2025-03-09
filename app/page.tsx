@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QuestionMarkCircleIcon, ArrowPathIcon, ClipboardIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 export default function Home() {
   const [content, setContent] = useState('');
@@ -324,11 +325,9 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-              <span>Made with <span className="text-red-500">❤</span> by <a href="https://www.linkedin.com/in/menajul-hoque/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Menajul Hoque</a></span>
+              <span>Made with <span className="text-red-500">&hearts;</span> by <a href="https://www.linkedin.com/in/menajul-hoque/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Menajul Hoque</a></span>
             </div>
-            <a href="https://www.buymeacoffee.com/qurangptlik" target="_blank" rel="noopener noreferrer" className="transform hover:scale-105 transition-all duration-300">
-              <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" className="h-8" />
-            </a>
+            <Image src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" className="h-8" width={100} height={40} />
           </div>
         </div>
       </footer>
