@@ -485,6 +485,8 @@ export async function GET(request: NextRequest) {
     console.log('Prayer times in user timezone:', userTimezone);
     console.log('User current time:', userCurrentTime.toLocaleString('en-US', { timeZone: userTimezone }));
     console.log('Today\'s date:', new Date().toLocaleDateString('en-US', { timeZone: userTimezone }));
+    console.log('Raw prayer data from API:', prayers);
+    
     for (const prayerName of prayerNames) {
       if (prayerTimes[prayerName]) {
         console.log(`${prayerName}: ${prayerTimes[prayerName].toLocaleString('en-US', { timeZone: userTimezone })}`);
@@ -507,6 +509,14 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Validate prayer times
+    console.log('Prayer times validation:');
+    for (const timingName of allTimings) {
+      if (prayers[timingName]) {
+        console.log(`${timingName}: ${prayers[timingName]} -> ${prayerTimesInMinutes[timingName]} minutes`);
+      }
+    }
+    
     console.log('Prayer times in minutes:', prayerTimesInMinutes);
     console.log('Current time in minutes:', currentTimeInMinutes);
     
@@ -514,7 +524,7 @@ export async function GET(request: NextRequest) {
     if (prayerTimesInMinutes['Fajr'] && prayerTimesInMinutes['Sunrise']) {
       if (currentTimeInMinutes >= prayerTimesInMinutes['Fajr'] && currentTimeInMinutes < prayerTimesInMinutes['Sunrise']) {
         currentPrayer = 'Fajr';
-        // Create end time for Fajr (ends at sunrise)
+        // Create end time for Fajr (ends at sunrise) - use today's date
         const fajrEndTime = new Date();
         fajrEndTime.setHours(Math.floor(prayerTimesInMinutes['Sunrise'] / 60), prayerTimesInMinutes['Sunrise'] % 60, 0, 0);
         currentPrayerEndTime = fajrEndTime;
@@ -524,7 +534,7 @@ export async function GET(request: NextRequest) {
     if (prayerTimesInMinutes['Sunrise'] && prayerTimesInMinutes['Dhuhr']) {
       if (currentTimeInMinutes >= prayerTimesInMinutes['Sunrise'] && currentTimeInMinutes < prayerTimesInMinutes['Dhuhr']) {
         currentPrayer = 'Sunrise';
-        // Create end time for Sunrise (ends when Dhuhr begins)
+        // Create end time for Sunrise (ends when Dhuhr begins) - use today's date
         const sunriseEndTime = new Date();
         sunriseEndTime.setHours(Math.floor(prayerTimesInMinutes['Dhuhr'] / 60), prayerTimesInMinutes['Dhuhr'] % 60, 0, 0);
         currentPrayerEndTime = sunriseEndTime;
@@ -534,7 +544,7 @@ export async function GET(request: NextRequest) {
     if (prayerTimesInMinutes['Dhuhr'] && prayerTimesInMinutes['Asr']) {
       if (currentTimeInMinutes >= prayerTimesInMinutes['Dhuhr'] && currentTimeInMinutes < prayerTimesInMinutes['Asr']) {
         currentPrayer = 'Dhuhr';
-        // Create end time for Dhuhr (ends when Asr begins)
+        // Create end time for Dhuhr (ends when Asr begins) - use today's date
         const dhuhrEndTime = new Date();
         dhuhrEndTime.setHours(Math.floor(prayerTimesInMinutes['Asr'] / 60), prayerTimesInMinutes['Asr'] % 60, 0, 0);
         currentPrayerEndTime = dhuhrEndTime;
@@ -544,7 +554,7 @@ export async function GET(request: NextRequest) {
     if (prayerTimesInMinutes['Asr'] && prayerTimesInMinutes['Maghrib']) {
       if (currentTimeInMinutes >= prayerTimesInMinutes['Asr'] && currentTimeInMinutes < prayerTimesInMinutes['Maghrib']) {
         currentPrayer = 'Asr';
-        // Create end time for Asr (ends when Maghrib begins)
+        // Create end time for Asr (ends when Maghrib begins) - use today's date
         const asrEndTime = new Date();
         asrEndTime.setHours(Math.floor(prayerTimesInMinutes['Maghrib'] / 60), prayerTimesInMinutes['Maghrib'] % 60, 0, 0);
         currentPrayerEndTime = asrEndTime;
@@ -554,16 +564,22 @@ export async function GET(request: NextRequest) {
     if (prayerTimesInMinutes['Maghrib'] && prayerTimesInMinutes['Isha']) {
       if (currentTimeInMinutes >= prayerTimesInMinutes['Maghrib'] && currentTimeInMinutes < prayerTimesInMinutes['Isha']) {
         currentPrayer = 'Maghrib';
-        // Create end time for Maghrib (ends when Isha begins)
+        // Create end time for Maghrib (ends when Isha begins) - use today's date
         const maghribEndTime = new Date();
         maghribEndTime.setHours(Math.floor(prayerTimesInMinutes['Isha'] / 60), prayerTimesInMinutes['Isha'] % 60, 0, 0);
         currentPrayerEndTime = maghribEndTime;
       }
     }
     
-    // Handle Isha (overnight prayer)
-    if (prayerTimesInMinutes['Isha']) {
-      if (currentTimeInMinutes >= prayerTimesInMinutes['Isha'] || currentTimeInMinutes < prayerTimesInMinutes['Fajr']) {
+    // Handle Isha (overnight prayer) - more precise logic
+    if (prayerTimesInMinutes['Isha'] && prayerTimesInMinutes['Fajr']) {
+      // Isha is current if:
+      // 1. Current time is after Isha time, OR
+      // 2. Current time is before Fajr time (overnight)
+      const isAfterIsha = currentTimeInMinutes >= prayerTimesInMinutes['Isha'];
+      const isBeforeFajr = currentTimeInMinutes < prayerTimesInMinutes['Fajr'];
+      
+      if (isAfterIsha || isBeforeFajr) {
         currentPrayer = 'Isha';
         // Isha ends at next day's Fajr
         const nextFajr = new Date();
