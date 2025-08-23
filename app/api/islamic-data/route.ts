@@ -412,33 +412,49 @@ export async function GET(request: NextRequest) {
     const userTimezone = locationData.timezone || 'UTC';
     const currentTime = new Date();
     
-    // Parse all prayer times for today
+    // Convert current time to user's timezone for accurate comparison
+    const userCurrentTime = new Date(currentTime.toLocaleString('en-US', { timeZone: userTimezone }));
+    
+    // Parse all prayer times for today in user's timezone
     const prayerTimes: { [key: string]: Date } = {};
     for (const prayerName of prayerNames) {
       if (prayers[prayerName]) {
-        const prayerTime = new Date();
         const timeStr = prayers[prayerName].split(' ')[0]; // Remove timezone if present
         const [hours, minutes] = timeStr.split(':');
-        prayerTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        prayerTimes[prayerName] = prayerTime;
+        
+        // Create date in user's timezone
+        const prayerTime = new Date();
+        prayerTime.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        // Convert to user's timezone
+        const userTime = new Date(prayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
+        prayerTimes[prayerName] = userTime;
       }
     }
 
-    // Also get sunrise and sunset for prayer end times
+    // Also get sunrise and sunset for prayer end times in user's timezone
     const sunrise = prayerData.data?.timings?.Sunrise ? (() => {
-      const time = new Date();
       const timeStr = prayerData.data.timings.Sunrise.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
-      time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      return time;
+      
+      // Create date in user's timezone
+      const time = new Date();
+      time.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Convert to user's timezone
+      return new Date(time.toLocaleString('en-US', { timeZone: userTimezone }));
     })() : null;
 
     const sunset = prayerData.data?.timings?.Sunset ? (() => {
-      const time = new Date();
       const timeStr = prayerData.data.timings.Sunset.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
-      time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      return time;
+      
+      // Create date in user's timezone
+      const time = new Date();
+      time.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Convert to user's timezone
+      return new Date(time.toLocaleString('en-US', { timeZone: userTimezone }));
     })() : null;
 
     // Define prayer end times based on Islamic rules
@@ -467,6 +483,15 @@ export async function GET(request: NextRequest) {
     let currentPrayerEndTime: Date | null = null;
     let nextPrayer = 'Fajr';
     let nextPrayerTime = new Date();
+    
+    // Debug: Log prayer times and current time
+    console.log('Prayer times in user timezone:', userTimezone);
+    console.log('User current time:', userCurrentTime.toLocaleString('en-US', { timeZone: userTimezone }));
+    for (const prayerName of prayerNames) {
+      if (prayerTimes[prayerName]) {
+        console.log(`${prayerName}: ${prayerTimes[prayerName].toLocaleString('en-US', { timeZone: userTimezone })}`);
+      }
+    }
 
     // Check if we're currently in a prayer window
     for (const prayerName of prayerNames) {
@@ -476,13 +501,13 @@ export async function GET(request: NextRequest) {
       if (prayerStart && prayerEnd) {
         // Handle overnight prayers (Isha)
         if (prayerName === 'Isha') {
-          if (currentTime >= prayerStart || currentTime < prayerEnd) {
+          if (userCurrentTime >= prayerStart || userCurrentTime < prayerEnd) {
             currentPrayer = prayerName;
             currentPrayerEndTime = prayerEnd;
             break;
           }
         } else {
-          if (currentTime >= prayerStart && currentTime < prayerEnd) {
+          if (userCurrentTime >= prayerStart && userCurrentTime < prayerEnd) {
             currentPrayer = prayerName;
             currentPrayerEndTime = prayerEnd;
             break;
@@ -494,7 +519,7 @@ export async function GET(request: NextRequest) {
     // Find the next upcoming prayer (regardless of whether we have a current prayer)
     for (const prayerName of prayerNames) {
       const prayerTime = prayerTimes[prayerName];
-      if (prayerTime && prayerTime > currentTime) {
+      if (prayerTime && prayerTime > userCurrentTime) {
         nextPrayer = prayerName;
         nextPrayerTime = prayerTime;
         break;
@@ -502,7 +527,7 @@ export async function GET(request: NextRequest) {
     }
 
     // If no prayer found for today, get tomorrow's Fajr
-    if (nextPrayer === 'Fajr' && prayerTimes['Fajr'] && prayerTimes['Fajr'] <= currentTime) {
+    if (nextPrayer === 'Fajr' && prayerTimes['Fajr'] && prayerTimes['Fajr'] <= userCurrentTime) {
       nextPrayerTime = new Date(prayerTimes['Fajr']);
       nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
     }
@@ -523,6 +548,12 @@ export async function GET(request: NextRequest) {
         nextPrayerTime = prayerTimes[nextPrayerName] || nextPrayerTime;
       }
     }
+    
+    // Debug: Log final prayer detection results
+    console.log('Prayer detection results:');
+    console.log('Current prayer:', currentPrayer);
+    console.log('Next prayer:', nextPrayer);
+    console.log('Next prayer time:', nextPrayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
 
     // Calculate Eid dates for 2025 (updated dates)
     const currentYear = currentDate.getFullYear();
