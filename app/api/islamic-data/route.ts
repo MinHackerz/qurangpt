@@ -422,13 +422,15 @@ export async function GET(request: NextRequest) {
         const timeStr = prayers[prayerName].split(' ')[0]; // Remove timezone if present
         const [hours, minutes] = timeStr.split(':');
         
-        // Create date in user's timezone
-        const prayerTime = new Date();
-        prayerTime.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+        // Create today's date in user's timezone
+        const today = new Date();
+        const userToday = new Date(today.toLocaleString('en-US', { timeZone: userTimezone }));
         
-        // Convert to user's timezone
-        const userTime = new Date(prayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
-        prayerTimes[prayerName] = userTime;
+        // Set the prayer time to today's date
+        const prayerTime = new Date(userToday);
+        prayerTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        prayerTimes[prayerName] = prayerTime;
       }
     }
 
@@ -437,24 +439,30 @@ export async function GET(request: NextRequest) {
       const timeStr = prayerData.data.timings.Sunrise.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
       
-      // Create date in user's timezone
-      const time = new Date();
-      time.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+      // Create today's date in user's timezone
+      const today = new Date();
+      const userToday = new Date(today.toLocaleString('en-US', { timeZone: userTimezone }));
       
-      // Convert to user's timezone
-      return new Date(time.toLocaleString('en-US', { timeZone: userTimezone }));
+      // Set the time to today's date
+      const time = new Date(userToday);
+      time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      return time;
     })() : null;
 
     const sunset = prayerData.data?.timings?.Sunset ? (() => {
       const timeStr = prayerData.data.timings.Sunset.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
       
-      // Create date in user's timezone
-      const time = new Date();
-      time.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+      // Create today's date in user's timezone
+      const today = new Date();
+      const userToday = new Date(today.toLocaleString('en-US', { timeZone: userTimezone }));
       
-      // Convert to user's timezone
-      return new Date(time.toLocaleString('en-US', { timeZone: userTimezone }));
+      // Set the time to today's date
+      const time = new Date(userToday);
+      time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      return time;
     })() : null;
 
     // Define prayer end times based on Islamic rules
@@ -487,6 +495,7 @@ export async function GET(request: NextRequest) {
     // Debug: Log prayer times and current time
     console.log('Prayer times in user timezone:', userTimezone);
     console.log('User current time:', userCurrentTime.toLocaleString('en-US', { timeZone: userTimezone }));
+    console.log('Today\'s date:', new Date().toLocaleDateString('en-US', { timeZone: userTimezone }));
     for (const prayerName of prayerNames) {
       if (prayerTimes[prayerName]) {
         console.log(`${prayerName}: ${prayerTimes[prayerName].toLocaleString('en-US', { timeZone: userTimezone })}`);
