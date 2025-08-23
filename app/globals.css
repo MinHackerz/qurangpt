@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Markazi+Text:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -76,6 +80,305 @@ body {
   .link-icon {
     @apply text-xs opacity-70;
   }
+  
+  /* Advanced Arabic-style title */
+  .arabic-styled-title {
+    @apply relative font-['Scheherazade_New'] font-bold;
+    letter-spacing: 0.1em;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .arabic-styled-title .quran-word {
+    @apply relative inline-block;
+  }
+
+  /* Enhanced Middle Eastern styling for titles */
+  .quran-word {
+    @apply relative inline-block;
+    background: linear-gradient(135deg, #1f2937 0%, #374151 50%, #111827 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 8px rgba(17, 24, 39, 0.3);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  .gpt-word {
+    @apply relative inline-block;
+    background: linear-gradient(135deg, #374151 0%, #6b7280 50%, #4b5563 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 8px rgba(75, 85, 99, 0.3);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  /* Enhanced ornament styling */
+  .arabic-ornament {
+    @apply relative;
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse-glow {
+    0% {
+      text-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+    }
+    100% {
+      text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 30px rgba(245, 158, 11, 0.6);
+    }
+  }
+
+  /* Enhanced Cairo font styling for titles */
+  .cairo-title {
+    font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure Cairo font is applied with fallbacks */
+  .cairo-title .quran-word,
+  .cairo-title .gpt-word {
+    font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif;
+    font-weight: 700;
+  }
+
+  /* Enhanced Cairo font loading and fallbacks */
+  .cairo-title {
+    font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif !important;
+  }
+
+  /* Font loading optimization */
+  .font-cairo {
+    font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif;
+  }
+
+  /* Dark mode specific title styling */
+  .dark .quran-word {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 4px 8px rgba(209, 213, 219, 0.3);
+  }
+
+  .dark .gpt-word {
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 50%, #9ca3af 100%);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 4px 8px rgba(156, 163, 175, 0.3);
+  }
+
+  /* Enhanced title container styling */
+  .title-container {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Additional shadow effects for better depth */
+  .quran-word,
+  .gpt-word {
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+  }
+
+  .quran-word::after,
+  .gpt-word::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    filter: blur(8px);
+    opacity: 0.3;
+    background: inherit;
+    transform: scale(1.1);
+    transition: all 0.3s ease;
+  }
+
+  /* Hover effects for better interactivity */
+  .quran-word:hover,
+  .gpt-word:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+
+  .quran-word:hover::after,
+  .gpt-word:hover::after {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+
+  /* Enhanced styling for Explanation and Tafsir sections */
+  .explanation-section {
+    @apply relative;
+  }
+
+  .explanation-section::before {
+    content: '';
+    @apply absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600 rounded-full opacity-30;
+  }
+
+  .tafsir-section {
+    @apply relative;
+  }
+
+  .tafsir-section::before {
+    content: '';
+    @apply absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full opacity-30;
+  }
+
+  /* Animation for section headers */
+  .explanation-section .flex,
+  .tafsir-section .flex {
+    @apply transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl;
+  }
+
+  /* Subtle background patterns */
+  .explanation-section::after {
+    content: '';
+    @apply absolute inset-0 bg-blue-50 dark:bg-blue-900/10 rounded-2xl opacity-20 pointer-events-none;
+    background-image: radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+  }
+
+  .tafsir-section::after {
+    content: '';
+    @apply absolute inset-0 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl opacity-20 pointer-events-none;
+    background-image: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  }
+
+  .arabic-styled-title .quran-word {
+    font-family: 'Scheherazade New', 'Amiri', serif;
+    font-weight: 700;
+    transform: perspective(500px) rotateY(-5deg);
+    text-shadow: 
+      2px 2px 0px rgba(0, 0, 0, 0.1),
+      4px 4px 8px rgba(0, 0, 0, 0.15),
+      -1px -1px 0px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .arabic-styled-title .gpt-word {
+    @apply relative inline-block ml-6;
+    font-family: 'Markazi Text', 'Aref Ruqaa', serif;
+    font-weight: 600;
+    transform: perspective(500px) rotateY(5deg);
+    text-shadow: 
+      -2px 2px 0px rgba(0, 0, 0, 0.1),
+      -4px 4px 8px rgba(0, 0, 0, 0.15),
+      1px -1px 0px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  /* Dark mode adjustments */
+  .dark .arabic-styled-title .quran-word {
+    text-shadow: 
+      2px 2px 0px rgba(255, 255, 255, 0.1),
+      4px 4px 8px rgba(0, 0, 0, 0.5),
+      -1px -1px 0px rgba(0, 0, 0, 0.3);
+  }
+  
+  .dark .arabic-styled-title .gpt-word {
+    text-shadow: 
+      -2px 2px 0px rgba(255, 255, 255, 0.1),
+      -4px 4px 8px rgba(0, 0, 0, 0.5),
+      1px -1px 0px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Decorative elements */
+  .arabic-styled-title::before {
+    content: '۞';
+    @apply absolute -left-12 top-1/2 transform -translate-y-1/2 text-2xl opacity-30;
+    font-family: 'Scheherazade New', serif;
+  }
+  
+  .arabic-styled-title::after {
+    content: '۞';
+    @apply absolute -right-12 top-1/2 transform -translate-y-1/2 text-2xl opacity-30;
+    font-family: 'Scheherazade New', serif;
+  }
+  
+  /* Hover effects */
+  .arabic-styled-title:hover .quran-word {
+    transform: perspective(500px) rotateY(0deg) scale(1.02);
+  }
+  
+  .arabic-styled-title:hover .gpt-word {
+    transform: perspective(500px) rotateY(0deg) scale(1.02);
+  }
+  
+  /* Ornamental flourishes */
+  .arabic-ornament {
+    @apply relative;
+  }
+  
+  .arabic-ornament::before {
+    content: '◦ ◦ ◦';
+    @apply absolute left-1/2 transform -translate-x-1/2 -top-6 text-xs opacity-40 tracking-widest;
+  }
+  
+  .arabic-ornament::after {
+    content: '◦ ◦ ◦';
+    @apply absolute left-1/2 transform -translate-x-1/2 -bottom-6 text-xs opacity-40 tracking-widest;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .arabic-styled-title::before,
+    .arabic-styled-title::after {
+      @apply hidden;
+    }
+    
+    .arabic-styled-title .gpt-word {
+      @apply ml-3;
+    }
+  }
+  
+  /* Islamic-inspired send button enhancements */
+  .islamic-send-button {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%);
+    box-shadow: 
+      0 4px 15px rgba(217, 119, 6, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .islamic-send-button:hover {
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
+    box-shadow: 
+      0 8px 25px rgba(217, 119, 6, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  }
+  
+  .islamic-send-button:active {
+    transform: translateY(1px);
+    box-shadow: 
+      0 2px 10px rgba(217, 119, 6, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Golden glow animation */
+  @keyframes golden-glow {
+    0%, 100% { 
+      box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 20px rgba(217, 119, 6, 0.5), 0 0 30px rgba(217, 119, 6, 0.2);
+    }
+  }
+  
+  .islamic-send-button.ready {
+    animation: golden-glow 2s ease-in-out infinite;
+  }
 }
 
 .animate-spin {
@@ -132,4 +435,210 @@ body {
   .prose blockquote {
     @apply border-emerald-500 bg-emerald-900/30 text-gray-300;
   }
+}
+
+/* Hide scrollbars for chat input textarea */
+.chat-input-textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-input-textarea {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* Interactive border animations */
+@keyframes chatInputSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes questionButtonSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes chatInputGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(29, 78, 216, 0.6);
+  }
+}
+
+@keyframes questionButtonGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.6);
+  }
+}
+
+.interactive-border {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.interactive-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 1px; /* Very thin border */
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(29, 78, 216, 0.8), 
+    rgba(126, 34, 206, 0.8), 
+    rgba(219, 39, 119, 0.8), 
+    transparent
+  );
+  background-size: 300% 100%;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.interactive-border:hover::before {
+  opacity: 1;
+  animation: chatInputSweep 2.5s linear infinite;
+}
+
+.interactive-border:hover {
+  animation: chatInputGlow 2.5s ease-in-out infinite;
+}
+
+/* Different style for question buttons */
+.interactive-border.question-button::before {
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(5, 150, 105, 0.8), 
+    rgba(29, 78, 216, 0.8), 
+    rgba(147, 51, 234, 0.8), 
+    transparent
+  );
+}
+
+.interactive-border.question-button:hover::before {
+  animation: questionButtonSweep 2s linear infinite;
+}
+
+.interactive-border.question-button:hover {
+  animation: questionButtonGlow 2s ease-in-out infinite;
+}
+
+/* Islamic pattern border animation */
+@keyframes islamicPattern1 {
+  0% {
+    background-position: -200% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+@keyframes islamicPattern2 {
+  0% {
+    background-position: -200% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+@keyframes islamicPattern3 {
+  0% {
+    background-position: -200% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+@keyframes islamicGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(120, 53, 15, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(120, 53, 15, 0.7);
+  }
+}
+
+.islamic-border {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.islamic-border::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 1px; /* Very thin border */
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(120, 53, 15, 0.8), 
+    rgba(161, 98, 7, 0.8), 
+    rgba(194, 65, 12, 0.8), 
+    transparent
+  );
+  background-size: 300% 100%;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.islamic-border:hover::after {
+  opacity: 1;
+  animation: islamicPattern1 3s linear infinite;
+}
+
+.islamic-border:hover {
+  animation: questionButtonGlow 2s ease-in-out infinite;
+}
+
+/* All Islamic widgets use the same design as question buttons */
+.islamic-border.prayer-widget::after,
+.islamic-border.eid-fitr-widget::after,
+.islamic-border.eid-adha-widget::after {
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(5, 150, 105, 0.8), 
+    rgba(29, 78, 216, 0.8), 
+    rgba(147, 51, 234, 0.8), 
+    transparent
+  );
+}
+
+.islamic-border.prayer-widget:hover::after {
+  animation: questionButtonSweep 2s linear infinite;
+}
+
+.islamic-border.eid-fitr-widget:hover::after {
+  animation: questionButtonSweep 2s linear infinite;
+}
+
+.islamic-border.eid-adha-widget:hover::after {
+  animation: questionButtonSweep 2s linear infinite;
 }

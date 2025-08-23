@@ -1,10 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { QuestionMarkCircleIcon, ArrowPathIcon, ClipboardIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
+import Script from 'next/script';
+import {
+  HeroSection,
+  QuickQuestions,
+  ChatSection,
+  ThinkingProcess,
+  ResponseSection,
+  Footer,
+  IslamicWidgets
+} from './components';
+import { useAudioManager } from './hooks/useAudioManager';
 
 export default function Home() {
   const [content, setContent] = useState('');
@@ -13,6 +21,20 @@ export default function Home() {
   const [showSummary, setShowSummary] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  
+  // Audio management
+  const {
+    currentAyahId,
+    isPlaying,
+    playAudio,
+    pauseAudio,
+    resumeAudio,
+    stopAudio,
+    isAyahPlaying,
+    isAyahActive,
+    getAudioProgress,
+    cleanup: cleanupAudio
+  } = useAudioManager();
 
   const insertQuestion = (question: string) => {
     setContent(question);
@@ -25,11 +47,33 @@ export default function Home() {
     setShowSummary(false);
     setIsProcessing(false);
     setError('');
+    
+    // Clean up audio state
+    stopAudio();
   };
 
   const copyContent = async () => {
     try {
-      await navigator.clipboard.writeText(summary);
+      // Clean the content for copying - remove HTML tags and audio elements, keep only reference links
+      const cleanContent = summary
+        // Remove HTML tags but keep line breaks
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/?[^>]+(>|$)/g, '')
+        // Remove audio player sections
+        .replace(/Audio Recitation[\s\S]*?Ready/g, '')
+        .replace(/Select Reciter[\s\S]*?128kbps MP3/g, '')
+        // Remove progress bars
+        .replace(/progress-container[\s\S]*?hidden/g, '')
+        // Clean up extra whitespace
+        .replace(/\n\s*\n\s*\n/g, '\n\n')
+        .replace(/^\s+|\s+$/gm, '')
+        // Add reference links at the end
+        .replace(/"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\(([^)]+)\)/g, (match, verseText, surahName, ayahNumber, url) => {
+          return `"${verseText}"\nReference: ${surahName}, Verse ${ayahNumber} - ${url}`;
+        })
+        .trim();
+
+      await navigator.clipboard.writeText(cleanContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -39,23 +83,377 @@ export default function Home() {
     }
   };
 
+  // Audio management functions
+  const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
+    const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+    try {
+      await playAudio(ayahId, audioUrl);
+    } catch (error) {
+      // Silently handle audio errors
+    }
+  }, [playAudio]);
+
+  const handleAudioPause = useCallback(() => {
+    pauseAudio();
+  }, [pauseAudio]);
+
+  const handleAudioEnd = useCallback(() => {
+    // Audio ended naturally, no action needed
+  }, []);
+
+  // Helper function to format time
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Set up enhanced audio player functionality
+  useEffect(() => {
+    if (!showSummary || !summary) return;
+
+    const setupAudioPlayers = () => {
+      const audioPlayers = document.querySelectorAll('.enhanced-audio-player');
+      
+      audioPlayers.forEach((player) => {
+        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
+        const playIcon = player.querySelector('.play-icon') as HTMLElement;
+        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
+        const statusText = player.querySelector('.status-text') as HTMLElement;
+        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
+        const progressFill = player.querySelector('.progress-fill') as HTMLElement;
+        const progressSlider = player.querySelector('.progress-slider') as HTMLInputElement;
+        const currentTime = player.querySelector('.current-time') as HTMLElement;
+        const totalDuration = player.querySelector('.total-duration') as HTMLElement;
+        const timeDisplay = player.querySelector('.time-display') as HTMLElement;
+        
+        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator || !progressFill || !progressSlider || !currentTime || !totalDuration || !timeDisplay) return;
+        
+        const ayahId = playBtn.getAttribute('data-ayah-id');
+        const globalAyahNumber = player.getAttribute('data-global-ayah');
+        
+        if (!ayahId || !globalAyahNumber) return;
+        
+        // Remove existing event listeners
+        const newPlayBtn = playBtn.cloneNode(true) as HTMLButtonElement;
+        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
+        
+        // Add click event listener for play/pause
+        newPlayBtn.addEventListener('click', async () => {
+          try {
+            if (isAyahPlaying(ayahId)) {
+              // Pause audio
+              pauseAudio();
+              playIcon.classList.remove('hidden');
+              pauseIcon.classList.add('hidden');
+              statusText.textContent = 'Click to play';
+              statusIndicator.classList.add('hidden');
+              newPlayBtn.classList.remove('bg-gradient-to-br', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-lg', 'hover:shadow-xl');
+              newPlayBtn.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-lg');
+            } else {
+              // Play audio
+              await handleAudioPlay(ayahId, globalAyahNumber);
+              playIcon.classList.add('hidden');
+              pauseIcon.classList.remove('hidden');
+              statusText.textContent = 'Playing';
+              statusIndicator.classList.remove('hidden');
+              newPlayBtn.classList.add('hover:shadow-xl');
+            }
+          } catch (error) {
+            console.error('Audio player error:', error);
+            statusText.textContent = 'Error';
+          }
+        });
+        
+        // Add progress bar functionality
+        progressSlider.addEventListener('input', (e) => {
+          const target = e.target as HTMLInputElement;
+          const value = parseInt(target.value);
+          progressFill.style.width = `${value}%`;
+          
+          // Update current time display (this is a simplified version)
+          const duration = 60; // We'll get this from the audio element
+          const newTime = Math.round((value / 100) * duration);
+          currentTime.textContent = formatTime(newTime);
+        });
+      });
+    };
+
+    // Use setTimeout to ensure DOM is updated
+    const timer = setTimeout(setupAudioPlayers, 100);
+    
+    return () => clearTimeout(timer);
+  }, [showSummary, summary, isAyahPlaying, pauseAudio, handleAudioPlay]);
+
+  // Update UI when audio state changes
+  useEffect(() => {
+    if (!showSummary || !summary) return;
+
+    const updateAudioPlayerUI = () => {
+      const audioPlayers = document.querySelectorAll('.enhanced-audio-player');
+      
+      audioPlayers.forEach((player) => {
+        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
+        const playIcon = player.querySelector('.play-icon') as HTMLElement;
+        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
+        const statusText = player.querySelector('.status-text') as HTMLElement;
+        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
+        
+        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) return;
+        
+        const ayahId = playBtn.getAttribute('data-ayah-id');
+        if (!ayahId) return;
+        
+        const isPlaying = isAyahPlaying(ayahId);
+        const isActive = isAyahActive(ayahId);
+        
+        if (isPlaying) {
+          playIcon.classList.add('hidden');
+          pauseIcon.classList.remove('hidden');
+          statusText.textContent = 'Playing';
+          statusIndicator.classList.remove('hidden');
+          playBtn.classList.add('hover:shadow-xl');
+        } else {
+          playIcon.classList.remove('hidden');
+          pauseIcon.classList.add('hidden');
+          statusText.textContent = 'Click to play';
+          statusIndicator.classList.add('hidden');
+          playBtn.classList.remove('hover:shadow-xl');
+        }
+      });
+    };
+
+    // Update UI immediately and then on audio state changes
+    updateAudioPlayerUI();
+    
+    const timer = setInterval(updateAudioPlayerUI, 100);
+    
+    return () => clearInterval(timer);
+  }, [showSummary, summary, isAyahPlaying, isAyahActive]);
+
+  // Update progress bars in real-time
+  useEffect(() => {
+    if (!showSummary || !summary || !isPlaying) return;
+
+    const updateProgress = () => {
+      const progress = getAudioProgress();
+      if (progress.duration === 0) return;
+
+      const audioPlayers = document.querySelectorAll('.enhanced-audio-player');
+      audioPlayers.forEach((player) => {
+        const ayahId = player.getAttribute('data-ayah-id');
+        if (ayahId === currentAyahId) {
+          const progressFill = player.querySelector('.progress-fill') as HTMLElement;
+          const currentTimeEl = player.querySelector('.current-time') as HTMLElement;
+          const totalDurationEl = player.querySelector('.total-duration') as HTMLElement;
+          const timeDisplayEl = player.querySelector('.time-display') as HTMLElement;
+          
+          if (progressFill && currentTimeEl && totalDurationEl && timeDisplayEl) {
+            progressFill.style.width = `${progress.progress}%`;
+            currentTimeEl.textContent = formatTime(progress.currentTime);
+            totalDurationEl.textContent = formatTime(progress.duration);
+            timeDisplayEl.textContent = formatTime(progress.currentTime);
+          }
+        }
+      });
+    };
+
+    const interval = setInterval(updateProgress, 100);
+    return () => clearInterval(interval);
+  }, [showSummary, summary, isPlaying, currentAyahId, getAudioProgress]);
+
   const formatResponse = (response: string) => {
+    
     const processedText = response
-      .replace(/\[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g, '<span class="quran-link"><span class="surah-name">$1 $2</span><a href="$3" target="_blank" rel="noopener noreferrer" class="link-icon">↗</a></span>')
-      .replace(/\*\*([^*]*)\*\*/g, '<span class="font-bold">$1</span>')
-      .replace(/\_\_([^_]*)\_\_/g, '<span class="italic">$1</span>')
-      .replace(/### Quran GPT's Answer:/g, '')
-      .replace(/Allah\(SWT\) says in the Glorious Quran:/g, '<h3 class="divine-quote-heading">Allah (SWT) says in the Glorious Quran:</h3>')
-      .replace(/"(.*?)" \[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g, '<blockquote class="divine-quote">"$1" <span class="surah-reference">$2 $3 <a href="$4" target="_blank" rel="noopener noreferrer" class="link-icon">↗</a></span></blockquote>')
-      .replace(/Explanation:/g, '<h3 class="section-heading">Explanation</h3>')
-      .replace(/Tafseer:/g, '<h3 class="section-heading">Tafseer</h3>')
-      .replace(/Additional Information:/g, '<h3 class="section-heading">Additional Information</h3>')
-      .replace(/References:/g, '<h3 class="section-heading">References</h3>');
+      // Format section headers with enhanced styling
+      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-3 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
+      
+      // Format ayah references with embedded audio players
+      .replace(/"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g, (match, verseText, surahName, ayahNumber, url) => {
+        // Map surah names to numbers for audio
+        const surahNameToNumber: { [key: string]: number } = {
+          'Al-Fatiha': 1, 'Al-Baqarah': 2, 'Aal-Imran': 3, 'An-Nisa': 4, 'Al-Ma\'idah': 5,
+          'Al-An\'am': 6, 'Al-A\'raf': 7, 'Al-Anfal': 8, 'At-Tawbah': 9, 'Yunus': 10,
+          'Hud': 11, 'Yusuf': 12, 'Ar-Ra\'d': 13, 'Ibrahim': 14, 'Al-Hijr': 15,
+          'An-Nahl': 16, 'Al-Isra': 17, 'Al-Kahf': 18, 'Maryam': 19, 'Ta-Ha': 20,
+          'Al-Anbya': 21, 'Al-Hajj': 22, 'Al-Mu\'minun': 23, 'An-Nur': 24, 'Al-Furqan': 25,
+          'Ash-Shu\'ara': 26, 'An-Naml': 27, 'Al-Qasas': 28, 'Al-Ankabut': 29, 'Ar-Rum': 30,
+          'Luqman': 31, 'As-Sajdah': 32, 'Al-Ahzab': 33, 'Saba': 34, 'Fatir': 35,
+          'Ya-Sin': 36, 'As-Saffat': 37, 'Sad': 38, 'Az-Zumar': 39, 'Ghafir': 40,
+          'Fussilat': 41, 'Ash-Shura': 42, 'Az-Zukhruf': 43, 'Ad-Dukhan': 44, 'Al-Jathiyah': 45,
+          'Al-Ahqaf': 46, 'Muhammad': 47, 'Al-Fath': 48, 'Al-Hujurat': 49, 'Qaf': 50,
+          'Adh-Dhariyat': 51, 'At-Tur': 52, 'An-Najm': 53, 'Al-Qamar': 54, 'Ar-Rahman': 55,
+          'Al-Waqi\'ah': 56, 'Al-Hadid': 57, 'Al-Mujadila': 58, 'Al-Hashr': 59, 'Al-Mumtahanah': 60,
+          'As-Saf': 61, 'Al-Jumu\'ah': 62, 'Al-Munafiqun': 63, 'At-Taghabun': 64, 'At-Talaq': 65,
+          'At-Tahrim': 66, 'Al-Mulk': 67, 'Al-Qalam': 68, 'Al-Haqqah': 69, 'Al-Ma\'arij': 70,
+          'Nuh': 71, 'Al-Jinn': 72, 'Al-Muzzammil': 73, 'Al-Muddathir': 74, 'Al-Qiyamah': 75,
+          'Al-Insan': 76, 'Al-Mursalat': 77, 'An-Naba': 78, 'An-Nazi\'at': 79, 'Abasa': 80,
+          'At-Takwir': 81, 'Al-Infitar': 82, 'Al-Mutaffifin': 83, 'Al-Inshiqaq': 84, 'Al-Buruj': 85,
+          'At-Tariq': 86, 'Al-A\'la': 87, 'Al-Ghashiyah': 88, 'Al-Fajr': 89, 'Al-Balad': 90,
+          'Ash-Shams': 91, 'Al-Layl': 92, 'Ad-Duha': 93, 'Ash-Sharh': 94, 'At-Tin': 95,
+          'Al-Alaq': 96, 'Al-Qadr': 97, 'Al-Bayyinah': 98, 'Az-Zalzalah': 99, 'Al-Adiyat': 100,
+          'Al-Qari\'ah': 101, 'At-Takathur': 102, 'Al-Asr': 103, 'Al-Humazah': 104, 'Al-Fil': 105,
+          'Quraish': 106, 'Al-Ma\'un': 107, 'Al-Kawthar': 108, 'Al-Kafirun': 109, 'An-Nasr': 110,
+          'Al-Masad': 111, 'Al-Ikhlas': 112, 'Al-Falaq': 113, 'An-Nas': 114
+        };
+        
+        // Calculate global ayah number
+        const surahNumber = surahNameToNumber[surahName.trim()] || 1;
+        const ayahNum = parseInt(ayahNumber);
+        
+        // The Islamic Network API uses sequential ayah numbers from 1 to 6236
+        // We need to calculate the correct global ayah number
+        const surahAyahCounts = [
+          7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
+        ];
+        
+        // Calculate the global ayah number (1-6236)
+        let globalAyahNumber = 0;
+        for (let i = 0; i < surahNumber - 1; i++) {
+          globalAyahNumber += surahAyahCounts[i] || 0;
+        }
+        globalAyahNumber += ayahNum;
+        
+
+        
+        // Generate unique ID for this ayah
+        const ayahId = `ayah-${surahNumber}-${ayahNum}-${Date.now()}`;
+        
+        return `<div class="ayah-reference mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 transition-all duration-200" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
+          <!-- Verse content with better typography and spacing -->
+          <div class="mb-6">
+            <blockquote class="text-xl md:text-2xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed italic tracking-wide">"${verseText}"</blockquote>
+          </div>
+          
+          <!-- Reference info with better spacing -->
+          <div class="flex items-center justify-between mb-4 text-sm">
+            <div class="flex items-center space-x-3">
+              <span class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">${surahName}</span>
+              <span class="text-gray-500 dark:text-gray-400">Verse ${ayahNumber}</span>
+            </div>
+            <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+            </a>
+          </div>
+          
+          <!-- Enhanced Audio Player with Duration Bar -->
+          <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
+            <div class="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+              <!-- Top row - Play button and info -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-4">
+                  <button class="play-pause-btn relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95" data-ayah-id="${ayahId}">
+                    <svg class="play-icon w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg class="pause-icon w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                  </button>
+                  
+                  <div class="flex flex-col">
+                    <span class="status-text text-sm font-semibold text-gray-800 dark:text-gray-200">Click to play</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Mishary Rashid Alafasy • 128kbps</span>
+                  </div>
+                </div>
+
+                <!-- Right side - Status indicator and time -->
+                <div class="flex items-center space-x-3">
+                  <div class="status-indicator w-3 h-3 bg-blue-500 rounded-full hidden animate-pulse"></div>
+                  <span class="time-display text-xs text-gray-500 dark:text-gray-400 font-mono">--:--</span>
+                </div>
+              </div>
+
+              <!-- Progress bar row -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span class="current-time">0:00</span>
+                  <span class="total-duration">--:--</span>
+                </div>
+                
+                <!-- Progress bar container -->
+                <div class="relative">
+                  <div class="progress-bg w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                    <div class="progress-fill h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                  </div>
+                  
+                  <!-- Progress bar thumb (invisible but functional) -->
+                  <input type="range" class="progress-slider absolute inset-0 w-full h-2 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      })
+      
+      // Format bold text
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>')
+      
+      // Format italic text
+      .replace(/\*([^*]+)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>')
+      
+      // Format underlined text
+      .replace(/\_\_([^_]+)\_\_/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500">$1</span>')
+      
+      // Format numbered lists with enhanced styling and spacing
+      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-6 flex items-start p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all duration-200"><span class="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 text-white dark:text-gray-800 rounded-full text-sm font-bold mr-4 mt-0.5 flex-shrink-0 shadow-md">$1</span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$2</span></div>')
+      
+      // Format bullet points
+      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-5 flex items-start p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all duration-200"><span class="w-3 h-3 bg-gradient-to-br from-gray-600 to-gray-500 dark:from-gray-400 dark:to-gray-300 rounded-full mr-4 mt-3 flex-shrink-0 shadow-sm"></span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$1</span></div>')
+      
+      // Format specific Islamic terms with enhanced styling
+      .replace(/Allah\s*\(SWT\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-sm font-bold border-2 border-gray-300 dark:border-gray-500 shadow-sm hover:shadow-md transition-all duration-200">🕌 Allah (SWT)</span>')
+      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-sm font-bold border-2 border-gray-300 dark:border-gray-500 shadow-sm hover:shadow-md transition-all duration-200">📖 Prophet Muhammad (PBUH)</span>')
+      .replace(/\(peace be upon him\)/gi, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
+      
+      // Format Explanation headers with distinctive styling
+      .replace(/^(Explanation):?\s*$/gmi, 
+        '<div class="explanation-section mt-12 mb-8"><div class="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl border-l-4 border-blue-500 dark:border-blue-400 shadow-lg"><div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-xl flex items-center justify-center shadow-md"><svg class="w-6 h-6 text-white dark:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div><div><h3 class="text-2xl md:text-3xl font-bold text-blue-800 dark:text-blue-200 font-[var(--font-amiri)] tracking-wide">💡 Explanation</h3><p class="text-sm text-blue-600 dark:text-blue-400 mt-1">Understanding the meaning and context</p></div></div></div>')
+      
+      // Format Tafsir/Tafseer headers with distinctive styling
+      .replace(/^(Tafs[ie]r):?\s*$/gmi, 
+        '<div class="tafsir-section mt-12 mb-8"><div class="flex items-center gap-4 p-6 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 rounded-2xl border-l-4 border-emerald-500 dark:border-emerald-400 shadow-lg"><div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-400 dark:to-emerald-500 rounded-xl flex items-center justify-center shadow-md"><svg class="w-6 h-6 text-white dark:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><div><h3 class="text-2xl md:text-3xl font-bold text-emerald-800 dark:text-emerald-200 font-[var(--font-amiri)] tracking-wide">📚 Tafsir</h3><p class="text-sm text-emerald-600 dark:text-emerald-400 mt-1">Detailed scholarly interpretation</p></div></div></div>')
+      
+      // Format other common section headers with enhanced styling
+      .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi, 
+        '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
+      
+      // Format Quranic section headers with enhanced styling
+      .replace(/Allah\s*\(SWT\)\s*says\s*in\s*the\s*(Glorious\s*)?Quran:?/gi, 
+        '<div class="my-8 p-6 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600 rounded-2xl border-l-4 border-gray-800 dark:border-gray-200 shadow-lg"><h3 class="divine-quote-heading text-xl font-bold text-gray-800 dark:text-gray-200 mb-3 font-[var(--font-amiri)] tracking-wide flex items-center">📖 <span class="ml-3">Allah (SWT) says in the Glorious Quran:</span></h3><div class="w-16 h-1 bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 rounded-full"></div></div>')
+      
+      // Clean up any remaining formatting markers
+      .replace(/###\s*Quran GPT's Answer:?\s*/gi, '')
+      .replace(/^\s*[\r\n]+/gm, '') // Remove empty lines
+      .replace(/\n{3,}/g, '\n\n'); // Limit consecutive line breaks
+    
     return processedText;
   };
 
   const getPrompt = () => {
-    return `**Introduction:**\n\nI am Quran GPT, an AI-powered Islamic Library with experience as a Quran Scholar/Researcher. My task is to answer questions by providing authentic references from the Holy Quran. I will include at least one to three relevant Ayahs of the Quran to support my answers.\n\n**Format:**\n\nI will respond to your question in a peaceful and polite manner. In my answer, I will include Quranic references to support my response. I will use references from different Surahs of the Quran if found to ensure accuracy.\n\n**Reference Format:**\n\n1. I will provide the answer in the following format:\n\nAllah(SWT) says in the Glorious Quran:**\n\n"Ayah text" [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})\n\n2. I will explain the Ayahs with proper and exact tafseer as an authority.\n\n3. ............................................\n\nPlease note that you should replace \`{Surah No.}\` and \`{Ayah No.}\` with the actual Surah and Ayah number when you use this format to provide the answer.\n\nQuestion: ${content}`;
+    return `You are Quran GPT, an AI-powered Islamic Library with experience as a Quran Scholar/Researcher. Your task is to answer questions by providing authentic references from the Holy Quran.
+
+IMPORTANT: You must format your response exactly as follows:
+
+1. Start with a brief introduction to the topic
+2. Include at least 2-3 relevant Quranic verses in this EXACT format:
+   "Verse text here" [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
+
+3. Provide explanation and tafseer for each verse
+4. End with practical guidance or conclusion
+
+CRITICAL FORMAT REQUIREMENTS:
+- Use EXACTLY this format for ayah references: [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
+- Replace {Surah No.} and {Ayah No.} with actual numbers
+- Use proper surah names like: Al-Fatiha, Al-Baqarah, Aal-Imran, An-Nisa, Al-Ma'idah, etc.
+- Include the full verse text in quotes before each reference
+
+Example format:
+"Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
+
+Question: ${content}`;
   };
 
   const askQuran = async () => {
@@ -64,6 +462,9 @@ export default function Home() {
       setError('Please enter a question');
       return;
     }
+
+    // Clean up any existing audio before starting new question
+    stopAudio();
 
     setIsProcessing(true);
     setSummary('');
@@ -120,22 +521,22 @@ export default function Home() {
 
     if (today <= ramadanEnd) {
       return (
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-3xl md:text-4xl text-emerald-600 dark:text-emerald-400">🌙</span>
-          <span className="text-xl md:text-2xl font-semibold text-emerald-700 dark:text-emerald-300">
-            Ramadan Mubarak!
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-4xl md:text-5xl">🌙</span>
+          <span className="text-xl md:text-2xl font-semibold text-black dark:text-white">
+            Ramadan Mubarak
           </span>
-          <span className="text-3xl md:text-4xl text-emerald-600 dark:text-emerald-400">⭐</span>
+          <span className="text-4xl md:text-5xl">⭐</span>
         </div>
       );
     } else if (today.toDateString() === eidDate.toDateString()) {
       return (
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-3xl md:text-4xl text-emerald-600 dark:text-emerald-400">🎉</span>
-          <span className="text-xl md:text-2xl font-semibold text-emerald-700 dark:text-emerald-300">
-            Eid Mubarak!
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-4xl md:text-5xl">🎉</span>
+          <span className="text-xl md:text-2xl font-semibold text-black dark:text-white">
+            Eid Mubarak
           </span>
-          <span className="text-3xl md:text-4xl text-emerald-600 dark:text-emerald-400">🎊</span>
+          <span className="text-4xl md:text-5xl">🎊</span>
         </div>
       );
     }
@@ -163,17 +564,7 @@ export default function Home() {
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-NMNGXPDXNK"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-NMNGXPDXNK');
-            `
-          }}
-        />
+
         <script
           type="text/javascript"
           dangerouslySetInnerHTML={{
@@ -187,195 +578,68 @@ export default function Home() {
           }}
         />
       </Head>
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="container max-w-5xl mx-auto px-4 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <div className="inline-block mb-6">
-              <div className="relative h-20 w-20 mx-auto">
-                <div className="absolute inset-0 bg-emerald-500 rounded-full opacity-20 animate-ping" style={{ animationDuration: '3s' }}></div>
-                <div className="relative flex items-center justify-center h-full w-full bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div className="mb-4">
-              {getGreetingMessage()}
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400 dark:from-emerald-400 dark:to-teal-300 mb-4">
-              Quran GPT
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-6">
-              An AI-powered Islamic knowledge base providing authentic answers from the Holy Quran
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              <span className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 rounded-full">AI-Powered</span>
-              <span className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 rounded-full">Quranic Knowledge</span>
-              <span className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 rounded-full">Islamic Guidance</span>
-            </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"
-          >
-            {[
-              { question: 'What is the purpose of life?', icon: '🌱' },
-              { question: 'Who is Prophet Muhammad (PBUH)?', icon: '☪️' },
-              { question: 'Who is Allah?', icon: '✨' }
-            ].map((item) => (
-              <motion.button
-                key={item.question}
-                whileHover={{ scale: 1.02, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => insertQuestion(item.question)}
-                className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl px-6 py-4 text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-gray-700/80 transition-all duration-300 border border-gray-100 dark:border-gray-700"
-              >
-                <div className="flex items-center mb-2">
-                  <span className="text-2xl mr-2">{item.icon}</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">Popular Question</span>
-                </div>
-                <p className="text-left font-medium group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors duration-200">{item.question}</p>
-              </motion.button>
-            ))}
-          </motion.div>
+      {/* Google Analytics */}
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-NMNGXPDXNK"
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-NMNGXPDXNK');
+        `}
+      </Script>
+      
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Hero Section */}
+        <HeroSection getGreetingMessage={getGreetingMessage} />
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mb-8 relative"
-          >
-            <div className="absolute top-4 left-4 text-gray-400 dark:text-gray-500 pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </div>
-            <textarea
-              placeholder="Assalamu Alaikum! Ask your question about Islam and the Holy Quran..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full h-40 p-4 pl-12 rounded-xl shadow-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 text-base resize-none"
+        {/* Main Content */}
+        <main className="relative z-10">
+          <div className="container max-w-7xl mx-auto px-6">
+            
+            {/* Quick Questions Section */}
+            <QuickQuestions insertQuestion={insertQuestion} />
+
+            {/* Question Input Section */}
+            <ChatSection 
+              content={content}
+              setContent={setContent}
+              askQuran={askQuran}
+              resetForm={resetForm}
+              isProcessing={isProcessing}
+              error={error}
+              showSummary={showSummary}
             />
-          </motion.div>
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex justify-center gap-4 mb-10">
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={askQuran}
-              disabled={isProcessing}
-              className="flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium"
-            >
-              <QuestionMarkCircleIcon className="w-5 h-5 mr-2" />
-              Ask Quran
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}
-              whileTap={{ scale: 0.95 }}
-              onClick={resetForm}
-              className="flex items-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg shadow-lg transition-all duration-300 font-medium"
-            >
-              <ArrowPathIcon className="w-5 h-5 mr-2" />
-              Reset
-            </motion.button>
-          </div>
-
-          <AnimatePresence>
-            {isProcessing && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex justify-center items-center mb-10"
-              >
-                <div className="relative">
-                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-500"></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-emerald-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                </div>
-                <p className="ml-3 text-emerald-600 dark:text-emerald-400 font-medium">Consulting the Quran...</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {showSummary && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 mb-20 border border-gray-100 dark:border-gray-700"
-              >
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-t-xl"></div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={copyContent}
-                  className={`absolute top-4 right-4 flex items-center px-4 py-2 rounded-lg transition-all duration-300 ${
-                    copied
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  <ClipboardIcon className="w-5 h-5 mr-2" />
-                  {copied ? 'Copied!' : 'Copy'}
-                </motion.button>
-                <div className="mt-6 mb-2 flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <h2 className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">Quran GPT's Answer</h2>
-                </div>
-                <div 
-                  className="prose dark:prose-invert max-w-none mt-4 text-gray-700 dark:text-gray-300 space-y-4"
-                  dangerouslySetInnerHTML={{ __html: summary }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <footer className="bg-white dark:bg-gray-800 shadow-md border-t border-gray-200 dark:border-gray-700 mt-10 w-full">
-          <div className="max-w-5xl mx-auto px-4 py-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                <span>Made with <span className="text-red-500">♥</span> by <a href="https://www.linkedin.com/in/menajul-hoque/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Menajul Hoque</a></span>
-              </div>
-              <Image src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" className="h-8" width={100} height={40} />
+            {/* Islamic Widgets */}
+            <div className="mb-12">
+              <IslamicWidgets showWidgets={!isProcessing && !showSummary} />
             </div>
+
+            {/* Thinking Process */}
+            <ThinkingProcess isProcessing={isProcessing} />
+
+            {/* Response Section */}
+            <ResponseSection 
+              showSummary={showSummary}
+              summary={summary}
+              copyContent={copyContent}
+              copied={copied}
+              onAudioPlay={handleAudioPlay}
+              onAudioPause={handleAudioPause}
+              onAudioEnd={handleAudioEnd}
+              isAudioPlaying={isAyahPlaying}
+              isAudioActive={isAyahActive}
+            />
           </div>
-        </footer>
+        </main>
+
+        {/* Footer */}
+        <Footer />
       </div>
     </>
   );

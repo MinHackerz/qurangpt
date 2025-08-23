@@ -1,8 +1,28 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Scheherazade_New, Amiri, Noto_Naskh_Arabic, Cairo } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
+const scheherazade = Scheherazade_New({ 
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-scheherazade'
+});
+const amiri = Amiri({ 
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-amiri'
+});
+const notoNaskh = Noto_Naskh_Arabic({ 
+  subsets: ['arabic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-naskh'
+});
+const cairo = Cairo({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-cairo'
+});
 
 export const metadata: Metadata = {
   title: 'QuranGPT - Get Guidance from the Holy Quran',
@@ -30,7 +50,7 @@ export default function RootLayout({
         <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
         <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={`${inter.className} ${scheherazade.variable} ${amiri.variable} ${notoNaskh.variable} ${cairo.variable}`}>{children}</body>
     </html>
   );
 }
