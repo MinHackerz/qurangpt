@@ -447,6 +447,25 @@ body {
   scrollbar-width: none;     /* Firefox */
 }
 
+/* Mobile-specific improvements for chat input */
+@media (max-width: 639px) {
+  .chat-input-textarea {
+    /* Ensure text is fully visible on mobile */
+    line-height: 1.5;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /* Better touch scrolling on mobile */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Improve mobile text input experience */
+  .chat-input-textarea:focus {
+    /* Ensure focus state is visible on mobile */
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
 /* Interactive border animations */
 @keyframes chatInputSweep {
   0% {

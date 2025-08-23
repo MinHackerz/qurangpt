@@ -25,13 +25,39 @@ export default function ChatSection({
 }: ChatSectionProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize function
+  // Auto-resize function with improved mobile support
   const autoResize = (target: HTMLTextAreaElement) => {
+    // Reset height to auto to get accurate scrollHeight
     target.style.height = 'auto';
-    const minHeight = window.innerWidth >= 640 ? 60 : 52; // sm:min-h-[60px] : min-h-[52px]
-    const maxHeight = window.innerWidth >= 640 ? 240 : 200; // sm:max-h-[240px] : max-h-[200px]
-    const newHeight = Math.min(Math.max(target.scrollHeight, minHeight), maxHeight);
+    
+    // Get the actual content height
+    const scrollHeight = target.scrollHeight;
+    
+    // Mobile-first height calculations
+    const isMobile = window.innerWidth < 640;
+    const minHeight = isMobile ? 56 : 60; // Increased mobile min height
+    const maxHeight = isMobile ? 300 : 240; // Increased mobile max height for better text visibility
+    
+    // Calculate new height with better mobile support
+    let newHeight = Math.max(scrollHeight, minHeight);
+    
+    // On mobile, allow more height for better text visibility
+    if (isMobile && scrollHeight > minHeight) {
+      // Add extra padding for mobile to ensure text is fully visible
+      newHeight = Math.min(scrollHeight + 20, maxHeight);
+    } else {
+      newHeight = Math.min(newHeight, maxHeight);
+    }
+    
+    // Apply the new height
     target.style.height = newHeight + 'px';
+    
+    // Ensure the textarea doesn't get cut off on mobile
+    if (isMobile && newHeight >= maxHeight) {
+      target.style.overflowY = 'auto';
+    } else {
+      target.style.overflowY = 'hidden';
+    }
   };
 
   // Effect to handle initial height and external content changes
@@ -40,6 +66,26 @@ export default function ChatSection({
       autoResize(textareaRef.current);
     }
   }, [content]);
+
+  // Handle window resize and orientation changes for mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (textareaRef.current) {
+        // Small delay to ensure orientation change is complete
+        setTimeout(() => {
+          autoResize(textareaRef.current!);
+        }, 100);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   // Handle Enter key press
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -82,7 +128,7 @@ export default function ChatSection({
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               rows={1}
-              className={`chat-input-textarea w-full p-4 sm:p-5 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 border-none resize-none focus:outline-none text-base sm:text-lg leading-relaxed min-h-[52px] sm:min-h-[60px] max-h-[200px] sm:max-h-[240px] transition-all duration-200 ${
+              className={`chat-input-textarea w-full p-4 sm:p-5 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 border-none resize-none focus:outline-none text-base sm:text-lg leading-relaxed min-h-[56px] sm:min-h-[60px] max-h-[300px] sm:max-h-[240px] transition-all duration-200 ${
                 (content.trim() || showSummary) ? 'pr-28 sm:pr-32' : 'pr-16 sm:pr-20'
               }`}
               style={{ 
