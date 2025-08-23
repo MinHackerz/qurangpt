@@ -407,6 +407,7 @@ export async function GET(request: NextRequest) {
     // Calculate current and next prayer
     const prayers = prayerData.data?.timings || {};
     const prayerNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    const allTimings = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     
     // Get current time in user's timezone
     const userTimezone = locationData.timezone || 'UTC';
@@ -422,29 +423,21 @@ export async function GET(request: NextRequest) {
         const timeStr = prayers[prayerName].split(' ')[0]; // Remove timezone if present
         const [hours, minutes] = timeStr.split(':');
         
-        // Create today's date in user's timezone
-        const today = new Date();
-        const userToday = new Date(today.toLocaleString('en-US', { timeZone: userTimezone }));
-        
-        // Set the prayer time to today's date
-        const prayerTime = new Date(userToday);
+        // Create today's date and set the prayer time
+        const prayerTime = new Date();
         prayerTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         
         prayerTimes[prayerName] = prayerTime;
       }
     }
 
-    // Also get sunrise and sunset for prayer end times in user's timezone
+    // Also get sunrise and sunset for prayer end times
     const sunrise = prayerData.data?.timings?.Sunrise ? (() => {
       const timeStr = prayerData.data.timings.Sunrise.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
       
-      // Create today's date in user's timezone
-      const today = new Date();
-      const userToday = new Date(today.toLocaleString('en-US', { timeZone: userTimezone }));
-      
-      // Set the time to today's date
-      const time = new Date(userToday);
+      // Create today's date and set the time
+      const time = new Date();
       time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       
       return time;
@@ -454,12 +447,8 @@ export async function GET(request: NextRequest) {
       const timeStr = prayerData.data.timings.Sunset.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
       
-      // Create today's date in user's timezone
-      const today = new Date();
-      const userToday = new Date(today.toLocaleString('en-US', { timeZone: userTimezone }));
-      
-      // Set the time to today's date
-      const time = new Date(userToday);
+      // Create today's date and set the time
+      const time = new Date();
       time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       
       return time;
@@ -502,59 +491,128 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Check if we're currently in a prayer window
-    for (const prayerName of prayerNames) {
-      const prayerStart = prayerTimes[prayerName];
-      const prayerEnd = getPrayerEndTime(prayerName);
-      
-      if (prayerStart && prayerEnd) {
-        // Handle overnight prayers (Isha)
-        if (prayerName === 'Isha') {
-          if (userCurrentTime >= prayerStart || userCurrentTime < prayerEnd) {
-            currentPrayer = prayerName;
-            currentPrayerEndTime = prayerEnd;
-            break;
-          }
-        } else {
-          if (userCurrentTime >= prayerStart && userCurrentTime < prayerEnd) {
-            currentPrayer = prayerName;
-            currentPrayerEndTime = prayerEnd;
-            break;
-          }
+    // Simplified prayer detection logic
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    
+    // Convert prayer times to minutes for easier comparison
+    const prayerTimesInMinutes: { [key: string]: number } = {};
+    for (const timingName of allTimings) {
+      if (prayers[timingName]) {
+        const timeStr = prayers[timingName].split(' ')[0];
+        const [hours, minutes] = timeStr.split(':');
+        prayerTimesInMinutes[timingName] = parseInt(hours) * 60 + parseInt(minutes);
+      }
+    }
+    
+    console.log('Prayer times in minutes:', prayerTimesInMinutes);
+    console.log('Current time in minutes:', currentTimeInMinutes);
+    
+    // Find current prayer based on time ranges
+    if (prayerTimesInMinutes['Fajr'] && prayerTimesInMinutes['Sunrise']) {
+      if (currentTimeInMinutes >= prayerTimesInMinutes['Fajr'] && currentTimeInMinutes < prayerTimesInMinutes['Sunrise']) {
+        currentPrayer = 'Fajr';
+        // Create end time for Fajr (ends at sunrise)
+        const fajrEndTime = new Date();
+        fajrEndTime.setHours(Math.floor(prayerTimesInMinutes['Sunrise'] / 60), prayerTimesInMinutes['Sunrise'] % 60, 0, 0);
+        currentPrayerEndTime = fajrEndTime;
+      }
+    }
+    
+    if (prayerTimesInMinutes['Sunrise'] && prayerTimesInMinutes['Dhuhr']) {
+      if (currentTimeInMinutes >= prayerTimesInMinutes['Sunrise'] && currentTimeInMinutes < prayerTimesInMinutes['Dhuhr']) {
+        currentPrayer = 'Sunrise';
+        // Create end time for Sunrise (ends when Dhuhr begins)
+        const sunriseEndTime = new Date();
+        sunriseEndTime.setHours(Math.floor(prayerTimesInMinutes['Dhuhr'] / 60), prayerTimesInMinutes['Dhuhr'] % 60, 0, 0);
+        currentPrayerEndTime = sunriseEndTime;
+      }
+    }
+    
+    if (prayerTimesInMinutes['Dhuhr'] && prayerTimesInMinutes['Asr']) {
+      if (currentTimeInMinutes >= prayerTimesInMinutes['Dhuhr'] && currentTimeInMinutes < prayerTimesInMinutes['Asr']) {
+        currentPrayer = 'Dhuhr';
+        // Create end time for Dhuhr (ends when Asr begins)
+        const dhuhrEndTime = new Date();
+        dhuhrEndTime.setHours(Math.floor(prayerTimesInMinutes['Asr'] / 60), prayerTimesInMinutes['Asr'] % 60, 0, 0);
+        currentPrayerEndTime = dhuhrEndTime;
+      }
+    }
+    
+    if (prayerTimesInMinutes['Asr'] && prayerTimesInMinutes['Maghrib']) {
+      if (currentTimeInMinutes >= prayerTimesInMinutes['Asr'] && currentTimeInMinutes < prayerTimesInMinutes['Maghrib']) {
+        currentPrayer = 'Asr';
+        // Create end time for Asr (ends when Maghrib begins)
+        const asrEndTime = new Date();
+        asrEndTime.setHours(Math.floor(prayerTimesInMinutes['Maghrib'] / 60), prayerTimesInMinutes['Maghrib'] % 60, 0, 0);
+        currentPrayerEndTime = asrEndTime;
+      }
+    }
+    
+    if (prayerTimesInMinutes['Maghrib'] && prayerTimesInMinutes['Isha']) {
+      if (currentTimeInMinutes >= prayerTimesInMinutes['Maghrib'] && currentTimeInMinutes < prayerTimesInMinutes['Isha']) {
+        currentPrayer = 'Maghrib';
+        // Create end time for Maghrib (ends when Isha begins)
+        const maghribEndTime = new Date();
+        maghribEndTime.setHours(Math.floor(prayerTimesInMinutes['Isha'] / 60), prayerTimesInMinutes['Isha'] % 60, 0, 0);
+        currentPrayerEndTime = maghribEndTime;
+      }
+    }
+    
+    // Handle Isha (overnight prayer)
+    if (prayerTimesInMinutes['Isha']) {
+      if (currentTimeInMinutes >= prayerTimesInMinutes['Isha'] || currentTimeInMinutes < prayerTimesInMinutes['Fajr']) {
+        currentPrayer = 'Isha';
+        // Isha ends at next day's Fajr
+        const nextFajr = new Date();
+        nextFajr.setDate(nextFajr.getDate() + 1);
+        nextFajr.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+        currentPrayerEndTime = nextFajr;
+      }
+    }
+    
+    // Find next prayer
+    if (!currentPrayer) {
+      // Find the next prayer that hasn't started yet
+      for (const prayerName of prayerNames) {
+        if (prayerTimesInMinutes[prayerName] && prayerTimesInMinutes[prayerName] > currentTimeInMinutes) {
+          nextPrayer = prayerName;
+          // Create next prayer time
+          const nextTime = new Date();
+          nextTime.setHours(Math.floor(prayerTimesInMinutes[prayerName] / 60), prayerTimesInMinutes[prayerName] % 60, 0, 0);
+          nextPrayerTime = nextTime;
+          break;
         }
       }
-    }
-
-    // Find the next upcoming prayer (regardless of whether we have a current prayer)
-    for (const prayerName of prayerNames) {
-      const prayerTime = prayerTimes[prayerName];
-      if (prayerTime && prayerTime > userCurrentTime) {
-        nextPrayer = prayerName;
-        nextPrayerTime = prayerTime;
-        break;
+      
+      // If no prayer found for today, get tomorrow's Fajr
+      if (nextPrayer === 'Fajr' && prayerTimesInMinutes['Fajr'] && prayerTimesInMinutes['Fajr'] <= currentTimeInMinutes) {
+        nextPrayerTime = new Date();
+        nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
+        nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
       }
-    }
-
-    // If no prayer found for today, get tomorrow's Fajr
-    if (nextPrayer === 'Fajr' && prayerTimes['Fajr'] && prayerTimes['Fajr'] <= userCurrentTime) {
-      nextPrayerTime = new Date(prayerTimes['Fajr']);
-      nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
-    }
-
-    // If we have a current prayer, make sure next prayer is actually the next one
-    if (currentPrayer) {
+    } else {
+      // If we have a current prayer, find the next one
       const currentPrayerIndex = prayerNames.indexOf(currentPrayer);
       const nextPrayerIndex = (currentPrayerIndex + 1) % prayerNames.length;
       const nextPrayerName = prayerNames[nextPrayerIndex];
       
       if (nextPrayerName === 'Fajr' && currentPrayer !== 'Isha') {
         // If next prayer is Fajr but current isn't Isha, it should be tomorrow's Fajr
-        nextPrayerTime = new Date(prayerTimes['Fajr']);
+        nextPrayerTime = new Date();
         nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
+        nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
         nextPrayer = 'Fajr';
       } else {
         nextPrayer = nextPrayerName;
-        nextPrayerTime = prayerTimes[nextPrayerName] || nextPrayerTime;
+        // Create next prayer time
+        if (prayerTimesInMinutes[nextPrayerName]) {
+          const nextTime = new Date();
+          nextTime.setHours(Math.floor(prayerTimesInMinutes[nextPrayerName] / 60), prayerTimesInMinutes[nextPrayerName] % 60, 0, 0);
+          nextPrayerTime = nextTime;
+        }
       }
     }
     
@@ -563,6 +621,9 @@ export async function GET(request: NextRequest) {
     console.log('Current prayer:', currentPrayer);
     console.log('Next prayer:', nextPrayer);
     console.log('Next prayer time:', nextPrayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
+    if (currentPrayerEndTime) {
+      console.log('Current prayer end time:', currentPrayerEndTime.toLocaleString('en-US', { timeZone: userTimezone }));
+    }
 
     // Calculate Eid dates for 2025 (updated dates)
     const currentYear = currentDate.getFullYear();

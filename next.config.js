@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable trust proxy for proper IP detection in production
-  experimental: {
-    trustHostHeader: true,
-  },
   images: {
     remotePatterns: [
       {
