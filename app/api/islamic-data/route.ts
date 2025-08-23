@@ -1,12 +1,189 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 
+// Function to get user's real IP address from request headers
+function getClientIP(request: NextRequest): string {
+  // Check various headers that might contain the real client IP
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  const cfConnectingIP = request.headers.get('cf-connecting-ip'); // Cloudflare
+  const forwarded = request.headers.get('x-forwarded');
+  const clientIP = request.headers.get('x-client-ip');
+  const trueClientIP = request.headers.get('x-true-client-ip'); // Akamai
+  const via = request.headers.get('via');
+  
+  // Log IP headers for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('IP Headers found:', {
+      'x-forwarded-for': forwardedFor,
+      'x-real-ip': realIP,
+      'cf-connecting-ip': cfConnectingIP,
+      'x-forwarded': forwarded,
+      'x-client-ip': clientIP,
+      'x-true-client-ip': trueClientIP,
+      'via': via
+    });
+  }
+  
+  // Try to extract IP from x-forwarded-for (most common)
+  if (forwardedFor) {
+    // x-forwarded-for can contain multiple IPs, take the first one
+    const ips = forwardedFor.split(',').map(ip => ip.trim());
+    for (const ip of ips) {
+      if (ip && ip !== 'unknown' && ip !== '::1' && ip !== '127.0.0.1' && 
+          !ip.startsWith('10.') && !ip.startsWith('172.') && !ip.startsWith('192.168.')) {
+        console.log('Using x-forwarded-for IP:', ip);
+        return ip;
+      }
+    }
+  }
+  
+  // Try other headers
+  if (realIP && realIP !== 'unknown' && realIP !== '::1' && realIP !== '127.0.0.1' &&
+      !realIP.startsWith('10.') && !realIP.startsWith('172.') && !realIP.startsWith('192.168.')) {
+    console.log('Using x-real-ip:', realIP);
+    return realIP;
+  }
+  
+  if (cfConnectingIP && cfConnectingIP !== 'unknown' && cfConnectingIP !== '::1' && cfConnectingIP !== '127.0.0.1' &&
+      !cfConnectingIP.startsWith('10.') && !cfConnectingIP.startsWith('172.') && !cfConnectingIP.startsWith('192.168.')) {
+    console.log('Using cf-connecting-ip:', cfConnectingIP);
+    return cfConnectingIP;
+  }
+  
+  if (clientIP && clientIP !== 'unknown' && clientIP !== '::1' && clientIP !== '127.0.0.1' &&
+      !clientIP.startsWith('10.') && !clientIP.startsWith('172.') && !clientIP.startsWith('192.168.')) {
+    console.log('Using x-client-ip:', clientIP);
+    return clientIP;
+  }
+  
+  if (trueClientIP && trueClientIP !== 'unknown' && trueClientIP !== '::1' && trueClientIP !== '127.0.0.1' &&
+      !trueClientIP.startsWith('10.') && !trueClientIP.startsWith('172.') && !trueClientIP.startsWith('192.168.')) {
+    console.log('Using x-true-client-ip:', trueClientIP);
+    return trueClientIP;
+  }
+  
+  // Fallback to connection remote address
+  const connection = (request as any).connection;
+  if (connection?.remoteAddress && connection.remoteAddress !== '::1' && connection.remoteAddress !== '127.0.0.1' &&
+      !connection.remoteAddress.startsWith('10.') && !connection.remoteAddress.startsWith('172.') && !connection.remoteAddress.startsWith('192.168.')) {
+    console.log('Using connection remote address:', connection.remoteAddress);
+    return connection.remoteAddress;
+  }
+  
+  // Last resort: try to get IP from socket connection
+  try {
+    const socket = (request as any).socket;
+    if (socket?.remoteAddress && socket.remoteAddress !== '::1' && socket.remoteAddress !== '127.0.0.1' &&
+        !socket.remoteAddress.startsWith('10.') && !socket.remoteAddress.startsWith('172.') && !socket.remoteAddress.startsWith('192.168.')) {
+      console.log('Using socket remote address:', socket.remoteAddress);
+      return socket.remoteAddress;
+    }
+  } catch (error) {
+    console.log('Could not access socket remote address');
+  }
+  
+  // If all else fails, return a placeholder that will trigger fallback
+  console.log('No valid client IP found, will use fallback location');
+  return 'unknown';
+}
+
+// Alternative function to get location without IP (for cases where IP detection fails)
+async function getLocationFromRequest(request: NextRequest): Promise<{
+  lat: number;
+  lng: number;
+  city: string;
+  country: string;
+  timezone: string;
+  region: string;
+}> {
+  // Try to get location from Accept-Language header as a fallback
+  const acceptLanguage = request.headers.get('accept-language');
+  if (acceptLanguage) {
+    console.log('Attempting location detection from Accept-Language:', acceptLanguage);
+    
+    // Simple mapping based on language preferences
+    if (acceptLanguage.includes('hi') || acceptLanguage.includes('bn') || acceptLanguage.includes('ur')) {
+      // Hindi, Bengali, Urdu - likely Indian subcontinent
+      return {
+        lat: 22.5726,
+        lng: 88.3639,
+        city: 'Kolkata',
+        country: 'India',
+        timezone: 'Asia/Kolkata',
+        region: 'West Bengal'
+      };
+    } else if (acceptLanguage.includes('ar')) {
+      // Arabic - likely Middle East
+      return {
+        lat: 21.4225,
+        lng: 39.8262,
+        city: 'Mecca',
+        country: 'Saudi Arabia',
+        timezone: 'Asia/Riyadh',
+        region: 'Makkah'
+      };
+    } else if (acceptLanguage.includes('tr')) {
+      // Turkish
+      return {
+        lat: 39.9334,
+        lng: 32.8597,
+        city: 'Ankara',
+        country: 'Turkey',
+        timezone: 'Europe/Istanbul',
+        region: 'Ankara'
+      };
+    }
+  }
+  
+  // Check other headers that might indicate location
+  const userAgent = request.headers.get('user-agent') || '';
+  const host = request.headers.get('host') || '';
+  
+  // If the request is coming from an Indian domain or has Indian indicators, use Kolkata
+  if (host.includes('.in') || userAgent.includes('India') || userAgent.includes('IN')) {
+    console.log('Detected Indian indicators, using Kolkata location');
+    return {
+      lat: 22.5726,
+      lng: 88.3639,
+      city: 'Kolkata',
+      country: 'India',
+      timezone: 'Asia/Kolkata',
+      region: 'West Bengal'
+    };
+  }
+  
+  // Default fallback - Use UTC for unknown locations
+  console.log('Using UTC as default fallback location');
+  return {
+    lat: 0,
+    lng: 0,
+    city: 'Unknown',
+    country: 'Unknown',
+    timezone: 'UTC',
+    region: 'Unknown'
+  };
+}
+
 // Function to get location from IP using multiple geolocation services
-async function getLocationFromIP() {
+async function getLocationFromIP(clientIP: string): Promise<{
+  lat: number;
+  lng: number;
+  city: string;
+  country: string;
+  timezone: string;
+  region: string;
+} | null> {
+  // If no valid IP found, return null to trigger fallback logic
+  if (!clientIP || clientIP === 'unknown') {
+    console.log('No valid client IP provided, will use fallback logic');
+    return null;
+  }
+  
   // Try multiple services for better reliability
   const services = [
     {
-      url: 'https://ipapi.co/json/',
+      url: `https://ipapi.co/${clientIP}/json/`,
       parser: (data: any) => ({
         lat: data.latitude,
         lng: data.longitude,
@@ -17,7 +194,18 @@ async function getLocationFromIP() {
       })
     },
     {
-      url: 'http://ip-api.com/json/',
+      url: `https://ipapi.co/json/`,
+      parser: (data: any) => ({
+        lat: data.latitude,
+        lng: data.longitude,
+        city: data.city,
+        country: data.country_name,
+        timezone: data.timezone,
+        region: data.region
+      })
+    },
+    {
+      url: `http://ip-api.com/json/${clientIP}`,
       parser: (data: any) => ({
         lat: data.lat,
         lng: data.lon,
@@ -42,14 +230,23 @@ async function getLocationFromIP() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log(`Service ${service.url} response:`, data);
+        
         const location = service.parser(data);
         
         // Validate that we got valid coordinates
         if (location.lat && location.lng && 
-            typeof location.lat === 'number' && typeof location.lng === 'number') {
+            typeof location.lat === 'number' && typeof location.lng === 'number' &&
+            location.lat !== 0 && location.lng !== 0) {
           console.log(`Successfully got location: ${location.city}, ${location.region}, ${location.country} (${location.lat}, ${location.lng}) - ${location.timezone}`);
           return location;
+        } else {
+          console.warn(`Invalid location data from ${service.url}:`, location);
         }
+      } else {
+        console.warn(`Service ${service.url} returned status: ${response.status}`);
+        const errorText = await response.text();
+        console.warn(`Error response:`, errorText);
       }
     } catch (error) {
       console.warn(`Failed to get location from ${service.url}:`, error);
@@ -57,15 +254,15 @@ async function getLocationFromIP() {
     }
   }
   
-  // Fallback to Mecca coordinates
-  console.log('All geolocation services failed, using Mecca as fallback');
+  // Fallback to UTC coordinates when geolocation fails
+  console.log('All geolocation services failed, using UTC as fallback');
   return {
-    lat: 21.4225,
-    lng: 39.8262,
-    city: 'Mecca',
-    country: 'Saudi Arabia',
-    timezone: 'Asia/Riyadh',
-    region: 'Makkah'
+    lat: 0,
+    lng: 0,
+    city: 'Unknown',
+    country: 'Unknown',
+    timezone: 'UTC',
+    region: 'Unknown'
   };
 }
 
@@ -74,15 +271,65 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     let lat = searchParams.get('lat');
     let lng = searchParams.get('lng');
-    let locationData = null;
+    let locationData: {
+      lat: number;
+      lng: number;
+      city: string;
+      country: string;
+      timezone: string;
+      region: string;
+    } | null = null;
     
     // If no coordinates provided, try to get from IP geolocation
     if (!lat || !lng) {
       console.log('No coordinates provided, attempting IP-based geolocation...');
-      locationData = await getLocationFromIP();
-      lat = locationData.lat.toString();
-      lng = locationData.lng.toString();
-      console.log(`Using IP-based location: ${locationData.city}, ${locationData.country} (${lat}, ${lng})`);
+      const clientIP = getClientIP(request);
+      console.log('Client IP detected:', clientIP);
+      
+              if (clientIP && clientIP !== 'unknown') {
+      console.log('Using detected client IP for geolocation:', clientIP);
+      locationData = await getLocationFromIP(clientIP);
+    } else {
+      console.log('IP detection failed, trying direct ipapi.co call...');
+      try {
+        // Try to get location directly from ipapi.co (it will auto-detect the caller's IP)
+        const response = await fetch('https://ipapi.co/json/', {
+          headers: {
+            'User-Agent': 'QuranGPT/1.0'
+          },
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          locationData = {
+            lat: data.latitude,
+            lng: data.longitude,
+            city: data.city,
+            country: data.country_name,
+            timezone: data.timezone,
+            region: data.region
+          };
+          console.log('Successfully got location from direct ipapi.co call:', locationData);
+        } else {
+          console.log('Direct ipapi.co call failed, using request-based fallback...');
+          locationData = await getLocationFromRequest(request);
+        }
+      } catch (error) {
+        console.log('Direct ipapi.co call error, using request-based fallback...');
+        locationData = await getLocationFromRequest(request);
+      }
+    }
+    
+    // Ensure we have valid location data
+    if (!locationData) {
+      console.log('No location data obtained, using request-based fallback...');
+      locationData = await getLocationFromRequest(request);
+    }
+    
+    lat = locationData.lat.toString();
+    lng = locationData.lng.toString();
+    console.log(`Using location: ${locationData.city}, ${locationData.country} (${lat}, ${lng})`);
     } else {
       console.log('Using provided coordinates:', lat, lng);
       // For provided coordinates, try to get timezone info
@@ -427,7 +674,6 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    console.log('Returning response:', response);
     return NextResponse.json(response);
 
   } catch (error) {
