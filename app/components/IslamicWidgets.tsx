@@ -5,18 +5,34 @@ import { motion } from 'framer-motion';
 import { ClockIcon, CalendarDaysIcon, GiftIcon } from '@heroicons/react/24/outline';
 
 interface IslamicData {
+  currentPrayer: {
+    name: string;
+    endTime: string;
+    endTimeString: string;
+    isActive: boolean;
+  } | null;
   nextPrayer: {
     name: string;
     time: string;
     timeString: string;
+    isActive: boolean;
+  };
+  location: {
+    city: string;
+    region: string;
+    country: string;
+    timezone: string;
+    timezoneAbbr: string;
   };
   eidFitr: {
     date: string;
     daysRemaining: number;
+    dateString: string;
   };
   eidAdha: {
     date: string;
     daysRemaining: number;
+    dateString: string;
   };
 }
 
@@ -79,18 +95,37 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
         const daysToEidAdha = Math.ceil((fallbackEidAdha.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
         
         setIslamicData({
+          currentPrayer: null,
           nextPrayer: {
             name: 'Maghrib',
             time: fallbackPrayerTime.toISOString(),
-            timeString: '6:30 PM'
+            timeString: '6:30 PM UTC',
+            isActive: false
+          },
+          location: {
+            city: 'Unknown',
+            region: 'Unknown',
+            country: 'Unknown',
+            timezone: 'UTC',
+            timezoneAbbr: 'UTC'
           },
           eidFitr: {
-            date: fallbackPrayerTime.toISOString(),
-            daysRemaining: Math.max(0, daysToEidFitr)
+            date: fallbackEidFitr.toISOString(),
+            daysRemaining: Math.max(0, daysToEidFitr),
+            dateString: fallbackEidFitr.toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            })
           },
           eidAdha: {
             date: fallbackEidAdha.toISOString(),
-            daysRemaining: Math.max(0, daysToEidAdha)
+            daysRemaining: Math.max(0, daysToEidAdha),
+            dateString: fallbackEidAdha.toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            })
           }
         });
         
@@ -133,16 +168,24 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     
-    return { hours, minutes, seconds };
+    return { hours, minutes, seconds, isNegative: diff < 0 };
   };
 
-  const timeUntilPrayer = islamicData?.nextPrayer ? calculateTimeRemaining(islamicData.nextPrayer.time) : null;
+  // Get the active prayer info (current prayer if active, otherwise next prayer)
+  const activePrayer = islamicData?.currentPrayer || islamicData?.nextPrayer;
+  const timeRemaining = activePrayer ? 
+    calculateTimeRemaining(islamicData?.currentPrayer ? islamicData.currentPrayer.endTime : islamicData.nextPrayer.time) : null;
 
   // Calculate prayer time for analog clock
   const getPrayerTimeForClock = () => {
-    if (!islamicData?.nextPrayer.time) return { hours: 0, minutes: 0 };
+    // Show current prayer's end time if active, otherwise show next prayer's start time
+    const targetTime = islamicData?.currentPrayer ? 
+      islamicData.currentPrayer.endTime : 
+      islamicData?.nextPrayer.time;
     
-    const prayerTime = new Date(islamicData.nextPrayer.time);
+    if (!targetTime) return { hours: 0, minutes: 0 };
+    
+    const prayerTime = new Date(targetTime);
     return {
       hours: prayerTime.getHours() % 12,
       minutes: prayerTime.getMinutes()
@@ -153,6 +196,23 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
 
   return (
     <div className="max-w-6xl mx-auto px-4">
+      {/* Location Info */}
+      {islamicData?.location && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="text-center mb-6 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700"
+        >
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            📍 {islamicData.location.city}{islamicData.location.region && islamicData.location.region !== 'Unknown' && `, ${islamicData.location.region}`}, {islamicData.location.country}
+            <span className="ml-2 px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">
+              {islamicData.location.timezoneAbbr}
+            </span>
+          </p>
+        </motion.div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Prayer Time Clock */}
         <motion.div
@@ -163,8 +223,20 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
         >
           {/* Prayer Info - Centered */}
           <div className="text-center mb-6">
-            <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg mb-1">Next Prayer</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{islamicData?.nextPrayer.name}</p>
+            {islamicData?.currentPrayer ? (
+              <>
+                <h3 className="font-semibold text-green-600 dark:text-green-400 text-lg mb-1 flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Current Prayer
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{islamicData.currentPrayer.name}</p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg mb-1">Next Prayer</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{islamicData?.nextPrayer.name}</p>
+              </>
+            )}
           </div>
           
           {/* Analog Clock - Larger Size */}
@@ -219,15 +291,32 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           </div>
           
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-              {islamicData?.nextPrayer.timeString}
-            </div>
-            
-            {timeUntilPrayer && (
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {timeUntilPrayer.hours > 0 && `${timeUntilPrayer.hours}h `}
-                {timeUntilPrayer.minutes}m {timeUntilPrayer.seconds}s remaining
-              </div>
+            {islamicData?.currentPrayer ? (
+              <>
+                <div className="text-lg font-semibold text-green-600 dark:text-green-400 mb-2">
+                  Ends at {islamicData.currentPrayer.endTimeString}
+                </div>
+                
+                {timeRemaining && !timeRemaining.isNegative && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
+                    {timeRemaining.minutes}m {timeRemaining.seconds}s remaining
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                  {islamicData?.nextPrayer.timeString}
+                </div>
+                
+                {timeRemaining && !timeRemaining.isNegative && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
+                    {timeRemaining.minutes}m {timeRemaining.seconds}s remaining
+                  </div>
+                )}
+              </>
             )}
           </div>
           
@@ -286,11 +375,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Expected Date</p>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              {islamicData?.eidFitr.date ? new Date(islamicData.eidFitr.date).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-              }) : 'Loading...'}
+              {islamicData?.eidFitr.dateString || 'Loading...'}
             </p>
           </div>
         </motion.div>
@@ -347,11 +432,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Expected Date</p>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              {islamicData?.eidAdha.date ? new Date(islamicData.eidAdha.date).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-              }) : 'Loading...'}
+              {islamicData?.eidAdha.dateString || 'Loading...'}
             </p>
           </div>
         </motion.div>
