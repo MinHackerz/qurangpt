@@ -176,42 +176,20 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
   const timeRemaining = activePrayer ? 
     calculateTimeRemaining(islamicData?.currentPrayer ? islamicData.currentPrayer.endTime : islamicData.nextPrayer.time) : null;
 
-  // Calculate prayer time for analog clock
-  const getPrayerTimeForClock = () => {
-    // Show current prayer's end time if active, otherwise show next prayer's start time
-    const targetTime = islamicData?.currentPrayer ? 
-      islamicData.currentPrayer.endTime : 
-      islamicData?.nextPrayer.time;
-    
-    if (!targetTime) return { hours: 0, minutes: 0 };
-    
-    const prayerTime = new Date(targetTime);
+  // Calculate current time for analog clock
+  const getCurrentTimeForClock = () => {
+    const now = new Date();
     return {
-      hours: prayerTime.getHours() % 12,
-      minutes: prayerTime.getMinutes()
+      hours: now.getHours() % 12,
+      minutes: now.getMinutes()
     };
   };
 
-  const prayerTime = getPrayerTimeForClock();
+  const clockTime = getCurrentTimeForClock();
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-      {/* Location Info */}
-      {islamicData?.location && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="text-center mb-6 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700"
-        >
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            📍 {islamicData.location.city}{islamicData.location.region && islamicData.location.region !== 'Unknown' && `, ${islamicData.location.region}`}, {islamicData.location.country}
-            <span className="ml-2 px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">
-              {islamicData.location.timezoneAbbr}
-            </span>
-          </p>
-        </motion.div>
-      )}
+
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Prayer Time Clock */}
@@ -229,12 +207,16 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   Current Prayer
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{islamicData.currentPrayer.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {islamicData.currentPrayer.name === 'Dhuhr' && new Date().getDay() === 5 ? 'Jummah' : islamicData.currentPrayer.name}
+                </p>
               </>
             ) : (
               <>
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg mb-1">Next Prayer</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{islamicData?.nextPrayer.name}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {islamicData?.nextPrayer.name === 'Dhuhr' && new Date().getDay() === 5 ? 'Jummah' : islamicData?.nextPrayer.name}
+                </p>
               </>
             )}
           </div>
@@ -270,7 +252,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
                   style={{
                     left: '50%',
                     top: '50%',
-                    transform: `translate(-50%, -100%) rotate(${prayerTime.hours * 30 + prayerTime.minutes * 0.5}deg)`
+                    transform: `translate(-50%, -100%) rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5}deg)`
                   }}
                 />
                 
@@ -280,7 +262,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
                   style={{
                     left: '50%',
                     top: '50%',
-                    transform: `translate(-50%, -100%) rotate(${prayerTime.minutes * 6}deg)`
+                    transform: `translate(-50%, -100%) rotate(${clockTime.minutes * 6}deg)`
                   }}
                 />
                 
