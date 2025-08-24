@@ -152,14 +152,15 @@ export class GeminiApiManager {
   }
 
   async translateText(
-    text: string, 
-    targetLanguage: string, 
-    sourceLanguage: string, 
-    context?: string, 
-    preserveFormatting?: boolean,
+    text: string,
+    targetLanguage: string,
+    sourceLanguage: string = 'en',
+    context: string = 'general',
+    preserveFormatting: boolean = true,
     model: string = 'gemini-2.0-flash'
   ): Promise<ApiKeyResult> {
-    const translationPrompt = this.createTranslationPrompt(
+    // Optimize prompt for faster translation
+    const prompt = this.createOptimizedTranslationPrompt(
       text,
       targetLanguage,
       sourceLanguage,
@@ -172,16 +173,17 @@ export class GeminiApiManager {
         {
           parts: [
             {
-              text: translationPrompt,
-            },
-          ],
-        },
+              text: prompt
+            }
+          ]
+        }
       ],
       generationConfig: {
-        temperature: 0.1,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 8192,
+        temperature: 0.1, // Lower temperature for more consistent translations
+        topK: 1, // Reduce options for faster response
+        topP: 0.8, // Optimize for speed
+        maxOutputTokens: Math.min(text.length * 3, 8000), // Optimize token limit
+        stopSequences: [] // No stop sequences for faster completion
       },
       safetySettings: [
         {
@@ -203,7 +205,7 @@ export class GeminiApiManager {
       ]
     };
 
-    // Try each available key
+    // Try each available key with optimized retry logic
     for (let attempt = 0; attempt < this.apiKeys.length; attempt++) {
       const apiKey = this.getNextAvailableKey();
       if (!apiKey) {
@@ -265,6 +267,29 @@ export class GeminiApiManager {
     }
     
     prompt += `\n\nText to translate:\n${text}`;
+    
+    return prompt;
+  }
+
+  private createOptimizedTranslationPrompt(
+    text: string,
+    targetLanguage: string,
+    sourceLanguage: string,
+    context?: string,
+    preserveFormatting?: boolean
+  ): string {
+    // Optimized prompt for faster translation
+    let prompt = `Translate from ${sourceLanguage} to ${targetLanguage}. `;
+    
+    if (context === 'islamic') {
+      prompt += `Preserve Islamic terms and religious accuracy. `;
+    }
+    
+    if (preserveFormatting) {
+      prompt += `Keep exact formatting and structure. `;
+    }
+    
+    prompt += `\n\nText:\n${text}`;
     
     return prompt;
   }

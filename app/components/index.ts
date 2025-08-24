@@ -10,3 +10,4 @@ export { default as AudioPlayer } from './AudioPlayer';
 export { default as MinimalAudioPlayer } from './MinimalAudioPlayer';
 export { default as AyahAudioPlayer } from './AyahAudioPlayer';
 export { default as LanguageTabs } from './LanguageTabs';
+export { default as TafsirDropdown } from './TafsirDropdown';

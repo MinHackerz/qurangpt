@@ -1,14 +1,13 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardIcon } from '@heroicons/react/24/outline';
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { preloadAudioMetadata, getCachedAudioMetadata, setCachedAudioMetadata, formatTime } from '../utils/audioUtils';
 
 interface ResponseSectionProps {
   showSummary: boolean;
   summary: string;
-  copyContent: () => void;
   copied: boolean;
   onAudioPlay: (ayahId: string, globalAyahNumber: string) => void;
   onAudioPause: (ayahId: string) => void;
@@ -18,12 +17,12 @@ interface ResponseSectionProps {
   getAudioProgress: () => { currentTime: number; duration: number; progress: number };
   seekToTime: (timeInSeconds: number) => boolean;
   displayedContent?: string; // Content to display (could be translated)
+  onCopyAIContent?: () => void; // New prop for copying AI content
 }
 
 export default function ResponseSection({ 
   showSummary, 
   summary, 
-  copyContent, 
   copied,
   onAudioPlay,
   onAudioPause,
@@ -32,9 +31,20 @@ export default function ResponseSection({
   isAudioActive,
   getAudioProgress,
   seekToTime,
-  displayedContent
+  displayedContent,
+  onCopyAIContent
 }: ResponseSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showCopySuccess, setShowCopySuccess] = useState(false);
+
+  // Show copy success message
+  useEffect(() => {
+    if (copied && onCopyAIContent) {
+      setShowCopySuccess(true);
+      const timer = setTimeout(() => setShowCopySuccess(false), 1500); // Show tick for 1.5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [copied, onCopyAIContent]);
 
   // Function to process content and convert markdown links to HTML links
   const processContentLinks = (content: string): string => {
@@ -108,187 +118,173 @@ export default function ResponseSection({
     });
   }, [updateDurationDisplay]);
 
-  // Process content to set up audio player functionality
+  // Additional effect specifically for translation changes
+  useEffect(() => {
+    if (!contentToShow || !containerRef.current) return;
+
+    // This effect runs specifically when displayedContent changes (translation)
+    const timer = setTimeout(() => {
+      // Force re-initialization of all audio players
+      const audioPlayers = containerRef.current?.querySelectorAll('.enhanced-audio-player');
+      
+      if (!audioPlayers) return;
+      
+      audioPlayers.forEach((player) => {
+        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
+        const ayahId = playBtn?.getAttribute('data-ayah-id');
+        const globalAyahNumber = player.getAttribute('data-global-ayah');
+        
+        if (!playBtn || !ayahId || !globalAyahNumber) return;
+        
+        // Create completely new button with fresh event listeners
+        const newPlayBtn = document.createElement('button');
+        newPlayBtn.className = playBtn.className;
+        newPlayBtn.setAttribute('data-ayah-id', ayahId);
+        newPlayBtn.innerHTML = playBtn.innerHTML;
+        
+        // Replace the old button
+        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
+        
+        // Add fresh event listener
+        newPlayBtn.addEventListener('click', async () => {
+          try {
+            if (isAudioPlaying(ayahId)) {
+              onAudioPause(ayahId);
+            } else {
+              await onAudioPlay(ayahId, globalAyahNumber);
+            }
+          } catch (error) {
+            console.error('Audio player error after translation:', error);
+          }
+        });
+      });
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [displayedContent, onAudioPlay, onAudioPause, isAudioPlaying, contentToShow]);
+
+  // Comprehensive audio setup function
+  const setupAudioPlayers = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player');
+    
+    audioPlayers.forEach((player, index) => {
+      const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
+      const playIcon = player.querySelector('.play-icon') as HTMLElement;
+      const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
+      const statusText = player.querySelector('.status-text') as HTMLElement;
+      const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
+      
+      if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) {
+        return;
+      }
+      
+      const ayahId = playBtn.getAttribute('data-ayah-id');
+      const globalAyahNumber = player.getAttribute('data-global-ayah');
+      
+      if (!ayahId || !globalAyahNumber) {
+        return;
+      }
+      
+      // Remove existing event listeners by cloning the button
+      const newPlayBtn = playBtn.cloneNode(true) as HTMLButtonElement;
+      newPlayBtn.className = playBtn.className;
+      newPlayBtn.setAttribute('data-ayah-id', ayahId);
+      playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
+      
+      // Add click event listener for play/pause
+      newPlayBtn.addEventListener('click', async () => {
+        try {
+          if (isAudioPlaying(ayahId)) {
+            // Pause audio
+            onAudioPause(ayahId);
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            statusText.textContent = 'Click to play';
+            statusIndicator.classList.add('hidden');
+            newPlayBtn.classList.remove('hover:shadow-xl');
+          } else {
+            // Play audio
+            await onAudioPlay(ayahId, globalAyahNumber);
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            statusText.textContent = 'Playing';
+            statusIndicator.classList.remove('hidden');
+            newPlayBtn.classList.add('hover:shadow-xl');
+          }
+        } catch (error) {
+          console.error('Audio player error:', error);
+          statusText.textContent = 'Error';
+        }
+      });
+    });
+  }, [onAudioPlay, onAudioPause, isAudioPlaying]);
+
+  // Use the comprehensive setup function
   useEffect(() => {
     if (!contentToShow || !containerRef.current) return;
 
     // Preload audio metadata first
     preloadAllAudioMetadata();
 
-    // Add a small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      // Find all enhanced audio players
-      const audioPlayers = containerRef.current?.querySelectorAll('.enhanced-audio-player');
-      
-      if (!audioPlayers) return;
-      
-      audioPlayers.forEach((player, index) => {
-        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-        const playIcon = player.querySelector('.play-icon') as HTMLElement;
-        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
-        const statusText = player.querySelector('.status-text') as HTMLElement;
-        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
-        
-        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) {
-          return;
-        }
-        
-        const ayahId = playBtn.getAttribute('data-ayah-id');
-        const globalAyahNumber = player.getAttribute('data-global-ayah');
-        
-        if (!ayahId || !globalAyahNumber) {
-          return;
-        }
-        
-        // Remove existing event listeners by cloning the button
-        const newPlayBtn = playBtn.cloneNode(true) as HTMLButtonElement;
-        newPlayBtn.className = playBtn.className;
-        newPlayBtn.setAttribute('data-ayah-id', ayahId);
-        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
-        
-        // Add click event listener for play/pause
-        newPlayBtn.addEventListener('click', async () => {
-          try {
-            if (isAudioPlaying(ayahId)) {
-              // Pause audio
-              onAudioPause(ayahId);
-              playIcon.classList.remove('hidden');
-              pauseIcon.classList.add('hidden');
-              statusText.textContent = 'Click to play';
-              statusIndicator.classList.add('hidden');
-              newPlayBtn.classList.remove('hover:shadow-xl');
-            } else {
-              // Play audio
-              await onAudioPlay(ayahId, globalAyahNumber);
-              playIcon.classList.add('hidden');
-              pauseIcon.classList.remove('hidden');
-              statusText.textContent = 'Playing';
-              statusIndicator.classList.remove('hidden');
-              newPlayBtn.classList.add('hover:shadow-xl');
-            }
-          } catch (error) {
-            console.error('Audio player error:', error);
-            statusText.textContent = 'Error';
-          }
-        });
-      });
+    // Setup audio players with multiple attempts to ensure they work
+    const setupTimer = setTimeout(() => {
+      setupAudioPlayers();
     }, 100);
     
-    return () => clearTimeout(timer);
-  }, [contentToShow, onAudioPlay, onAudioPause, isAudioPlaying, preloadAllAudioMetadata]);
-
-  // Update UI when audio state changes
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
-
-    const updateAudioPlayerUI = () => {
-      if (!containerRef.current) return;
-      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player');
-      
-      audioPlayers.forEach((player) => {
-        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-        const playIcon = player.querySelector('.play-icon') as HTMLElement;
-        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
-        const statusText = player.querySelector('.status-text') as HTMLElement;
-        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
-        
-        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) return;
-        
-        const ayahId = playBtn.getAttribute('data-ayah-id');
-        if (!ayahId) return;
-        
-        const isPlaying = isAudioPlaying(ayahId);
-        const isActive = isAudioActive(ayahId);
-        
-        if (isPlaying) {
-          playIcon.classList.add('hidden');
-          pauseIcon.classList.remove('hidden');
-          statusText.textContent = 'Playing';
-          statusIndicator.classList.remove('hidden');
-          playBtn.classList.add('hover:shadow-xl');
-        } else {
-          playIcon.classList.remove('hidden');
-          pauseIcon.classList.add('hidden');
-          statusText.textContent = 'Click to play';
-          statusIndicator.classList.add('hidden');
-          playBtn.classList.remove('hover:shadow-xl');
-        }
-      });
-    };
-
-    // Update UI immediately and then on audio state changes
-    updateAudioPlayerUI();
-    
-    const timer = setInterval(updateAudioPlayerUI, 100);
-    
-    return () => clearInterval(timer);
-  }, [contentToShow, isAudioPlaying, isAudioActive]);
-
-  // Re-setup audio players when content changes
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
-
-    // Add a longer delay to ensure DOM is fully updated
-    const timer = setTimeout(() => {
-      // Find all enhanced audio players
-      const audioPlayers = containerRef.current?.querySelectorAll('.enhanced-audio-player');
-      
-      if (!audioPlayers) return;
-      
-      audioPlayers.forEach((player, index) => {
-        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-        const playIcon = player.querySelector('.play-icon') as HTMLElement;
-        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
-        const statusText = player.querySelector('.status-text') as HTMLElement;
-        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
-        
-        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) {
-          return;
-        }
-        
-        const ayahId = playBtn.getAttribute('data-ayah-id');
-        const globalAyahNumber = player.getAttribute('data-global-ayah');
-        
-        if (!ayahId || !globalAyahNumber) {
-          return;
-        }
-        
-        // Remove existing event listeners by cloning the button
-        const newPlayBtn = playBtn.cloneNode(true) as HTMLButtonElement;
-        newPlayBtn.className = playBtn.className;
-        newPlayBtn.setAttribute('data-ayah-id', ayahId);
-        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
-        
-        // Add click event listener for play/pause
-        newPlayBtn.addEventListener('click', async () => {
-          try {
-            if (isAudioPlaying(ayahId)) {
-              // Pause audio
-              onAudioPause(ayahId);
-              playIcon.classList.remove('hidden');
-              pauseIcon.classList.add('hidden');
-              statusText.textContent = 'Click to play';
-              statusIndicator.classList.add('hidden');
-              newPlayBtn.classList.remove('hover:shadow-xl');
-            } else {
-              // Play audio
-              await onAudioPlay(ayahId, globalAyahNumber);
-              playIcon.classList.add('hidden');
-              pauseIcon.classList.remove('hidden');
-              statusText.textContent = 'Playing';
-              statusIndicator.classList.remove('hidden');
-              newPlayBtn.classList.add('hover:shadow-xl');
-            }
-          } catch (error) {
-            console.error('Audio player error:', error);
-            statusText.textContent = 'Error';
-          }
-        });
-      });
+    const backupTimer = setTimeout(() => {
+      setupAudioPlayers();
     }, 500);
     
-    return () => clearTimeout(timer);
-  }, [contentToShow, onAudioPlay, onAudioPause, isAudioPlaying]);
+    const finalTimer = setTimeout(() => {
+      setupAudioPlayers();
+    }, 1000);
+    
+    return () => {
+      clearTimeout(setupTimer);
+      clearTimeout(backupTimer);
+      clearTimeout(finalTimer);
+    };
+  }, [contentToShow, setupAudioPlayers, preloadAllAudioMetadata]);
+
+  // MutationObserver to detect DOM changes and reinitialize audio
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new MutationObserver((mutations) => {
+      // Check if any audio players were added or modified
+      const hasAudioChanges = mutations.some(mutation => {
+        if (mutation.type === 'childList') {
+          return Array.from(mutation.addedNodes).some(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              return element.querySelector('.enhanced-audio-player') || 
+                     element.classList.contains('enhanced-audio-player');
+            }
+            return false;
+          });
+        }
+        return false;
+      });
+
+      if (hasAudioChanges) {
+        // Small delay to ensure DOM is stable
+        setTimeout(() => {
+          setupAudioPlayers();
+        }, 100);
+      }
+    });
+
+    observer.observe(containerRef.current, {
+      childList: true,
+      subtree: true,
+      attributes: false,
+      characterData: false
+    });
+
+    return () => observer.disconnect();
+  }, [setupAudioPlayers]);
 
   // Add seek functionality to progress sliders
   useEffect(() => {
@@ -376,34 +372,38 @@ export default function ResponseSection({
           // Get audio progress from the audio manager
           const { currentTime, duration, progress } = getAudioProgress();
           
-          // Update progress bar
-          progressFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+          // Update progress bar with null check
+          if (progressFill && progressFill.style) {
+            progressFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+          }
           
-          // Update time displays
-          currentTimeEl.textContent = formatTime(currentTime);
-          totalDurationEl.textContent = duration > 0 ? formatTime(duration) : '--:--';
-          timeDisplayEl.textContent = formatTime(currentTime);
+          // Update time displays with null checks
+          if (currentTimeEl) currentTimeEl.textContent = formatTime(currentTime);
+          if (totalDurationEl) totalDurationEl.textContent = duration > 0 ? formatTime(duration) : '--:--';
+          if (timeDisplayEl) timeDisplayEl.textContent = formatTime(currentTime);
           
-          // Update slider value
-          progressSlider.value = progress.toString();
+          // Update slider value with null check
+          if (progressSlider) progressSlider.value = progress.toString();
           
         } else {
           // Reset progress for inactive players but keep duration if available
-          progressFill.style.width = '0%';
-          currentTimeEl.textContent = '0:00';
+          if (progressFill && progressFill.style) {
+            progressFill.style.width = '0%';
+          }
+          if (currentTimeEl) currentTimeEl.textContent = '0:00';
           
           // Try to get cached duration for this player
           const globalAyahNumber = player.getAttribute('data-global-ayah');
           if (globalAyahNumber) {
             const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
             const cachedDuration = getCachedAudioMetadata(audioUrl);
-            totalDurationEl.textContent = cachedDuration ? formatTime(cachedDuration) : '--:--';
+            if (totalDurationEl) totalDurationEl.textContent = cachedDuration ? formatTime(cachedDuration) : '--:--';
           } else {
-            totalDurationEl.textContent = '--:--';
+            if (totalDurationEl) totalDurationEl.textContent = '--:--';
           }
           
-          timeDisplayEl.textContent = '--:--';
-          progressSlider.value = '0';
+          if (timeDisplayEl) timeDisplayEl.textContent = '--:--';
+          if (progressSlider) progressSlider.value = '0';
         }
       });
     };
@@ -430,68 +430,10 @@ export default function ResponseSection({
             {/* Top accent bar */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gray-800 dark:bg-gray-200"></div>
             
-            {/* Header with copy button */}
+            {/* Header */}
             <div className="relative p-6 md:p-8 pb-4 md:pb-6 bg-gray-50 dark:bg-gray-900">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={copyContent}
-                className={`absolute top-4 md:top-6 right-4 md:right-6 z-20 overflow-hidden w-12 h-12 rounded-full text-sm font-medium transition-all duration-500 transform flex items-center justify-center ${
-                  copied
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white scale-105'
-                    : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-700 dark:text-gray-200 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-500'
-                }`}
-              >
-                {/* Animated background ripple effect */}
-                <div className={`absolute inset-0 rounded-full transition-all duration-700 ${
-                  copied 
-                    ? 'bg-gradient-to-r from-emerald-400 to-green-400 opacity-100 scale-110' 
-                    : 'opacity-0 scale-95'
-                }`} />
-                
-                {/* Success checkmark animation */}
-                <motion.div 
-                  className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
-                    copied ? 'scale-100 opacity-100' : 'scale-75 opacity-0'
-                  }`}
-                  animate={copied ? { scale: [0.75, 1.1, 1], opacity: [0, 1, 1] } : {}}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                >
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <motion.path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2.5" 
-                      d="M5 13l4 4L19 7"
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      animate={copied ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
-                      transition={{ duration: 0.5, delay: 0.1 }}
-                    />
-                  </svg>
-                </motion.div>
-                
-                {/* Default content with slide animation */}
-                <motion.div 
-                  className={`relative z-10 transition-all duration-400 ${
-                    copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-                  }`}
-                  animate={copied ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <ClipboardIcon className="w-5 h-5 transition-colors duration-200" />
-                </motion.div>
-                
-                {/* Subtle sparkle effect */}
-                <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-                  copied ? 'opacity-100' : 'opacity-0'
-                }`}>
-                  <div className="absolute top-1 right-2 w-1 h-1 bg-white rounded-full animate-pulse" />
-                  <div className="absolute top-3 right-1 w-0.5 h-0.5 bg-white rounded-full animate-pulse delay-150" />
-                  <div className="absolute bottom-2 left-2 w-1 h-1 bg-white rounded-full animate-pulse delay-300" />
-                </div>
-              </motion.button>
               
-              <div className="flex items-center mb-6">
+              <div className="flex items-center mb-3">
                 {/* Modern Icon Container */}
                 <div className="relative mr-4">
                   <div className="w-12 h-12 md:w-14 md:h-14 bg-white dark:bg-white rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-300">
@@ -523,7 +465,56 @@ export default function ResponseSection({
                     <div className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full"></div>
                   </div>
                 </div>
+
+                {/* Copy AI Content Button */}
+                {onCopyAIContent && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onCopyAIContent}
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-300 ${
+                      showCopySuccess 
+                        ? 'bg-emerald-500 border-emerald-500 text-white' 
+                        : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    } shadow-sm hover:shadow-md`}
+                    title="Copy AI-generated content only"
+                  >
+                    <AnimatePresence mode="wait">
+                      {showCopySuccess ? (
+                        <motion.svg
+                          key="tick"
+                          initial={{ scale: 0, rotate: -90 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          exit={{ scale: 0, rotate: 90 }}
+                          transition={{ duration: 0.2 }}
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </motion.svg>
+                      ) : (
+                        <motion.svg
+                          key="copy"
+                          initial={{ scale: 0, rotate: 90 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          exit={{ scale: 0, rotate: -90 }}
+                          transition={{ duration: 0.2 }}
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </motion.svg>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                )}
               </div>
+
+              {/* Remove the separate copy success notification since it's now integrated into the button */}
             </div>
 
             {/* Content with sophisticated typography */}

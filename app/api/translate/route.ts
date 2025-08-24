@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GeminiApiManager } from '../../utils/geminiApiManager';
 
-// Simple in-memory rate limiter
+// Simple in-memory rate limiter with improved caching
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const translationCache = new Map<string, { translation: any; timestamp: number; ttl: number }>();
 
-// Rate limiting configuration
+// Rate limiting configuration - more generous for better performance
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10; // Max 10 requests per minute per IP
+const MAX_REQUESTS_PER_WINDOW = 20; // Increased from 10 to 20 for better performance
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
@@ -24,6 +26,40 @@ function isRateLimited(ip: string): boolean {
   
   userData.count++;
   return false;
+}
+
+function getCachedTranslation(text: string, targetLanguage: string, context: string): any | null {
+  const cacheKey = `${text.substring(0, 200)}_${targetLanguage}_${context}`;
+  const cached = translationCache.get(cacheKey);
+  
+  if (cached && (Date.now() - cached.timestamp) < cached.ttl) {
+    return cached.translation;
+  }
+  
+  // Remove expired cache entry
+  if (cached) {
+    translationCache.delete(cacheKey);
+  }
+  
+  return null;
+}
+
+function setCachedTranslation(text: string, targetLanguage: string, context: string, translation: any): void {
+  const cacheKey = `${text.substring(0, 200)}_${targetLanguage}_${context}`;
+  translationCache.set(cacheKey, {
+    translation,
+    timestamp: Date.now(),
+    ttl: CACHE_TTL
+  });
+  
+  // Clean up old cache entries if cache gets too large
+  if (translationCache.size > 1000) {
+    const entries = Array.from(translationCache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    // Remove oldest 200 entries
+    entries.slice(0, 200).forEach(([key]) => translationCache.delete(key));
+  }
 }
 
 function getClientIP(req: NextRequest): string {
@@ -366,6 +402,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Check cache first
+    const cachedTranslation = getCachedTranslation(text, targetLanguage, context);
+    if (cachedTranslation) {
+      console.log(`Cache hit for: ${detectedSourceLang} -> ${targetLanguage} (context: ${context})`);
+      return NextResponse.json({
+        translatedText: cachedTranslation.translatedText,
+        sourceLanguage: detectedSourceLang,
+        targetLanguage,
+        confidence: cachedTranslation.confidence,
+        translationId: cachedTranslation.translationId
+      });
+    }
+
     // Initialize Gemini API Manager for translation
     let apiManager: GeminiApiManager;
     try {
@@ -448,6 +497,13 @@ export async function POST(request: NextRequest) {
       confidence,
       translationId: generateTranslationId()
     };
+
+    // Cache the translation result
+    setCachedTranslation(text, targetLanguage, context, {
+      translatedText: translatedText.trim(),
+      confidence,
+      translationId: generateTranslationId()
+    });
 
     console.log(`Translation completed: ${detectedSourceLang} -> ${targetLanguage} (confidence: ${confidence.toFixed(2)})`);
     

@@ -679,3 +679,48 @@ body {
   letter-spacing: 0.02em;
   line-height: 1.6;
 }
+
+/* Divine Islamic Terms Styling */
+.ai-explanation-section,
+.authentic-tafsir-section {
+  @apply relative overflow-hidden;
+}
+
+.ai-explanation-section::before,
+.authentic-tafsir-section::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-500;
+}
+
+.ai-explanation-section:hover::before,
+.authentic-tafsir-section:hover::before {
+  @apply opacity-100;
+}
+
+/* Enhanced styling for Islamic terms */
+.ai-explanation-section h4,
+.authentic-tafsir-section h4 {
+  @apply relative;
+}
+
+.ai-explanation-section h4::after,
+.authentic-tafsir-section h4::after {
+  content: '';
+  @apply absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 transition-all duration-300;
+}
+
+.ai-explanation-section:hover h4::after,
+.authentic-tafsir-section:hover h4::after {
+  @apply w-full;
+}
+
+/* Divine glow effect for Islamic terms */
+.ai-explanation-section .text-gray-700,
+.authentic-tafsir-section .text-gray-700 {
+  @apply transition-all duration-300;
+}
+
+.ai-explanation-section:hover .text-gray-700,
+.authentic-tafsir-section:hover .text-gray-700 {
+  @apply text-gray-800 dark:text-gray-200;
+}

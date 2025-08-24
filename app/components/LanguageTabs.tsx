@@ -39,6 +39,8 @@ interface LanguageTabsProps {
   context?: 'islamic' | 'general' | 'quran';
   preserveFormatting?: boolean;
   className?: string;
+  isTranslating?: boolean;
+  translationProgress?: number;
 }
 
 export default function LanguageTabs({
@@ -46,11 +48,13 @@ export default function LanguageTabs({
   onTranslationChange,
   context = 'islamic',
   preserveFormatting = true,
-  className = ''
+  className = '',
+  isTranslating = false,
+  translationProgress = 0
 }: LanguageTabsProps) {
   const { 
     translate, 
-    isLoading: isTranslating, 
+    isLoading: isTranslatingHook, 
     error: translationError, 
     getSupportedLanguages,
     getCachedTranslation 
@@ -61,10 +65,41 @@ export default function LanguageTabs({
   const [loadingLanguages, setLoadingLanguages] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string>('');
   const [isLoadingLanguages, setIsLoadingLanguages] = useState(true);
+  const [currentTranslationStage, setCurrentTranslationStage] = useState<string>('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastProcessedLanguage = useRef<string>('en');
   const lastProcessedText = useRef<string>('');
   const isMountedRef = useRef(true);
+
+  // Translation stages mapping
+  const getTranslationStage = (progress: number): string => {
+    if (progress <= 15) return 'Analyzing content...';
+    if (progress <= 35) return 'Extracting AI text...';
+    if (progress <= 70) return 'Translating...';
+    if (progress <= 85) return 'Processing...';
+    if (progress <= 95) return 'Finalizing...';
+    return 'Complete';
+  };
+
+  // Update translation stage when progress changes
+  useEffect(() => {
+    if (isTranslating) {
+      setCurrentTranslationStage(getTranslationStage(translationProgress));
+    } else {
+      setCurrentTranslationStage('');
+    }
+  }, [translationProgress, isTranslating]);
+
+  // Add completion celebration effect
+  useEffect(() => {
+    if (translationProgress === 100 && isTranslating) {
+      // Small delay to show completion state
+      const timer = setTimeout(() => {
+        setCurrentTranslationStage('Complete');
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [translationProgress, isTranslating]);
 
   // Popular languages to show first
   const POPULAR_LANGUAGES = [
@@ -95,8 +130,11 @@ export default function LanguageTabs({
         newSet.add(targetLanguage);
         return newSet;
       });
-      const translation = await translate(originalText, targetLanguage);
-      onTranslationChange(translation.translatedText, targetLanguage);
+      
+      // For selective translation, we need to pass the original text and let the parent handle it
+      // This ensures API components like audio players are preserved
+      onTranslationChange(originalText, targetLanguage);
+      
     } catch (err) {
       console.error('Translation error:', err);
       
@@ -161,7 +199,7 @@ export default function LanguageTabs({
         return newSet;
       });
     }
-  }, [originalText, onTranslationChange, getCachedTranslation, translate, supportedLanguages, selectedLanguage, getLanguageDisplayName]);
+  }, [originalText, onTranslationChange, getCachedTranslation, supportedLanguages, selectedLanguage, getLanguageDisplayName]);
 
   const loadSupportedLanguages = useCallback(async () => {
     try {
@@ -275,6 +313,103 @@ export default function LanguageTabs({
 
   return (
     <div className={`relative language-tabs-container ${className}`}>
+      {/* Translation Progress Indicator */}
+      <AnimatePresence>
+        {isTranslating && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm"
+          >
+            <div className="space-y-3">
+              {/* Header with stage and progress */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {currentTranslationStage}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                  {Math.round(translationProgress)}%
+                </span>
+              </div>
+              
+              {/* Enhanced Progress Bar */}
+              <div className="relative">
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+                  {/* Background gradient for depth */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full" />
+                  
+                  {/* Main progress bar with gradient */}
+                  <motion.div
+                    className="relative h-2 bg-gradient-to-r from-gray-400 via-gray-600 to-gray-800 dark:from-gray-500 dark:via-gray-700 dark:to-gray-900 rounded-full shadow-sm"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${translationProgress}%` }}
+                    transition={{ 
+                      duration: 0.4, 
+                      ease: "easeOut",
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 20
+                    }}
+                  >
+                    {/* Progress bar shine effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      animate={{ 
+                        x: translationProgress === 100 ? 0 : [-20, 20],
+                      }}
+                      transition={{ 
+                        duration: 1.5, 
+                        repeat: translationProgress === 100 ? 0 : Infinity,
+                        ease: "easeInOut"
+                      }}
+                    />
+                    
+                    {/* Completion pulse effect */}
+                    {translationProgress === 100 && (
+                      <motion.div
+                        className="absolute inset-0 bg-white/30 rounded-full"
+                        initial={{ scale: 0.8, opacity: 0.8 }}
+                        animate={{ scale: 1.2, opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      />
+                    )}
+                  </motion.div>
+                </div>
+                
+                {/* Progress markers for stages */}
+                <div className="flex justify-between mt-2">
+                  {[15, 35, 70, 85, 95].map((marker) => (
+                    <motion.div
+                      key={marker}
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        translationProgress >= marker 
+                          ? 'bg-gray-800 dark:bg-gray-200' 
+                          : 'bg-gray-400 dark:bg-gray-500'
+                      }`}
+                      initial={{ scale: 0 }}
+                      animate={{ 
+                        scale: translationProgress >= marker ? 1 : 0.5,
+                        opacity: translationProgress >= marker ? 1 : 0.3
+                      }}
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Error Message */}
       <AnimatePresence>
         {error && (
@@ -317,6 +452,7 @@ export default function LanguageTabs({
             const isLoading = loadingLanguages.has(langCode);
             const displayName = getLanguageDisplayName(langCode);
             const hasCachedTranslation = getCachedTranslation(originalText, langCode);
+            const isCurrentlyTranslating = isTranslating && selectedLanguage === langCode;
 
             return (
               <motion.button
@@ -324,24 +460,34 @@ export default function LanguageTabs({
                 onClick={() => {
                   setSelectedLanguage(langCode);
                 }}
-                disabled={isLoading}
+                disabled={isLoading || isTranslating}
                 className={`
                   relative group px-3 py-1.5 text-xs font-medium transition-all duration-300 whitespace-nowrap rounded-full border
                   ${isSelected
                     ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100'
                     : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
                   }
-                  ${isLoading 
-                    ? 'cursor-not-allowed border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 animate-pulse' 
+                  ${isLoading || isCurrentlyTranslating
+                    ? 'cursor-not-allowed border-gray-400 dark:border-gray-500 text-gray-500 dark:text-gray-400' 
                     : 'cursor-pointer hover:scale-105'
                   }
                   ${hasCachedTranslation && !isSelected ? 'border-green-400 dark:border-green-500' : ''}
                 `}
-                whileHover={!isLoading ? { scale: 1.05 } : {}}
-                whileTap={!isLoading ? { scale: 0.95 } : {}}
+                whileHover={!isLoading && !isTranslating ? { scale: 1.05 } : {}}
+                whileTap={!isLoading && !isTranslating ? { scale: 0.95 } : {}}
               >
+                {/* Translation Progress Indicator for Selected Language */}
+                {isCurrentlyTranslating && (
+                  <motion.div
+                    className="absolute inset-0 bg-gray-200/30 dark:bg-gray-600/30 rounded-full"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+
                 {/* Cached Translation Indicator */}
-                {hasCachedTranslation && !isLoading && (
+                {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
                   <motion.div
                     className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"
                     initial={{ scale: 0 }}
@@ -378,12 +524,12 @@ export default function LanguageTabs({
                 )}
 
                 {/* Language Name */}
-                <span className={`${isLoading ? 'opacity-30' : 'opacity-100'} transition-opacity duration-300`}>
+                <span className={`${isLoading || isCurrentlyTranslating ? 'opacity-30' : 'opacity-100'} transition-opacity duration-300`}>
                   {displayName}
                 </span>
                 
                 {/* Tooltip for translation status */}
-                {hasCachedTranslation && !isLoading && (
+                {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
                   <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                     Cached translation available
                   </div>

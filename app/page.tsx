@@ -14,6 +14,16 @@ import {
   LanguageTabs
 } from './components';
 import { useAudioManager } from './hooks/useAudioManager';
+import { getSurahNumber, surahAyahCounts, calculateGlobalAyahNumber, fetchTafsir } from './utils/tafsirUtils';
+import { useTranslation } from './hooks/useTranslation';
+
+// Extend Window interface for tafsir functionality
+declare global {
+  interface Window {
+    setupTafsirEventDelegation?: () => void;
+    toggleTafsir?: (tafsirId: string) => void;
+  }
+}
 
 export default function Home() {
   const [content, setContent] = useState('');
@@ -24,6 +34,8 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [displayedContent, setDisplayedContent] = useState('');
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationProgress, setTranslationProgress] = useState(0);
   
   // Audio management
   const {
@@ -56,26 +68,61 @@ export default function Home() {
     stopAudio();
   };
 
-  const copyContent = async () => {
+  const copyToClipboard = async () => {
     try {
-      // Use displayed content if available, otherwise use summary
-      const contentToCopy = displayedContent || summary;
-      
-      // Clean the content for copying - remove HTML tags and audio elements, keep only reference links
-      const cleanContent = contentToCopy
-        // Remove HTML tags but keep line breaks
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/?[^>]+(>|$)/g, '')
-        // Remove audio player sections
-        .replace(/Audio Recitation[\s\S]*?Ready/g, '')
-        .replace(/Select Reciter[\s\S]*?128kbps MP3/g, '')
-        // Remove progress bars
-        .replace(/progress-container[\s\S]*?hidden/g, '')
+      const cleanContent = summary
+        // Remove ALL Tafsir-related content from TafsirDropdown component
+        .replace(/Show Tafsir[\s\S]*?Hide Tafsir/g, '')
+        .replace(/Tafsir Dropdown[\s\S]*?Select Tafsir Source/g, '')
+        .replace(/Authentic Tafsir[\s\S]*?AI Explanation/g, '')
+        .replace(/Read Tafsir[\s\S]*?Ibn Kathir/g, '')
+        .replace(/Read Tafsir[\s\S]*?Maarif Ul Quran/g, '')
+        .replace(/Read Tafsir[\s\S]*?Tazkirul Quran/g, '')
+        .replace(/Loading tafsir[\s\S]*?\.\.\./g, '')
+        .replace(/Tafsir not available[\s\S]*?Unable to load tafsir/g, '')
+        .replace(/Tafsir by[\s\S]*?groupVerse/g, '')
+        .replace(/prose prose-sm[\s\S]*?prose-emerald/g, '')
+        .replace(/text-gray-700[\s\S]*?leading-relaxed/g, '')
+        .replace(/Ibn Kathir[\s\S]*?Maarif Ul Quran[\s\S]*?Tazkirul Quran/g, '')
+        .replace(/Tafsir by Ibn Kathir[\s\S]*?Tafsir by Maarif Ul Quran[\s\S]*?Tafsir by Tazkirul Quran/g, '')
+        .replace(/Tazkirul Quran[\s\S]*?Tafsir by Tazkirul Quran[\s\S]*?groupVerse[\s\S]*?prose prose-sm[\s\S]*?prose-emerald[\s\S]*?text-gray-700[\s\S]*?leading-relaxed/g, '')
+        .replace(/Maarif Ul Quran[\s\S]*?Tafsir by Maarif Ul Quran[\s\S]*?groupVerse[\s\S]*?prose prose-sm[\s\S]*?prose-emerald[\s\S]*?text-gray-700[\s\S]*?leading-relaxed/g, '')
+        .replace(/Ibn Kathir[\s\S]*?Tafsir by Ibn Kathir[\s\S]*?groupVerse[\s\S]*?prose prose-sm[\s\S]*?prose-emerald[\s\S]*?text-gray-700[\s\S]*?leading-relaxed/g, '')
+        .replace(/Read Tafsir[\s\S]*?Tafsir by[\s\S]*?groupVerse[\s\S]*?prose prose-sm[\s\S]*?prose-emerald[\s\S]*?text-gray-700[\s\S]*?leading-relaxed/g, '')
+        // Remove other UI elements
+        .replace(/Copy[\s\S]*?Copied!/g, '')
+        .replace(/Language[\s\S]*?Translation/g, '')
+        // Remove any remaining component-specific content
+        .replace(/Surah \d+/g, '')
+        .replace(/Ayah \d+/g, '')
+        .replace(/Global Ayah #\d+/g, '')
+        .replace(/128kbps MP3/g, '')
+        .replace(/ar\.alafasy/g, '')
+        .replace(/Mishary Rashid Alafasy/g, '')
+        .replace(/Loading\.\.\./g, '')
+        .replace(/Playing/g, '')
+        .replace(/Paused/g, '')
+        .replace(/Click to play/g, '')
+        .replace(/Skip backward 10s/g, '')
+        .replace(/Skip forward 10s/g, '')
+        .replace(/Unmute/g, '')
+        .replace(/Mute/g, '')
+        .replace(/Volume/g, '')
+        .replace(/Progress/g, '')
+        .replace(/Seek/g, '')
+        .replace(/Forward/g, '')
+        .replace(/Backward/g, '')
+        .replace(/SpeakerWaveIcon/g, '')
+        .replace(/SpeakerXMarkIcon/g, '')
+        .replace(/PlayIcon/g, '')
+        .replace(/PauseIcon/g, '')
+        .replace(/ForwardIcon/g, '')
+        .replace(/BackwardIcon/g, '')
         // Clean up extra whitespace
         .replace(/\n\s*\n\s*\n/g, '\n\n')
         .replace(/^\s+|\s+$/gm, '')
-        // Add reference links at the end
-        .replace(/"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\(([^)]+)\)/g, (match, verseText, surahName, ayahNumber, url) => {
+        // Keep only the essential content: ayahs, explanations, and references
+        .replace(/"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\(([^)]+)\)/g, (match: string, verseText: string, surahName: string, ayahNumber: string, url: string) => {
           return `"${verseText}"\nReference: ${surahName}, Verse ${ayahNumber} - ${url}`;
         })
         .trim();
@@ -90,10 +137,234 @@ export default function Home() {
     }
   };
 
-  const handleTranslationChange = useCallback((translatedText: string, language: string) => {
-    setDisplayedContent(translatedText);
-    setCurrentLanguage(language);
+  // Function to extract AI-generated content for translation
+  const extractAIContentForTranslation = (formattedResponse: string) => {
+    // Create a temporary DOM element to parse the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = formattedResponse;
+    
+    // Extract only the AI-generated text content, excluding API-fetched components
+    const aiContent: string[] = [];
+    
+    // Walk through all text nodes and extract content
+    const walkTextNodes = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text && text.length > 0) {
+          // Check if this text is not part of API-fetched components
+          const parent = node.parentElement;
+          if (parent && !parent.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
+            aiContent.push(text);
+          }
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        // Skip API-fetched components
+        if (!element.classList.contains('stylish-ayah-reference') && 
+            !element.classList.contains('tafsir-content') && 
+            !element.classList.contains('enhanced-audio-player') &&
+            !element.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
+          // Extract text from elements that are not API-fetched
+          for (const child of Array.from(element.childNodes)) {
+            walkTextNodes(child);
+          }
+        }
+      }
+    };
+    
+    walkTextNodes(tempDiv);
+    
+    return aiContent.join('\n\n');
+  };
+
+  // Function to merge translated AI content with preserved API content
+  const mergeTranslatedContent = (originalFormattedResponse: string, translatedAIContent: string) => {
+    // Create a temporary DOM element to parse the original HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = originalFormattedResponse;
+    
+    // Split the translated AI content into paragraphs
+    const translatedParagraphs = translatedAIContent.split('\n\n').filter(p => p.trim().length > 0);
+    let paragraphIndex = 0;
+    
+    // Function to replace AI-generated text while preserving API components
+    const replaceAIText = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text && text.length > 0) {
+          const parent = node.parentElement;
+          if (parent && !parent.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
+            // This is AI-generated text that should be replaced
+            if (paragraphIndex < translatedParagraphs.length) {
+              node.textContent = translatedParagraphs[paragraphIndex];
+              paragraphIndex++;
+            }
+          }
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        // Skip API-fetched components
+        if (!element.classList.contains('stylish-ayah-reference') && 
+            !element.classList.contains('tafsir-content') && 
+            !element.classList.contains('enhanced-audio-player') &&
+            !element.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
+          // Process child nodes for AI-generated content
+          for (const child of Array.from(element.childNodes)) {
+            replaceAIText(child);
+          }
+        }
+      }
+    };
+    
+    replaceAIText(tempDiv);
+    
+    return tempDiv.innerHTML;
+  };
+
+  // Function to reinitialize audio functionality after translation
+  const reinitializeAudioAfterTranslation = useCallback(() => {
+    // Small delay to ensure DOM is updated
+    setTimeout(() => {
+      // Re-attach audio event listeners to preserve functionality
+      const audioButtons = document.querySelectorAll('.play-pause-btn');
+      audioButtons.forEach(button => {
+        const ayahId = button.getAttribute('data-ayah-id');
+        if (ayahId) {
+          // Remove existing listeners and reattach
+          const newButton = button.cloneNode(true) as HTMLButtonElement;
+          newButton.className = button.className;
+          newButton.setAttribute('data-ayah-id', ayahId);
+          button.parentNode?.replaceChild(newButton, button);
+        }
+      });
+      
+      // Re-initialize tafsir functionality
+      if (window.setupTafsirEventDelegation) {
+        window.setupTafsirEventDelegation();
+      }
+
+      // Force a re-render of audio players by triggering a content update
+      setDisplayedContent(prev => {
+        // This will trigger the useEffect in ResponseSection that sets up audio
+        return prev;
+      });
+    }, 200); // Increased delay to ensure DOM is fully updated
   }, []);
+
+  // Enhanced translation handler with selective translation and audio preservation
+  const handleTranslationChange = useCallback(async (translatedText: string, language: string) => {
+    if (language === 'en' || language === 'original') {
+      // Show original content
+      setDisplayedContent(summary);
+      setCurrentLanguage('en');
+      setIsTranslating(false);
+      setTranslationProgress(0);
+      return;
+    }
+
+    try {
+      // Start translation progress animation
+      setIsTranslating(true);
+      setTranslationProgress(0);
+      
+      // Advanced progress simulation with realistic stages
+      const progressStages = [
+        { stage: 'Analyzing content', progress: 15 },
+        { stage: 'Extracting AI text', progress: 35 },
+        { stage: 'Translating', progress: 70 },
+        { stage: 'Processing', progress: 85 },
+        { stage: 'Finalizing', progress: 95 }
+      ];
+      
+      let currentStage = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStage < progressStages.length) {
+          const { progress } = progressStages[currentStage];
+          setTranslationProgress(progress);
+          currentStage++;
+        } else {
+          // Smooth progress to completion
+          setTranslationProgress(prev => {
+            if (prev >= 95) return prev;
+            return prev + 0.5;
+          });
+        }
+      }, 300);
+
+      // Extract only AI-generated content for translation (much faster)
+      const aiContentToTranslate = extractAIContentForTranslation(summary);
+      
+      if (!aiContentToTranslate.trim()) {
+        // No AI content to translate, show original
+        setDisplayedContent(summary);
+        setCurrentLanguage(language);
+        setIsTranslating(false);
+        setTranslationProgress(0);
+        clearInterval(progressInterval);
+        return;
+      }
+
+      // Use optimized translation for AI content only
+      const translation = await translateAIContent(aiContentToTranslate, language);
+      
+      // Complete progress with smooth animation
+      setTranslationProgress(100);
+      
+      // Merge translated AI content with preserved API components
+      const mergedContent = mergeTranslatedContent(summary, translation);
+      
+      setDisplayedContent(mergedContent);
+      setCurrentLanguage(language);
+      
+      // Reinitialize audio functionality to ensure it works after translation
+      reinitializeAudioAfterTranslation();
+      
+      // Hide progress after a short delay
+      setTimeout(() => {
+        setIsTranslating(false);
+        setTranslationProgress(0);
+      }, 800);
+      
+      clearInterval(progressInterval);
+    } catch (error) {
+      console.error('Translation error:', error);
+      // Fallback to original content on error
+      setDisplayedContent(summary);
+      setCurrentLanguage('en');
+      setIsTranslating(false);
+      setTranslationProgress(0);
+    }
+  }, [summary, reinitializeAudioAfterTranslation]);
+
+  // Optimized translation function for AI content only
+  const translateAIContent = async (aiContent: string, targetLanguage: string): Promise<string> => {
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: aiContent,
+          targetLanguage,
+          sourceLanguage: 'en',
+          context: 'islamic',
+          preserveFormatting: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Translation failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.translatedText;
+    } catch (error) {
+      console.error('Translation API error:', error);
+      throw error;
+    }
+  };
 
   // Audio management functions
   const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
@@ -113,6 +384,43 @@ export default function Home() {
     // Audio ended naturally, no action needed
   }, []);
 
+  // Function to copy only AI-generated content (excluding API components)
+  const copyAIContentOnly = async () => {
+    try {
+      // Extract only AI-generated content for copying
+      const aiContentToCopy = extractAIContentForTranslation(displayedContent || summary);
+      
+      if (!aiContentToCopy.trim()) {
+        // Fallback to summary if no AI content extracted
+        await navigator.clipboard.writeText(summary);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+
+      // Clean up the AI content for copying (remove HTML tags, etc.)
+      const cleanAIContent = aiContentToCopy
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
+        .replace(/^\s+|\s+$/gm, '') // Trim lines
+        .trim();
+
+      await navigator.clipboard.writeText(cleanAIContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy AI content:', error);
+      // Fallback to copying summary
+      try {
+        await navigator.clipboard.writeText(summary);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackError) {
+        console.error('Failed to copy summary as fallback:', fallbackError);
+      }
+    }
+  };
+
   // Helper function to format time
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -120,138 +428,214 @@ export default function Home() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-
-
-
-
-
-
-  const formatResponse = (response: string) => {
+  const formatResponse = async (response: string) => {
+    // First, find all ayah references and prepare them with tafsir data
+    const ayahRegex = /"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const ayahMatches: RegExpExecArray[] = [];
+    let match;
     
-    const processedText = response
-      // Format section headers with enhanced styling
-      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-3 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
-      
-      // Format ayah references with embedded audio players
-      .replace(/"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g, (match, verseText, surahName, ayahNumber, url) => {
-        // Map surah names to numbers for audio
-        const surahNameToNumber: { [key: string]: number } = {
-          'Al-Fatiha': 1, 'Al-Baqarah': 2, 'Aal-Imran': 3, 'An-Nisa': 4, 'Al-Ma\'idah': 5,
-          'Al-An\'am': 6, 'Al-A\'raf': 7, 'Al-Anfal': 8, 'At-Tawbah': 9, 'Yunus': 10,
-          'Hud': 11, 'Yusuf': 12, 'Ar-Ra\'d': 13, 'Ibrahim': 14, 'Al-Hijr': 15,
-          'An-Nahl': 16, 'Al-Isra': 17, 'Al-Kahf': 18, 'Maryam': 19, 'Ta-Ha': 20,
-          'Al-Anbya': 21, 'Al-Hajj': 22, 'Al-Mu\'minun': 23, 'An-Nur': 24, 'Al-Furqan': 25,
-          'Ash-Shu\'ara': 26, 'An-Naml': 27, 'Al-Qasas': 28, 'Al-Ankabut': 29, 'Ar-Rum': 30,
-          'Luqman': 31, 'As-Sajdah': 32, 'Al-Ahzab': 33, 'Saba': 34, 'Fatir': 35,
-          'Ya-Sin': 36, 'As-Saffat': 37, 'Sad': 38, 'Az-Zumar': 39, 'Ghafir': 40,
-          'Fussilat': 41, 'Ash-Shura': 42, 'Az-Zukhruf': 43, 'Ad-Dukhan': 44, 'Al-Jathiyah': 45,
-          'Al-Ahqaf': 46, 'Muhammad': 47, 'Al-Fath': 48, 'Al-Hujurat': 49, 'Qaf': 50,
-          'Adh-Dhariyat': 51, 'At-Tur': 52, 'An-Najm': 53, 'Al-Qamar': 54, 'Ar-Rahman': 55,
-          'Al-Waqi\'ah': 56, 'Al-Hadid': 57, 'Al-Mujadila': 58, 'Al-Hashr': 59, 'Al-Mumtahanah': 60,
-          'As-Saf': 61, 'Al-Jumu\'ah': 62, 'Al-Munafiqun': 63, 'At-Taghabun': 64, 'At-Talaq': 65,
-          'At-Tahrim': 66, 'Al-Mulk': 67, 'Al-Qalam': 68, 'Al-Haqqah': 69, 'Al-Ma\'arij': 70,
-          'Nuh': 71, 'Al-Jinn': 72, 'Al-Muzzammil': 73, 'Al-Muddathir': 74, 'Al-Qiyamah': 75,
-          'Al-Insan': 76, 'Al-Mursalat': 77, 'An-Naba': 78, 'An-Nazi\'at': 79, 'Abasa': 80,
-          'At-Takwir': 81, 'Al-Infitar': 82, 'Al-Mutaffifin': 83, 'Al-Inshiqaq': 84, 'Al-Buruj': 85,
-          'At-Tariq': 86, 'Al-A\'la': 87, 'Al-Ghashiyah': 88, 'Al-Fajr': 89, 'Al-Balad': 90,
-          'Ash-Shams': 91, 'Al-Layl': 92, 'Ad-Duha': 93, 'Ash-Sharh': 94, 'At-Tin': 95,
-          'Al-Alaq': 96, 'Al-Qadr': 97, 'Al-Bayyinah': 98, 'Az-Zalzalah': 99, 'Al-Adiyat': 100,
-          'Al-Qari\'ah': 101, 'At-Takathur': 102, 'Al-Asr': 103, 'Al-Humazah': 104, 'Al-Fil': 105,
-          'Quraish': 106, 'Al-Ma\'un': 107, 'Al-Kawthar': 108, 'Al-Kafirun': 109, 'An-Nasr': 110,
-          'Al-Masad': 111, 'Al-Ikhlas': 112, 'Al-Falaq': 113, 'An-Nas': 114
-        };
-        
-        // Calculate global ayah number
-        const surahNumber = surahNameToNumber[surahName.trim()] || 1;
-        const ayahNum = parseInt(ayahNumber);
-        
-        // The Islamic Network API uses sequential ayah numbers from 1 to 6236
-        // We need to calculate the correct global ayah number
-        const surahAyahCounts = [
-          7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
-        ];
-        
-        // Calculate the global ayah number (1-6236)
-        let globalAyahNumber = 0;
-        for (let i = 0; i < surahNumber - 1; i++) {
-          globalAyahNumber += surahAyahCounts[i] || 0;
+    // Extract all matches
+    while ((match = ayahRegex.exec(response)) !== null) {
+      ayahMatches.push(match);
+    }
+    
+    // Process each ayah with tafsir data
+    const ayahReplacements = await Promise.all(
+      ayahMatches.map(async (match) => {
+        const [, verseText, surahName, ayahNumber, url] = match;
+        const surahNumber = getSurahNumber(surahName.trim());
+        if (!surahNumber) {
+          console.warn(`Could not find surah number for: "${surahName.trim()}". Using fallback value 1.`);
+        } else {
+          console.log(`Found surah number ${surahNumber} for: "${surahName.trim()}"`);
         }
-        globalAyahNumber += ayahNum;
+        const finalSurahNumber = surahNumber || 1;
+        const ayahNum = parseInt(ayahNumber);
+        const globalAyahNumber = calculateGlobalAyahNumber(finalSurahNumber, ayahNum);
+        const ayahId = `ayah-${finalSurahNumber}-${ayahNum}-${Date.now()}`;
         
-
+        // Fetch tafsir data
+        const tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
         
-        // Generate unique ID for this ayah
-        const ayahId = `ayah-${surahNumber}-${ayahNum}-${Date.now()}`;
+        // Generate tafsir buttons and content
+        let tafsirButtonsHTML = '';
+        let tafsirContentHTML = '';
         
-        return `<div class="stylish-ayah-reference mb-4 pt-1.5 pb-1.5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-            <!-- Compact Header -->
-            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                  <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
-                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                    </svg>
+        if (tafsirData && tafsirData.tafsirs && tafsirData.tafsirs.length > 0) {
+                      tafsirButtonsHTML = `
+            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+              <svg class="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span class="text-emerald-700 dark:text-emerald-300">Tafsir</span>
+            </h4>
+            <div class="flex flex-wrap gap-1.5 md:gap-2 flex-1">`;
+          
+          tafsirData.tafsirs.forEach((tafsir, index) => {
+            const tafsirId = `tafsir-${ayahId}-${index}`;
+            const formattedContent = tafsir.content
+              .replace(/\n/g, '<br>')
+              .replace(/##\s*(.*?)$/gm, '<h5 class="font-semibold text-gray-800 dark:text-gray-200 mt-3 mb-2">$1</h5>')
+              .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+            
+            tafsirButtonsHTML += `
+              <button 
+                data-tafsir-id="${tafsirId}"
+                class="tafsir-toggle-btn px-2 md:px-3 py-1.5 md:py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 flex items-center space-x-1.5 md:space-x-2 text-left focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-500 rounded-lg flex-shrink-0 border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md active:scale-95"
+              >
+                <div class="w-4 md:w-5 h-4 md:h-5 bg-gradient-to-br from-gray-400 to-gray-500 dark:from-gray-500 dark:to-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg class="w-2.5 md:w-3 h-2.5 md:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div class="text-xs font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">${tafsir.author}</div>
+              </button>`;
+              
+            tafsirContentHTML += `
+              <div id="${tafsirId}" class="tafsir-content w-full mt-4" style="display: none;">
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm overflow-hidden">
+                  <div class="bg-gray-50 dark:bg-gray-700 px-3 md:px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center justify-between">
+                      <h5 class="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span class="text-xs md:text-sm">${tafsir.author}</span>
+                      </h5>
+                      <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <h3 class="text-sm font-semibold text-white font-[var(--font-amiri)]">${surahName}</h3>
-                    <p class="text-xs text-emerald-100">Verse ${ayahNumber}</p>
+                  <div class="p-3 md:p-4">
+                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed text-xs md:text-sm space-y-2 md:space-y-3">
+                      ${formattedContent}
+                    </div>
                   </div>
                 </div>
-                <span class="px-2 py-0.5 bg-white/20 text-white text-xs font-mono rounded">${surahNumber}:${ayahNumber}</span>
-              </div>
-            </div>
-            
-            <!-- Compact Verse Content -->
-            <div class="p-4">
-              <div class="text-center mb-3">
-                <div class="relative inline-block">
-                  <div class="text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400 opacity-30 absolute -top-1 -left-6">"</div>
-                  <div class="text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400 opacity-30 absolute -top-1 -right-6">"</div>
-                  <blockquote class="text-lg md:text-xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed font-bold tracking-wide px-6">
-                    ${verseText}
-                  </blockquote>
+              </div>`;
+          });
+          
+          tafsirButtonsHTML += `
+              </div>`;
+        } else {
+          tafsirButtonsHTML = `
+            <div class="text-center text-gray-500 dark:text-gray-400 flex-1 flex flex-col justify-center">
+              <svg class="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <p class="text-sm font-medium">No tafsir available</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Check back later</p>
+            </div>`;
+        }
+        
+        return {
+          match: match[0],
+          replacement: `<div class="stylish-ayah-reference mb-8 max-w-none w-full pt-5 pb-5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full">
+              <!-- Clean Header -->
+              <div class="bg-gray-50 dark:bg-gray-750 px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                      <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)]">${surahName}</h3>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Verse ${ayahNumber}</p>
+                    </div>
+                  </div>
+                  <span class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-mono rounded-lg">${finalSurahNumber}:${ayahNumber}</span>
                 </div>
               </div>
               
-              <!-- Compact Audio Player -->
-              <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center space-x-3">
-                      <button class="play-pause-btn w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:scale-105 active:scale-95 transition-transform duration-200" data-ayah-id="${ayahId}">
-                        <svg class="play-icon w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                        <svg class="pause-icon w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                        </svg>
-                      </button>
-                      <span class="status-text text-sm font-medium text-gray-800 dark:text-gray-200">Click to play</span>
-                    </div>
-                    <span class="time-display text-xs text-gray-500 dark:text-gray-400 font-mono">--:--</span>
-                  </div>
-                  
-                  <div class="space-y-1.5">
-                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                      <span class="current-time">0:00</span>
-                      <span class="total-duration">--:--</span>
-                      <span class="status-indicator w-2 h-2 bg-emerald-500 rounded-full hidden animate-pulse"></span>
-                    </div>
-                    <div class="relative">
-                      <div class="progress-bg w-full h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                        <div class="progress-fill h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
-                      </div>
-                      <input type="range" class="progress-slider absolute inset-0 w-full h-1 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
-                    </div>
+              <!-- Verse Content -->
+              <div class="p-4">
+                <!-- Verse Text -->
+                <div class="text-center mb-6">
+                  <div class="relative">
+                    <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -left-4">"</div>
+                    <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -right-4">"</div>
+                    <blockquote class="text-lg md:text-xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed font-medium tracking-wide px-6 py-2">
+                      ${verseText}
+                    </blockquote>
                   </div>
                 </div>
+                
+                <!-- Audio Player and Tafsir Buttons -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <!-- Audio Player -->
+                  <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
+                    <div class="bg-gray-50 dark:bg-gray-750 rounded-xl p-3 border border-gray-200 dark:border-gray-600 min-h-[120px] md:min-h-[140px] flex flex-col justify-between">
+                      <div class="flex items-center space-x-3">
+                        <button class="play-pause-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 hover:bg-gray-700 dark:hover:bg-gray-300 active:scale-95 transition-all duration-200" data-ayah-id="${ayahId}">
+                          <svg class="play-icon w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                          <svg class="pause-icon w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                          </svg>
+                        </button>
+                        <div class="flex-1">
+                          <div class="status-text text-sm font-medium text-gray-800 dark:text-gray-200">Play recitation</div>
+                          <div class="text-xs text-gray-500 dark:text-gray-400">Alafasy</div>
+                        </div>
+                        <div class="text-right">
+                          <div class="time-display text-sm font-mono text-gray-600 dark:text-gray-400">--:--</div>
+                          <div class="status-indicator w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full hidden animate-pulse mt-1 ml-auto"></div>
+                        </div>
+                      </div>
+                      
+                      <!-- Progress Bar -->
+                      <div class="mt-3">
+                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          <span class="current-time">0:00</span>
+                          <span class="total-duration">--:--</span>
+                        </div>
+                        <div class="relative">
+                          <div class="progress-bg w-full h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                            <div class="progress-fill h-full bg-gray-800 dark:bg-gray-200 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                          </div>
+                          <input type="range" class="progress-slider absolute inset-0 w-full h-1.5 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Tafsir Buttons -->
+                  <div class="bg-gray-50 dark:bg-gray-750 rounded-xl p-3 border border-gray-200 dark:border-gray-600 min-h-[120px] md:min-h-[140px] flex flex-col justify-between">
+                    ${tafsirButtonsHTML}
+                  </div>
+                </div>
+                
+                <!-- Tafsir Content (Full Width Below) -->
+                ${tafsirContentHTML}
               </div>
             </div>
-          </div>
-        </div>`;
+          </div>`
+        };
       })
+    );
+    
+    // Apply all replacements
+    let processedText = response;
+    ayahReplacements.forEach(({ match, replacement }) => {
+      processedText = processedText.replace(match, replacement);
+    });
+    
+    // Continue with other formatting
+    processedText = processedText
+      // Format section headers with enhanced styling
+      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-3 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
+      // Format bold text
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>')
+      // Format section headers with enhanced styling
+      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-3 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
       
       // Format bold text
       .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>')
@@ -269,17 +653,31 @@ export default function Home() {
       .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-5 flex items-start p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all duration-200"><span class="w-3 h-3 bg-gradient-to-br from-gray-600 to-gray-500 dark:from-gray-400 dark:to-gray-300 rounded-full mr-4 mt-3 flex-shrink-0 shadow-sm"></span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$1</span></div>')
       
       // Format specific Islamic terms with enhanced styling
-      .replace(/Allah\s*\(SWT\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-sm font-bold border-2 border-gray-300 dark:border-gray-500 shadow-sm hover:shadow-md transition-all duration-200">🕌 Allah (SWT)</span>')
-      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-sm font-bold border-2 border-gray-300 dark:border-gray-500 shadow-sm hover:shadow-md transition-all duration-200">📖 Prophet Muhammad (PBUH)</span>')
-      .replace(/\(peace be upon him\)/gi, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
+      .replace(/Allah\s*\(SWT\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (SWT)</span>')
+      .replace(/Allah\s*SWT/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah SWT</span>')
+      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Prophet Muhammad (PBUH)</span>')
+      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Prophet Muhammad PBUH</span>')
+      .replace(/\(peace be upon him\)/g, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
+      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Muhammad (PBUH)</span>')
+      .replace(/Muhammad\s*PBUH/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Muhammad PBUH</span>')
+      .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (Subhanahu wa Ta\'ala)</span>')
+      .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah Subhanahu wa Ta\'ala</span>')
       
       // Format Explanation headers with distinctive styling
       .replace(/^(Explanation):?\s*$/gmi, 
         '<div class="explanation-section mt-12 mb-8"><div class="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl border-l-4 border-blue-500 dark:border-blue-400 shadow-lg"><div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-xl flex items-center justify-center shadow-md"><svg class="w-6 h-6 text-white dark:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div><div><h3 class="text-2xl md:text-3xl font-bold text-blue-800 dark:text-blue-200 font-[var(--font-amiri)] tracking-wide">💡 Explanation</h3><p class="text-sm text-blue-600 dark:text-blue-400 mt-1">Understanding the meaning and context</p></div></div></div>')
       
-      // Format Tafsir/Tafseer headers with distinctive styling
+      // Format Tafsir/Tafseer headers with simple styling (matching AI Explanation design)
       .replace(/^(Tafs[ie]r):?\s*$/gmi, 
-        '<div class="tafsir-section mt-12 mb-8"><div class="flex items-center gap-4 p-6 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 rounded-2xl border-l-4 border-emerald-500 dark:border-emerald-400 shadow-lg"><div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-400 dark:to-emerald-500 rounded-xl flex items-center justify-center shadow-md"><svg class="w-6 h-6 text-white dark:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><div><h3 class="text-2xl md:text-3xl font-bold text-emerald-800 dark:text-emerald-200 font-[var(--font-amiri)] tracking-wide">📚 Tafsir</h3><p class="text-sm text-emerald-600 dark:text-emerald-400 mt-1">Detailed scholarly interpretation</p></div></div></div>')
+        '<div class="tafsir-section mt-12 mb-8"><h3 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] tracking-wide border-b border-gray-300 dark:border-gray-600 pb-2">Tafsir</h3><p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Detailed scholarly interpretation</p></div>')
+      
+      // Format AI Explanation sections with simple styling
+      .replace(/\[AI Explanation:\s*([\s\S]*?)\]/gi, 
+        '<div class="ai-explanation-section mt-2 mb-4"><h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed text-base">$1</div></div>')
+      
+      // Format Authentic Tafsir sections with simple styling
+      .replace(/\[Authentic Tafsir:\s*([\s\S]*?)\]/g, 
+        '<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed text-base">$1</div></div>')
       
       // Format other common section headers with enhanced styling
       .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi, 
@@ -306,7 +704,10 @@ IMPORTANT: You must format your response exactly as follows:
 2. Include at least 2-3 relevant Quranic verses in this EXACT format:
    "Verse text here" [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
 
-3. Provide explanation and tafseer for each verse
+3. After each verse, provide:
+   - First: The authentic tafsir will be automatically fetched and displayed
+   - Second: Your AI-generated explanation and interpretation of the verse
+
 4. End with practical guidance or conclusion
 
 CRITICAL FORMAT REQUIREMENTS:
@@ -314,9 +715,13 @@ CRITICAL FORMAT REQUIREMENTS:
 - Replace {Surah No.} and {Ayah No.} with actual numbers
 - Use proper surah names like: Al-Fatiha, Al-Baqarah, Aal-Imran, An-Nisa, Al-Ma'idah, etc.
 - Include the full verse text in quotes before each reference
+- After each verse reference, provide your AI-generated explanation and interpretation
+- The authentic tafsir from Islamic scholars will be automatically displayed
 
 Example format:
 "Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
+
+[AI Explanation: This verse teaches us about patience and divine support. When we remain steadfast in difficult times, Allah promises to be with us, providing strength and guidance. This is a powerful reminder that patience is not just about waiting, but about maintaining faith and trust in Allah's plan.]
 
 Question: ${content}`;
   }, [content]);
@@ -340,7 +745,7 @@ Question: ${content}`;
 
     try {
       const response = await generate_response_with_gemini(prompt);
-      const formattedResponse = formatResponse(response);
+      const formattedResponse = await formatResponse(response);
       setSummary(formattedResponse);
       setDisplayedContent(formattedResponse); // Set initial displayed content
       setCurrentLanguage('en'); // Default to English
@@ -498,6 +903,8 @@ Question: ${content}`;
                   onTranslationChange={handleTranslationChange}
                   context="islamic"
                   preserveFormatting={true}
+                  isTranslating={isTranslating}
+                  translationProgress={translationProgress}
                 />
               </div>
             )}
@@ -506,7 +913,6 @@ Question: ${content}`;
             <ResponseSection 
               showSummary={showSummary}
               summary={summary}
-              copyContent={copyContent}
               copied={copied}
               onAudioPlay={handleAudioPlay}
               onAudioPause={handleAudioPause}
@@ -516,13 +922,156 @@ Question: ${content}`;
               getAudioProgress={getAudioProgress}
               seekToTime={seekToTime}
               displayedContent={displayedContent}
+              onCopyAIContent={copyAIContentOnly}
             />
+            
+
           </div>
         </main>
 
         {/* Footer */}
         <Footer />
       </div>
+
+      {/* Enhanced Tafsir Toggle Script with Event Delegation */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            // Set up event delegation for tafsir buttons
+            function setupTafsirEventDelegation() {
+              // Remove any existing listeners first
+              if (window.tafsirClickHandler) {
+                document.body.removeEventListener('click', window.tafsirClickHandler);
+              }
+              
+              // Create the click handler
+              window.tafsirClickHandler = function(event) {
+                const target = event.target;
+                
+                // Check if clicked element or its parent is a tafsir button
+                const tafsirBtn = target.closest('.tafsir-toggle-btn, .tafsir-close-btn');
+                
+                if (tafsirBtn) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  
+                  const tafsirId = tafsirBtn.getAttribute('data-tafsir-id');
+                  
+                  if (tafsirId) {
+                    if (window.toggleTafsir) {
+                      window.toggleTafsir(tafsirId);
+                    } else {
+                      console.error('toggleTafsir function not found');
+                    }
+                  } else {
+                    console.error('No tafsir ID found on button', tafsirBtn);
+                  }
+                }
+              };
+              
+              // Add event listener to document body
+              document.body.addEventListener('click', window.tafsirClickHandler);
+            }
+            
+            // Set up immediately or when DOM is ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', setupTafsirEventDelegation);
+            } else {
+              setupTafsirEventDelegation();
+            }
+            
+            // Also set up when content is dynamically added
+            const observer = new MutationObserver((mutations) => {
+              mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                  // Check if new tafsir content was added
+                  mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                      const tafsirButtons = node.querySelectorAll && node.querySelectorAll('.tafsir-toggle-btn');
+                      if (tafsirButtons && tafsirButtons.length > 0) {
+                        setupTafsirEventDelegation();
+                      }
+                    }
+                  });
+                }
+              });
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true });
+            
+
+            
+            // Keep the toggle function but make it more robust
+            window.toggleTafsir = function(tafsirId) {
+              try {
+                const content = document.getElementById(tafsirId);
+                
+                if (!content) {
+                  // Try again after a short delay in case DOM is still loading
+                  setTimeout(() => {
+                    const retryContent = document.getElementById(tafsirId);
+                    if (retryContent) {
+                      window.toggleTafsir(tafsirId);
+                    }
+                  }, 100);
+                  return;
+                }
+                
+                // Close other open tafsirs in the same ayah
+                try {
+                  const ayahContainer = content.closest('.stylish-ayah-reference');
+                  
+                  if (ayahContainer) {
+                    const otherTafsirs = ayahContainer.querySelectorAll('.tafsir-content:not(#' + tafsirId + ')');
+                    
+                    if (otherTafsirs && otherTafsirs.length > 0) {
+                      otherTafsirs.forEach((other) => {
+                        if (other && other.style) {
+                          other.style.display = 'none';
+                        }
+                      });
+                    }
+                  }
+                } catch (closeError) {
+                  console.error('Error closing other tafsirs:', closeError);
+                }
+                
+                // Toggle current tafsir
+                if (content) {
+                  const isHidden = content.style.display === 'none';
+                  
+                  if (isHidden) {
+                    // Show tafsir content
+                    content.style.display = 'block';
+                    
+                    // Add a subtle animation
+                    content.style.opacity = '0';
+                    content.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                      content.style.transition = 'all 0.3s ease-out';
+                      content.style.opacity = '1';
+                      content.style.transform = 'translateY(0)';
+                    }, 10);
+                    
+                    // Smooth scroll to make sure content is visible
+                    setTimeout(() => {
+                      if (content && typeof content.scrollIntoView === 'function') {
+                        content.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                      }
+                    }, 100);
+                  } else {
+                    // Hide tafsir content
+                    content.style.display = 'none';
+                  }
+                }
+                
+              } catch (error) {
+                console.error('Error in toggleTafsir:', error);
+              }
+            };
+          `
+        }}
+      />
     </>
   );
 }

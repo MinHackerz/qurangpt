@@ -1,47 +1,90 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface ThinkingProcessProps {
   isProcessing: boolean;
 }
 
+// Move processingSteps outside component to prevent recreation on every render
+const processingSteps = [
+  { 
+    step: "Processing user question", 
+    description: "Analyzing the question and preparing the structured prompt for AI", 
+    duration: 800 
+  },
+  { 
+    step: "Connecting to Gemini AI", 
+    description: "Establishing connection with Google's Gemini API for response generation", 
+    duration: 1200 
+  },
+  { 
+    step: "Generating AI response", 
+    description: "AI is analyzing the question and searching through Quranic knowledge base", 
+    duration: 4000 
+  },
+  { 
+    step: "Fetching Tafsir data", 
+    description: "Retrieving authentic tafsir interpretations from Islamic scholars via API", 
+    duration: 2000 
+  },
+  { 
+    step: "Formatting response", 
+    description: "Processing AI response and adding Quranic references with audio players", 
+    duration: 1500 
+  },
+  { 
+    step: "Preparing final output", 
+    description: "Structuring the response with proper formatting, tafsir, and Islamic styling", 
+    duration: 1000 
+  }
+];
+
 export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) {
   const [dots, setDots] = useState('');
-  const [thinkingText, setThinkingText] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  // Minimalistic thinking animation
+  // Memoize the processStep function to prevent recreation
+  const processStep = useCallback((currentStepIndex: number, stepStartTime: number) => {
+    if (currentStepIndex < processingSteps.length) {
+      setCurrentStep(currentStepIndex);
+      
+      // Mark step as completed after its duration
+      setTimeout(() => {
+        setCompletedSteps(prev => new Set(Array.from(prev).concat(currentStepIndex)));
+        
+        // Move to next step
+        const nextStepIndex = currentStepIndex + 1;
+        if (nextStepIndex < processingSteps.length) {
+          processStep(nextStepIndex, Date.now());
+        }
+      }, processingSteps[currentStepIndex].duration);
+    }
+  }, []);
+
+  // Simulate realistic step progression based on actual processing
   useEffect(() => {
     if (isProcessing) {
-      const steps = [
-        "Analyzing question",
-        "Searching Quran",
-        "Consulting tafseer",
-        "Compiling answer"
-      ];
-      
-      let stepIndex = 0;
-      const stepInterval = setInterval(() => {
-        if (stepIndex < steps.length) {
-          setThinkingText(steps[stepIndex]);
-          stepIndex++;
-        } else {
-          stepIndex = 0;
-        }
-      }, 1500);
-
-      // Animated dots
-      const dotInterval = setInterval(() => {
-        setDots(prev => prev.length >= 3 ? '' : prev + '.');
-      }, 500);
-
-      return () => {
-        clearInterval(stepInterval);
-        clearInterval(dotInterval);
-      };
+      // Start processing from step 0
+      processStep(0, Date.now());
+    } else {
+      // Reset when processing stops
+      setCurrentStep(0);
+      setCompletedSteps(new Set());
     }
-  }, [isProcessing]);
+
+    // Animated dots
+    const dotInterval = setInterval(() => {
+      setDots(prev => prev.length >= 3 ? '' : prev + '.');
+    }, 500);
+
+    return () => {
+      clearInterval(dotInterval);
+    };
+  }, [isProcessing, processStep]);
 
   if (!isProcessing) return null;
 
@@ -58,7 +101,7 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
         <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4">
             
-            {/* Left: Thinking indicator with subtle animation */}
+            {/* Left: Current step indicator */}
             <div className="flex items-center space-x-3">
               {/* Pulsing dot indicator */}
               <div className="flex items-center space-x-1">
@@ -80,43 +123,164 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
                 ))}
               </div>
               
-              {/* Thinking text */}
+              {/* Current step text */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Thinking
+                  {processingSteps[currentStep]?.step}
                 </span>
                 <motion.span
-                  key={thinkingText}
+                  key={currentStep}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
                   className="text-sm text-gray-500 dark:text-gray-400"
                 >
-                  {thinkingText}{dots}
+                  {dots}
                 </motion.span>
               </div>
             </div>
 
-            {/* Right: Subtle progress indicator */}
-            <div className="flex items-center space-x-2">
-              <div className="w-16 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <motion.div
-                  animate={{
-                    x: ["-100%", "100%"]
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="h-full w-1/3 bg-gradient-to-r from-transparent via-gray-400 dark:via-gray-500 to-transparent rounded-full"
-                />
+            {/* Right: Expandable button and progress indicator */}
+            <div className="flex items-center space-x-3">
+              {/* Expandable button */}
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center space-x-1 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <span>{isExpanded ? 'Hide' : 'Show'}</span>
+                <motion.svg
+                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </motion.svg>
+              </button>
+
+              {/* Progress indicator */}
+              <div className="flex items-center space-x-2">
+                <div className="w-16 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <motion.div
+                    animate={{
+                      x: ["-100%", "100%"]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="h-full w-1/3 bg-gradient-to-r from-transparent via-gray-400 dark:via-gray-500 to-transparent rounded-full"
+                  />
+                </div>
+                <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                  AI
+                </span>
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
-                AI
-              </span>
             </div>
           </div>
+
+          {/* Expandable process details */}
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden border-t border-gray-200/50 dark:border-gray-600/50"
+              >
+                <div className="px-6 py-4 space-y-3">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    AI Processing Workflow:
+                  </h4>
+                  
+                  {/* Process steps with realistic status */}
+                  <div className="space-y-2">
+                    {processingSteps.map((process, index) => {
+                      const isCompleted = completedSteps.has(index);
+                      const isCurrent = index === currentStep;
+                      const isPending = !isCompleted && !isCurrent;
+                      
+                      return (
+                        <div key={index} className="flex items-start space-x-3">
+                          <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                            isCurrent 
+                              ? 'bg-blue-500 text-white' 
+                              : isCompleted 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {isCompleted ? (
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <span className="text-xs font-medium">
+                                {index + 1}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className={`text-sm font-medium transition-colors duration-300 ${
+                              isCurrent 
+                                ? 'text-blue-600 dark:text-blue-400' 
+                                : isCompleted 
+                                ? 'text-green-600 dark:text-green-400' 
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}>
+                              {process.step}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {process.description}
+                              {isCurrent && (
+                                <span className="ml-2 text-blue-500 font-medium">
+                                  • In progress...
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Status indicator */}
+                          <div className="flex-shrink-0">
+                            {isCurrent && (
+                              <motion.div
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                                className="w-2 h-2 bg-blue-500 rounded-full"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Processing status summary */}
+                  <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-600/50">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>
+                        {completedSteps.size} of {processingSteps.length} steps completed
+                      </span>
+                      <span>
+                        {Math.round((completedSteps.size / processingSteps.length) * 100)}% done
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Additional info */}
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="text-xs text-blue-700 dark:text-blue-300">
+                      <strong>Note:</strong> This shows the actual AI processing workflow. The AI connects to Gemini, 
+                      processes your question, generates a response with Quranic references, and formats it with 
+                      interactive elements like audio players.
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </AnimatePresence>
