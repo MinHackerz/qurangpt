@@ -173,8 +173,30 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
 
   // Get the active prayer info (current prayer if active, otherwise next prayer)
   const activePrayer = islamicData?.currentPrayer || islamicData?.nextPrayer;
-  const timeRemaining = activePrayer ? 
-    calculateTimeRemaining(islamicData?.currentPrayer ? islamicData.currentPrayer.endTime : islamicData.nextPrayer.time) : null;
+  
+  // Calculate time remaining based on whether we have a current prayer or next prayer
+  let timeRemaining = null;
+  let countdownLabel = '';
+  
+  if (islamicData?.currentPrayer) {
+    // If there's a current prayer, count down to when it ends
+    timeRemaining = calculateTimeRemaining(islamicData.currentPrayer.endTime);
+    countdownLabel = 'remaining';
+  } else if (islamicData?.nextPrayer) {
+    // If there's no current prayer, count down to the next prayer
+    timeRemaining = calculateTimeRemaining(islamicData.nextPrayer.time);
+    
+    // Check if the next prayer is tomorrow's Fajr (all prayers passed for today)
+    const nextPrayerDate = new Date(islamicData.nextPrayer.time);
+    const today = new Date();
+    const isNextPrayerTomorrow = nextPrayerDate.getDate() !== today.getDate();
+    
+    if (isNextPrayerTomorrow) {
+      countdownLabel = 'until tomorrow\'s Fajr';
+    } else {
+      countdownLabel = 'until next prayer';
+    }
+  }
 
   // Calculate current time for analog clock
   const getCurrentTimeForClock = () => {
@@ -185,7 +207,29 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
     };
   };
 
+  // Calculate prayer time for the second clock
+  const getPrayerTimeForClock = () => {
+    if (islamicData?.currentPrayer) {
+      // If there's a current prayer, show when it ends
+      const endTime = new Date(islamicData.currentPrayer.endTime);
+      return {
+        hours: endTime.getHours() % 12,
+        minutes: endTime.getMinutes()
+      };
+    } else if (islamicData?.nextPrayer) {
+      // If there's no current prayer, show when the next prayer starts
+      const nextTime = new Date(islamicData.nextPrayer.time);
+      return {
+        hours: nextTime.getHours() % 12,
+        minutes: nextTime.getMinutes()
+      };
+    }
+    // Fallback to current time
+    return getCurrentTimeForClock();
+  };
+
   const clockTime = getCurrentTimeForClock();
+  const prayerClockTime = getPrayerTimeForClock();
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -221,53 +265,124 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
             )}
           </div>
           
-          {/* Analog Clock - Larger Size */}
-          <div className="flex justify-center mb-6">
-            <div className="relative w-32 h-32">
-              {/* Clock face */}
-              <div className="w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 relative">
-                {/* Clock numbers */}
-                {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
-                  const angle = (index * 30 - 90) * (Math.PI / 180);
-                  const x = 50 + 40 * Math.cos(angle);
-                  const y = 50 + 40 * Math.sin(angle);
-                  return (
-                    <div
-                      key={num}
-                      className="absolute text-sm font-medium text-gray-600 dark:text-gray-400"
-                      style={{
-                        left: `${x}%`,
-                        top: `${y}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    >
-                      {num}
-                    </div>
-                  );
+          {/* Dual Analog Clocks */}
+          <div className="flex justify-center gap-8 mb-6">
+            {/* Current Time Clock */}
+            <div className="text-center">
+              <div className="relative w-28 h-28 mb-2">
+                {/* Clock face */}
+                <div className="w-full h-full rounded-full border-4 border-blue-200 dark:border-blue-600 bg-white dark:bg-gray-800 relative">
+                  {/* Clock numbers */}
+                  {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
+                    const angle = (index * 30 - 90) * (Math.PI / 180);
+                    const x = 50 + 35 * Math.cos(angle);
+                    const y = 50 + 35 * Math.sin(angle);
+                    return (
+                      <div
+                        key={num}
+                        className="absolute text-xs font-medium text-gray-600 dark:text-gray-400"
+                        style={{
+                          left: `${x}%`,
+                          top: `${y}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      >
+                        {num}
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Hour hand */}
+                  <div
+                    className="absolute w-1.5 h-10 bg-blue-600 dark:bg-blue-400 rounded-full origin-bottom"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -100%) rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5}deg)`
+                    }}
+                  />
+                  
+                  {/* Minute hand */}
+                  <div
+                    className="absolute w-1 h-14 bg-blue-500 dark:bg-blue-300 rounded-full origin-bottom"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -100%) rotate(${clockTime.minutes * 6}deg)`
+                    }}
+                  />
+                  
+                  {/* Center dot */}
+                  <div className="absolute w-2.5 h-2.5 bg-blue-600 dark:bg-blue-400 rounded-full" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-blue-600 dark:text-blue-400">Current Time</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {new Date().toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: true 
                 })}
-                
-                {/* Hour hand */}
-                <div
-                  className="absolute w-1.5 h-12 bg-gray-800 dark:bg-gray-200 rounded-full origin-bottom"
-                  style={{
-                    left: '50%',
-                    top: '50%',
-                    transform: `translate(-50%, -100%) rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5}deg)`
-                  }}
-                />
-                
-                {/* Minute hand */}
-                <div
-                  className="absolute w-1 h-16 bg-gray-600 dark:bg-gray-300 rounded-full origin-bottom"
-                  style={{
-                    left: '50%',
-                    top: '50%',
-                    transform: `translate(-50%, -100%) rotate(${clockTime.minutes * 6}deg)`
-                  }}
-                />
-                
-                {/* Center dot */}
-                <div className="absolute w-3 h-3 bg-gray-800 dark:bg-gray-200 rounded-full" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+              </div>
+            </div>
+
+            {/* Prayer Time Clock */}
+            <div className="text-center">
+              <div className="relative w-28 h-28 mb-2">
+                {/* Clock face */}
+                <div className="w-full h-full rounded-full border-4 border-green-200 dark:border-green-600 bg-white dark:bg-gray-800 relative">
+                  {/* Clock numbers */}
+                  {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
+                    const angle = (index * 30 - 90) * (Math.PI / 180);
+                    const x = 50 + 35 * Math.cos(angle);
+                    const y = 50 + 35 * Math.sin(angle);
+                    return (
+                      <div
+                        key={num}
+                        className="absolute text-xs font-medium text-gray-600 dark:text-gray-400"
+                        style={{
+                          left: `${x}%`,
+                          top: `${y}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      >
+                        {num}
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Hour hand */}
+                  <div
+                    className="absolute w-1.5 h-10 bg-green-600 dark:bg-green-400 rounded-full origin-bottom"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -100%) rotate(${prayerClockTime.hours * 30 + prayerClockTime.minutes * 0.5}deg)`
+                    }}
+                  />
+                  
+                  {/* Minute hand */}
+                  <div
+                    className="absolute w-1 h-14 bg-green-500 dark:bg-green-300 rounded-full origin-bottom"
+                    style={{
+                      left: '50%',
+                      top: '50%',
+                      transform: `translate(-50%, -100%) rotate(${prayerClockTime.minutes * 6}deg)`
+                    }}
+                  />
+                  
+                  {/* Center dot */}
+                  <div className="absolute w-2.5 h-2.5 bg-green-600 dark:bg-green-400 rounded-full" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                {islamicData?.currentPrayer ? 'Prayer Ends' : 'Next Prayer'}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {islamicData?.currentPrayer 
+                  ? islamicData.currentPrayer.endTimeString
+                  : islamicData?.nextPrayer.timeString
+                }
               </div>
             </div>
           </div>
@@ -282,7 +397,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
                 {timeRemaining && !timeRemaining.isNegative && (
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
-                    {timeRemaining.minutes}m {timeRemaining.seconds}s remaining
+                    {timeRemaining.minutes}m {timeRemaining.seconds}s {countdownLabel}
                   </div>
                 )}
               </>
@@ -295,7 +410,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
                 {timeRemaining && !timeRemaining.isNegative && (
                   <div className="text-sm text-gray-600 dark:text-gray-400">
                     {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
-                    {timeRemaining.minutes}m {timeRemaining.seconds}s remaining
+                    {timeRemaining.minutes}m {timeRemaining.seconds}s {countdownLabel}
                   </div>
                 )}
               </>

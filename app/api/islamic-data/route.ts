@@ -437,6 +437,10 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Debug: Log current time and prayer times in minutes
+    console.log('Current time in minutes:', currentTimeInMinutes);
+    console.log('Prayer times in minutes:', prayerTimesInMinutes);
+    
     // Validate prayer times
     console.log('Prayer times validation:');
     for (const timingName of allTimings) {
@@ -536,7 +540,8 @@ export async function GET(request: NextRequest) {
     // Find next prayer
     console.log('Current prayer is null, finding next prayer...');
     if (!currentPrayer) {
-      // Find the next prayer that hasn't started yet
+      // Find the next prayer that hasn't started yet for today
+      let foundNextPrayerToday = false;
       for (const prayerName of prayerNames) {
         console.log(`Checking ${prayerName}: ${prayerTimesInMinutes[prayerName]} > ${currentTimeInMinutes}?`);
         if (prayerTimesInMinutes[prayerName] && prayerTimesInMinutes[prayerName] > currentTimeInMinutes) {
@@ -546,15 +551,28 @@ export async function GET(request: NextRequest) {
           nextTime.setHours(Math.floor(prayerTimesInMinutes[prayerName] / 60), prayerTimesInMinutes[prayerName] % 60, 0, 0);
           nextPrayerTime = nextTime;
           console.log(`Next prayer is ${prayerName} at ${nextTime.toLocaleString('en-US', { timeZone: userTimezone })}`);
+          foundNextPrayerToday = true;
           break;
         }
       }
       
-      // If no prayer found for today, get tomorrow's Fajr
-      if (nextPrayer === 'Fajr' && prayerTimesInMinutes['Fajr'] && prayerTimesInMinutes['Fajr'] <= currentTimeInMinutes) {
-        nextPrayerTime = new Date();
-        nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
-        nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+      // If no prayer found for today, check if Isha is still coming up
+      if (!foundNextPrayerToday) {
+        // Check if we're before Isha time (Isha is usually the last prayer of the day)
+        if (prayerTimesInMinutes['Isha'] && currentTimeInMinutes < prayerTimesInMinutes['Isha']) {
+          nextPrayer = 'Isha';
+          const nextTime = new Date();
+          nextTime.setHours(Math.floor(prayerTimesInMinutes['Isha'] / 60), prayerTimesInMinutes['Isha'] % 60, 0, 0);
+          nextPrayerTime = nextTime;
+          console.log(`Next prayer is Isha at ${nextTime.toLocaleString('en-US', { timeZone: userTimezone })}`);
+        } else {
+          // All prayers for today have passed, get tomorrow's Fajr
+          nextPrayer = 'Fajr';
+          nextPrayerTime = new Date();
+          nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
+          nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+          console.log(`All prayers passed for today, next prayer is tomorrow's Fajr at ${nextPrayerTime.toLocaleString('en-US', { timeZone: userTimezone })}`);
+        }
       }
     } else {
       // If we have a current prayer, find the next one
@@ -584,6 +602,7 @@ export async function GET(request: NextRequest) {
     console.log('Current prayer:', currentPrayer);
     console.log('Next prayer:', nextPrayer);
     console.log('Next prayer time:', nextPrayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
+    console.log('Next prayer date:', nextPrayerTime.toLocaleDateString('en-US', { timeZone: userTimezone }));
     if (currentPrayerEndTime) {
       console.log('Current prayer end time:', currentPrayerEndTime.toLocaleString('en-US', { timeZone: userTimezone }));
     }
