@@ -209,21 +209,33 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
 
   // Calculate prayer time for the second clock
   const getPrayerTimeForClock = () => {
+    let targetTimeString = '';
+    
     if (islamicData?.currentPrayer) {
-      // If there's a current prayer, show when it ends
-      const endTime = new Date(islamicData.currentPrayer.endTime);
-      return {
-        hours: endTime.getHours() % 12,
-        minutes: endTime.getMinutes()
-      };
+      targetTimeString = islamicData.currentPrayer.endTimeString;
     } else if (islamicData?.nextPrayer) {
-      // If there's no current prayer, show when the next prayer starts
-      const nextTime = new Date(islamicData.nextPrayer.time);
-      return {
-        hours: nextTime.getHours() % 12,
-        minutes: nextTime.getMinutes()
-      };
+      targetTimeString = islamicData.nextPrayer.timeString;
     }
+    
+    if (targetTimeString) {
+      // Parse time string like "6:30 PM IST"
+      const timeMatch = targetTimeString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (timeMatch) {
+        let hours = parseInt(timeMatch[1]);
+        const minutes = parseInt(timeMatch[2]);
+        const isPM = timeMatch[3].toUpperCase() === 'PM';
+        
+        // Convert to 24-hour format
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+        
+        return {
+          hours: hours % 12,
+          minutes: minutes
+        };
+      }
+    }
+    
     // Fallback to current time
     return getCurrentTimeForClock();
   };
