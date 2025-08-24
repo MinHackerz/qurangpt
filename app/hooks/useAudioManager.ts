@@ -4,13 +4,17 @@ interface AudioState {
   currentAyahId: string | null;
   isPlaying: boolean;
   audioElement: HTMLAudioElement | null;
+  duration: number;
+  isMetadataLoaded: boolean;
 }
 
 export const useAudioManager = () => {
   const [audioState, setAudioState] = useState<AudioState>({
     currentAyahId: null,
     isPlaying: false,
-    audioElement: null
+    audioElement: null,
+    duration: 0,
+    isMetadataLoaded: false
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -25,7 +29,9 @@ export const useAudioManager = () => {
     setAudioState({
       currentAyahId: null,
       isPlaying: false,
-      audioElement: null
+      audioElement: null,
+      duration: 0,
+      isMetadataLoaded: false
     });
   }, []);
 
@@ -72,6 +78,15 @@ export const useAudioManager = () => {
           ...prev,
           isPlaying: false,
           currentAyahId: null
+        }));
+      });
+
+      // Listen for metadata loading
+      newAudio.addEventListener('loadedmetadata', () => {
+        setAudioState(prev => ({
+          ...prev,
+          duration: newAudio.duration || 0,
+          isMetadataLoaded: true
         }));
       });
       
@@ -154,10 +169,13 @@ export const useAudioManager = () => {
       setAudioState({
         currentAyahId: ayahId,
         isPlaying: true,
-        audioElement: newAudio
+        audioElement: newAudio,
+        duration: 0,
+        isMetadataLoaded: false
       });
 
     } catch (error) {
+      console.error('useAudioManager: Error in playAudio:', error);
       cleanup();
       throw error;
     }
@@ -206,14 +224,33 @@ export const useAudioManager = () => {
 
   // Get current audio progress
   const getAudioProgress = useCallback(() => {
-    if (!audioRef.current) return { currentTime: 0, duration: 0, progress: 0 };
+    if (!audioRef.current) return { currentTime: 0, duration: audioState.duration, progress: 0 };
     
     const audio = audioRef.current;
     const currentTime = audio.currentTime || 0;
-    const duration = audio.duration || 0;
+    const duration = audioState.duration || audio.duration || 0;
     const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
     
     return { currentTime, duration, progress };
+  }, [audioState.duration]);
+
+  // Seek to a specific time in the current audio
+  const seekToTime = useCallback((timeInSeconds: number) => {
+    if (!audioRef.current) return false;
+    
+    try {
+      const audio = audioRef.current;
+      const duration = audio.duration || 0;
+      
+      // Ensure the seek time is within bounds
+      const seekTime = Math.max(0, Math.min(timeInSeconds, duration));
+      
+      audio.currentTime = seekTime;
+      return true;
+    } catch (error) {
+      console.error('Seek error:', error);
+      return false;
+    }
   }, []);
 
   // Cleanup on unmount
@@ -233,6 +270,7 @@ export const useAudioManager = () => {
     isAyahPlaying,
     isAyahActive,
     getAudioProgress,
+    seekToTime,
     cleanup
   };
 };

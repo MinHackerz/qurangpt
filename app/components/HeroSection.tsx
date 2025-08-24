@@ -19,8 +19,7 @@ export default function HeroSection({ getGreetingMessage }: HeroSectionProps) {
           {/* Advanced Arabic-Styled Title */}
           <div className="text-center mb-12 title-container">
             <h1 className="text-6xl md:text-8xl lg:text-9xl leading-[0.9] tracking-wide cairo-title">
-              <span className="quran-word font-bold">Quran</span>
-              <span className="gpt-word font-normal ml-3 md:ml-5 lg:ml-7">GPT</span>
+              <span className="quran-word font-bold">QuranGPT</span>
             </h1>
             {/* Enhanced Arabic-inspired ornament */}
             <div className="mt-6 flex items-center justify-center">

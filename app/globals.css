@@ -661,3 +661,21 @@ body {
 .islamic-border.eid-adha-widget:hover::after {
   animation: questionButtonSweep 2s linear infinite;
 }
+
+/* Stylish Ayah Reference Styling */
+.stylish-ayah-reference {
+  @apply relative;
+}
+
+/* Smooth transitions for interactive elements */
+.stylish-ayah-reference button {
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Enhanced typography for verse text */
+.stylish-ayah-reference blockquote {
+  font-family: 'Amiri', 'Scheherazade New', serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}

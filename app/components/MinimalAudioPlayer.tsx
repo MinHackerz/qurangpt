@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PlayIcon, PauseIcon } from '@heroicons/react/24/solid';
 
 interface MinimalAudioPlayerProps {
   audioUrl: string;
   ayahId: string;
-  onPlay: (ayahId: string) => void;
+  onPlay: (ayahId: string, globalAyahNumber: string) => void;
   onPause: (ayahId: string) => void;
   onEnd: (ayahId: string) => void;
   isPlaying: boolean;
@@ -23,79 +23,46 @@ export default function MinimalAudioPlayer({
   isPlaying,
   isActive
 }: MinimalAudioPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localIsPlaying, setLocalIsPlaying] = useState(false);
 
-  // Initialize audio element
-  const initAudio = useCallback(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      
-      const audio = audioRef.current;
-      
-      // Set up event listeners
-      audio.addEventListener('ended', () => {
-        onEnd(ayahId);
-      });
+  // Extract global ayah number from audioUrl
+  const globalAyahNumber = audioUrl.split('/').pop()?.replace('.mp3', '') || '';
 
-      audio.addEventListener('error', () => {
-        setError('Failed to load audio');
-        setIsLoading(false);
-      });
-
-      audio.addEventListener('loadstart', () => {
-        setIsLoading(true);
-        setError(null);
-      });
-
-      audio.addEventListener('canplay', () => {
-        setIsLoading(false);
-      });
-    }
-  }, [ayahId, onEnd]);
+  // Sync local state with props
+  useEffect(() => {
+    setLocalIsPlaying(isPlaying);
+  }, [isPlaying]);
 
   // Handle play/pause
   const togglePlayPause = useCallback(async () => {
-    if (!audioRef.current) {
-      initAudio();
-    }
-
-    const audio = audioRef.current;
-    if (!audio) return;
-
     try {
-      if (isPlaying) {
-        audio.pause();
+      if (localIsPlaying) {
         onPause(ayahId);
+        setLocalIsPlaying(false);
       } else {
-        // Set the audio source if not already set
-        if (audio.src !== audioUrl) {
-          audio.src = audioUrl;
-        }
+        setIsLoading(true);
+        setError(null);
         
-        await audio.play();
-        onPlay(ayahId);
+        // Call the onPlay callback with both ayahId and globalAyahNumber
+        await onPlay(ayahId, globalAyahNumber);
+        setLocalIsPlaying(true);
+        setIsLoading(false);
       }
     } catch (err) {
       console.error('Audio playback error:', err);
       setError('Playback failed');
+      setIsLoading(false);
     }
-  }, [isPlaying, ayahId, onPlay, onPause, audioUrl, initAudio]);
+  }, [localIsPlaying, ayahId, globalAyahNumber, onPlay, onPause]);
 
   // Cleanup on unmount
-  const cleanup = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-      audioRef.current = null;
-    }
+  useEffect(() => {
+    return () => {
+      // Cleanup when component unmounts
+    };
   }, []);
-
-  // Cleanup when component unmounts
-  if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', cleanup);
-  }
 
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
@@ -118,7 +85,7 @@ export default function MinimalAudioPlayer({
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
             />
-          ) : isPlaying ? (
+          ) : localIsPlaying ? (
             <PauseIcon className="w-5 h-5" />
           ) : (
             <PlayIcon className="w-5 h-5 ml-0.5" />
@@ -127,7 +94,7 @@ export default function MinimalAudioPlayer({
         
         <div className="flex flex-col">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {isLoading ? 'Loading...' : isPlaying ? 'Playing' : 'Click to play'}
+            {isLoading ? 'Loading...' : localIsPlaying ? 'Playing' : 'Click to play'}
           </span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             Mishary Rashid Alafasy

@@ -138,34 +138,26 @@ export default function ChatSection({
             />
             
             {/* Action buttons container */}
-            <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center gap-2">
-              {/* Send Button - Islamic-Inspired Design */}
+            <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center gap-3">
+              {/* Send Button - Minimalistic Professional Design */}
               <motion.button
                 whileHover={{ 
-                  scale: 1.05,
-                  rotate: 5,
-                  boxShadow: "0 10px 25px rgba(139, 69, 19, 0.3)"
+                  scale: 1.02,
+                  y: -1
                 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={askQuran}
                 disabled={isProcessing || !content.trim()}
-                className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 overflow-hidden ${
+                className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
                   content.trim() && !isProcessing
-                    ? 'islamic-send-button ready text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                    ? 'bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 text-gray-900 dark:text-gray-900 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-300'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
                 title="Send message"
               >
-                {/* Decorative inner ring */}
-                <div className={`absolute inset-1 rounded-full border-2 ${
-                  content.trim() && !isProcessing
-                    ? 'border-amber-300/40'
-                    : 'border-gray-300 dark:border-gray-600'
-                }`}></div>
-                
-                {/* Animated background pattern */}
+                {/* Subtle inner glow */}
                 {content.trim() && !isProcessing && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-amber-300/20 via-transparent to-amber-300/20 animate-pulse"></div>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 )}
                 
                 {/* Icon container */}
@@ -179,38 +171,36 @@ export default function ChatSection({
                   )}
                 </div>
                 
-                {/* Hover glow effect */}
+                {/* Professional border accent */}
                 {content.trim() && !isProcessing && (
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-300/0 via-amber-200/30 to-amber-300/0 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 rounded-full border border-gray-300/40 group-hover:border-gray-400/60 transition-colors duration-200"></div>
                 )}
               </motion.button>
 
-              {/* Clear Button - Only visible when there's content or results to clear */}
+              {/* Clear Button - Minimalistic Professional Design */}
               {(content.trim() || showSummary) && (
                 <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
                   whileHover={{ 
-                    scale: 1.05,
-                    boxShadow: "0 8px 20px rgba(75, 85, 99, 0.3)"
+                    scale: 1.02,
+                    y: -1
                   }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={resetForm}
                   disabled={isProcessing}
-                  className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 overflow-hidden ${
-                    !isProcessing
-                      ? 'bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                  }`}
+                                  className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
+                  !isProcessing
+                    ? 'bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 text-gray-900 dark:text-gray-900 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-300'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                }`}
                   title="Clear and reset"
                 >
-                  {/* Decorative inner ring */}
-                  <div className={`absolute inset-1 rounded-full border-2 ${
-                    !isProcessing
-                      ? 'border-gray-300/40'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}></div>
+                  {/* Subtle inner glow */}
+                  {!isProcessing && (
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  )}
                   
                   {/* Icon container */}
                   <div className="relative z-10 flex items-center justify-center">
@@ -219,9 +209,9 @@ export default function ChatSection({
                     </svg>
                   </div>
                   
-                  {/* Hover glow effect */}
+                  {/* Professional border accent */}
                   {!isProcessing && (
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-gray-300/0 via-gray-200/30 to-gray-300/0 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 rounded-full border border-gray-400/30 group-hover:border-gray-300/50 transition-colors duration-200"></div>
                   )}
                 </motion.button>
               )}

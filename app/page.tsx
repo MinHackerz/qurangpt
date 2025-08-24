@@ -10,7 +10,8 @@ import {
   ThinkingProcess,
   ResponseSection,
   Footer,
-  IslamicWidgets
+  IslamicWidgets,
+  LanguageTabs
 } from './components';
 import { useAudioManager } from './hooks/useAudioManager';
 
@@ -21,6 +22,8 @@ export default function Home() {
   const [showSummary, setShowSummary] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [displayedContent, setDisplayedContent] = useState('');
+  const [currentLanguage, setCurrentLanguage] = useState('en');
   
   // Audio management
   const {
@@ -33,6 +36,7 @@ export default function Home() {
     isAyahPlaying,
     isAyahActive,
     getAudioProgress,
+    seekToTime,
     cleanup: cleanupAudio
   } = useAudioManager();
 
@@ -54,8 +58,11 @@ export default function Home() {
 
   const copyContent = async () => {
     try {
+      // Use displayed content if available, otherwise use summary
+      const contentToCopy = displayedContent || summary;
+      
       // Clean the content for copying - remove HTML tags and audio elements, keep only reference links
-      const cleanContent = summary
+      const cleanContent = contentToCopy
         // Remove HTML tags but keep line breaks
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/?[^>]+(>|$)/g, '')
@@ -83,6 +90,11 @@ export default function Home() {
     }
   };
 
+  const handleTranslationChange = useCallback((translatedText: string, language: string) => {
+    setDisplayedContent(translatedText);
+    setCurrentLanguage(language);
+  }, []);
+
   // Audio management functions
   const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
     const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
@@ -108,159 +120,11 @@ export default function Home() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Set up enhanced audio player functionality
-  useEffect(() => {
-    if (!showSummary || !summary) return;
 
-    const setupAudioPlayers = () => {
-      const audioPlayers = document.querySelectorAll('.enhanced-audio-player');
-      
-      audioPlayers.forEach((player) => {
-        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-        const playIcon = player.querySelector('.play-icon') as HTMLElement;
-        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
-        const statusText = player.querySelector('.status-text') as HTMLElement;
-        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
-        const progressFill = player.querySelector('.progress-fill') as HTMLElement;
-        const progressSlider = player.querySelector('.progress-slider') as HTMLInputElement;
-        const currentTime = player.querySelector('.current-time') as HTMLElement;
-        const totalDuration = player.querySelector('.total-duration') as HTMLElement;
-        const timeDisplay = player.querySelector('.time-display') as HTMLElement;
-        
-        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator || !progressFill || !progressSlider || !currentTime || !totalDuration || !timeDisplay) return;
-        
-        const ayahId = playBtn.getAttribute('data-ayah-id');
-        const globalAyahNumber = player.getAttribute('data-global-ayah');
-        
-        if (!ayahId || !globalAyahNumber) return;
-        
-        // Remove existing event listeners
-        const newPlayBtn = playBtn.cloneNode(true) as HTMLButtonElement;
-        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
-        
-        // Add click event listener for play/pause
-        newPlayBtn.addEventListener('click', async () => {
-          try {
-            if (isAyahPlaying(ayahId)) {
-              // Pause audio
-              pauseAudio();
-              playIcon.classList.remove('hidden');
-              pauseIcon.classList.add('hidden');
-              statusText.textContent = 'Click to play';
-              statusIndicator.classList.add('hidden');
-              newPlayBtn.classList.remove('bg-gradient-to-br', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-lg', 'hover:shadow-xl');
-              newPlayBtn.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-blue-600', 'text-white', 'shadow-lg');
-            } else {
-              // Play audio
-              await handleAudioPlay(ayahId, globalAyahNumber);
-              playIcon.classList.add('hidden');
-              pauseIcon.classList.remove('hidden');
-              statusText.textContent = 'Playing';
-              statusIndicator.classList.remove('hidden');
-              newPlayBtn.classList.add('hover:shadow-xl');
-            }
-          } catch (error) {
-            console.error('Audio player error:', error);
-            statusText.textContent = 'Error';
-          }
-        });
-        
-        // Add progress bar functionality
-        progressSlider.addEventListener('input', (e) => {
-          const target = e.target as HTMLInputElement;
-          const value = parseInt(target.value);
-          progressFill.style.width = `${value}%`;
-          
-          // Update current time display (this is a simplified version)
-          const duration = 60; // We'll get this from the audio element
-          const newTime = Math.round((value / 100) * duration);
-          currentTime.textContent = formatTime(newTime);
-        });
-      });
-    };
 
-    // Use setTimeout to ensure DOM is updated
-    const timer = setTimeout(setupAudioPlayers, 100);
-    
-    return () => clearTimeout(timer);
-  }, [showSummary, summary, isAyahPlaying, pauseAudio, handleAudioPlay]);
 
-  // Update UI when audio state changes
-  useEffect(() => {
-    if (!showSummary || !summary) return;
 
-    const updateAudioPlayerUI = () => {
-      const audioPlayers = document.querySelectorAll('.enhanced-audio-player');
-      
-      audioPlayers.forEach((player) => {
-        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-        const playIcon = player.querySelector('.play-icon') as HTMLElement;
-        const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
-        const statusText = player.querySelector('.status-text') as HTMLElement;
-        const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
-        
-        if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) return;
-        
-        const ayahId = playBtn.getAttribute('data-ayah-id');
-        if (!ayahId) return;
-        
-        const isPlaying = isAyahPlaying(ayahId);
-        const isActive = isAyahActive(ayahId);
-        
-        if (isPlaying) {
-          playIcon.classList.add('hidden');
-          pauseIcon.classList.remove('hidden');
-          statusText.textContent = 'Playing';
-          statusIndicator.classList.remove('hidden');
-          playBtn.classList.add('hover:shadow-xl');
-        } else {
-          playIcon.classList.remove('hidden');
-          pauseIcon.classList.add('hidden');
-          statusText.textContent = 'Click to play';
-          statusIndicator.classList.add('hidden');
-          playBtn.classList.remove('hover:shadow-xl');
-        }
-      });
-    };
 
-    // Update UI immediately and then on audio state changes
-    updateAudioPlayerUI();
-    
-    const timer = setInterval(updateAudioPlayerUI, 100);
-    
-    return () => clearInterval(timer);
-  }, [showSummary, summary, isAyahPlaying, isAyahActive]);
-
-  // Update progress bars in real-time
-  useEffect(() => {
-    if (!showSummary || !summary || !isPlaying) return;
-
-    const updateProgress = () => {
-      const progress = getAudioProgress();
-      if (progress.duration === 0) return;
-
-      const audioPlayers = document.querySelectorAll('.enhanced-audio-player');
-      audioPlayers.forEach((player) => {
-        const ayahId = player.getAttribute('data-ayah-id');
-        if (ayahId === currentAyahId) {
-          const progressFill = player.querySelector('.progress-fill') as HTMLElement;
-          const currentTimeEl = player.querySelector('.current-time') as HTMLElement;
-          const totalDurationEl = player.querySelector('.total-duration') as HTMLElement;
-          const timeDisplayEl = player.querySelector('.time-display') as HTMLElement;
-          
-          if (progressFill && currentTimeEl && totalDurationEl && timeDisplayEl) {
-            progressFill.style.width = `${progress.progress}%`;
-            currentTimeEl.textContent = formatTime(progress.currentTime);
-            totalDurationEl.textContent = formatTime(progress.duration);
-            timeDisplayEl.textContent = formatTime(progress.currentTime);
-          }
-        }
-      });
-    };
-
-    const interval = setInterval(updateProgress, 100);
-    return () => clearInterval(interval);
-  }, [showSummary, summary, isPlaying, currentAyahId, getAudioProgress]);
 
   const formatResponse = (response: string) => {
     
@@ -319,68 +183,69 @@ export default function Home() {
         // Generate unique ID for this ayah
         const ayahId = `ayah-${surahNumber}-${ayahNum}-${Date.now()}`;
         
-        return `<div class="ayah-reference mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 transition-all duration-200" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
-          <!-- Verse content with better typography and spacing -->
-          <div class="mb-6">
-            <blockquote class="text-xl md:text-2xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed italic tracking-wide">"${verseText}"</blockquote>
-          </div>
-          
-          <!-- Reference info with better spacing -->
-          <div class="flex items-center justify-between mb-4 text-sm">
-            <div class="flex items-center space-x-3">
-              <span class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">${surahName}</span>
-              <span class="text-gray-500 dark:text-gray-400">Verse ${ayahNumber}</span>
-            </div>
-            <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-200">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-              </svg>
-            </a>
-          </div>
-          
-          <!-- Enhanced Audio Player with Duration Bar -->
-          <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
-            <div class="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
-              <!-- Top row - Play button and info -->
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center space-x-4">
-                  <button class="play-pause-btn relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95" data-ayah-id="${ayahId}">
-                    <svg class="play-icon w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
+        return `<div class="stylish-ayah-reference mb-4 pt-1.5 pb-1.5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 overflow-hidden">
+            <!-- Compact Header -->
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                     </svg>
-                    <svg class="pause-icon w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                    </svg>
-                  </button>
-                  
-                  <div class="flex flex-col">
-                    <span class="status-text text-sm font-semibold text-gray-800 dark:text-gray-200">Click to play</span>
-                    <span class="text-xs text-gray-600 dark:text-gray-400">Mishary Rashid Alafasy • 128kbps</span>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-white font-[var(--font-amiri)]">${surahName}</h3>
+                    <p class="text-xs text-emerald-100">Verse ${ayahNumber}</p>
                   </div>
                 </div>
-
-                <!-- Right side - Status indicator and time -->
-                <div class="flex items-center space-x-3">
-                  <div class="status-indicator w-3 h-3 bg-blue-500 rounded-full hidden animate-pulse"></div>
-                  <span class="time-display text-xs text-gray-500 dark:text-gray-400 font-mono">--:--</span>
+                <span class="px-2 py-0.5 bg-white/20 text-white text-xs font-mono rounded">${surahNumber}:${ayahNumber}</span>
+              </div>
+            </div>
+            
+            <!-- Compact Verse Content -->
+            <div class="p-4">
+              <div class="text-center mb-3">
+                <div class="relative inline-block">
+                  <div class="text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400 opacity-30 absolute -top-1 -left-6">"</div>
+                  <div class="text-2xl md:text-3xl text-emerald-600 dark:text-emerald-400 opacity-30 absolute -top-1 -right-6">"</div>
+                  <blockquote class="text-lg md:text-xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed font-bold tracking-wide px-6">
+                    ${verseText}
+                  </blockquote>
                 </div>
               </div>
-
-              <!-- Progress bar row -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span class="current-time">0:00</span>
-                  <span class="total-duration">--:--</span>
-                </div>
-                
-                <!-- Progress bar container -->
-                <div class="relative">
-                  <div class="progress-bg w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                    <div class="progress-fill h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+              
+              <!-- Compact Audio Player -->
+              <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-3">
+                      <button class="play-pause-btn w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:scale-105 active:scale-95 transition-transform duration-200" data-ayah-id="${ayahId}">
+                        <svg class="play-icon w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg class="pause-icon w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                        </svg>
+                      </button>
+                      <span class="status-text text-sm font-medium text-gray-800 dark:text-gray-200">Click to play</span>
+                    </div>
+                    <span class="time-display text-xs text-gray-500 dark:text-gray-400 font-mono">--:--</span>
                   </div>
                   
-                  <!-- Progress bar thumb (invisible but functional) -->
-                  <input type="range" class="progress-slider absolute inset-0 w-full h-2 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span class="current-time">0:00</span>
+                      <span class="total-duration">--:--</span>
+                      <span class="status-indicator w-2 h-2 bg-emerald-500 rounded-full hidden animate-pulse"></span>
+                    </div>
+                    <div class="relative">
+                      <div class="progress-bg w-full h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                        <div class="progress-fill h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                      </div>
+                      <input type="range" class="progress-slider absolute inset-0 w-full h-1 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -432,7 +297,7 @@ export default function Home() {
     return processedText;
   };
 
-  const getPrompt = () => {
+  const getPrompt = useCallback(() => {
     return `You are Quran GPT, an AI-powered Islamic Library with experience as a Quran Scholar/Researcher. Your task is to answer questions by providing authentic references from the Holy Quran.
 
 IMPORTANT: You must format your response exactly as follows:
@@ -454,7 +319,7 @@ Example format:
 "Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
 
 Question: ${content}`;
-  };
+  }, [content]);
 
   const askQuran = async () => {
     const trimmedContent = content.trim();
@@ -477,6 +342,8 @@ Question: ${content}`;
       const response = await generate_response_with_gemini(prompt);
       const formattedResponse = formatResponse(response);
       setSummary(formattedResponse);
+      setDisplayedContent(formattedResponse); // Set initial displayed content
+      setCurrentLanguage('en'); // Default to English
       setShowSummary(true);
     } catch (error) {
       if (error instanceof Error) {
@@ -514,7 +381,7 @@ Question: ${content}`;
     }
   };
 
-  const getGreetingMessage = () => {
+  const getGreetingMessage = useCallback(() => {
     const today = new Date();
     const ramadanEnd = new Date(today.getFullYear(), 2, 31); // March 31st
     const eidDate = new Date(today.getFullYear(), 2, 31); // March 31st
@@ -532,16 +399,16 @@ Question: ${content}`;
     } else if (today.toDateString() === eidDate.toDateString()) {
       return (
         <div className="flex items-center justify-center gap-3">
-          <span className="text-4xl md:text-5xl">🎉</span>
+          <span className="text-4xl md:text-4xl">🎉</span>
           <span className="text-xl md:text-2xl font-semibold text-black dark:text-white">
             Eid Mubarak
           </span>
-          <span className="text-4xl md:text-5xl">🎊</span>
+          <span className="text-4xl md:text-4xl">🎊</span>
         </div>
       );
     }
     return '';
-  };
+  }, []);
 
   return (
     <>
@@ -623,6 +490,18 @@ Question: ${content}`;
             {/* Thinking Process */}
             <ThinkingProcess isProcessing={isProcessing} />
 
+            {/* Language Translation Tabs - Above Response */}
+            {showSummary && (
+              <div className="mb-6 max-w-6xl mx-auto px-4">
+                <LanguageTabs
+                  originalText={summary}
+                  onTranslationChange={handleTranslationChange}
+                  context="islamic"
+                  preserveFormatting={true}
+                />
+              </div>
+            )}
+
             {/* Response Section */}
             <ResponseSection 
               showSummary={showSummary}
@@ -634,6 +513,9 @@ Question: ${content}`;
               onAudioEnd={handleAudioEnd}
               isAudioPlaying={isAyahPlaying}
               isAudioActive={isAyahActive}
+              getAudioProgress={getAudioProgress}
+              seekToTime={seekToTime}
+              displayedContent={displayedContent}
             />
           </div>
         </main>

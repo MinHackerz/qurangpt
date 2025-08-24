@@ -8,7 +8,7 @@ interface AyahAudioPlayerProps {
   globalAyahNumber: string;
   surahName: string;
   ayahNumber: string;
-  onPlay: (ayahId: string) => void;
+  onPlay: (ayahId: string, globalAyahNumber: string) => void;
   onPause: (ayahId: string) => void;
   onEnd: (ayahId: string) => void;
   isPlaying: boolean;
