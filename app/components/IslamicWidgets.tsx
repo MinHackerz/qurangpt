@@ -198,50 +198,16 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
     }
   }
 
-  // Calculate current time for analog clock
+  // Calculate current time for analog clock using state
   const getCurrentTimeForClock = () => {
-    const now = new Date();
     return {
-      hours: now.getHours() % 12,
-      minutes: now.getMinutes()
+      hours: currentTime.getHours() % 12,
+      minutes: currentTime.getMinutes(),
+      seconds: currentTime.getSeconds()
     };
   };
 
-  // Calculate prayer time for the second clock
-  const getPrayerTimeForClock = () => {
-    let targetTimeString = '';
-    
-    if (islamicData?.currentPrayer) {
-      targetTimeString = islamicData.currentPrayer.endTimeString;
-    } else if (islamicData?.nextPrayer) {
-      targetTimeString = islamicData.nextPrayer.timeString;
-    }
-    
-    if (targetTimeString) {
-      // Parse time string like "6:30 PM IST"
-      const timeMatch = targetTimeString.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-      if (timeMatch) {
-        let hours = parseInt(timeMatch[1]);
-        const minutes = parseInt(timeMatch[2]);
-        const isPM = timeMatch[3].toUpperCase() === 'PM';
-        
-        // Convert to 24-hour format
-        if (isPM && hours !== 12) hours += 12;
-        if (!isPM && hours === 12) hours = 0;
-        
-        return {
-          hours: hours % 12,
-          minutes: minutes
-        };
-      }
-    }
-    
-    // Fallback to current time
-    return getCurrentTimeForClock();
-  };
-
   const clockTime = getCurrentTimeForClock();
-  const prayerClockTime = getPrayerTimeForClock();
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -260,179 +226,83 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
             Kolkata, IN
           </div>
           
-          {/* Prayer Info - Centered */}
-          <div className="text-center mb-6">
-            {islamicData?.currentPrayer ? (
-              <>
-                <h3 className="font-semibold text-green-600 dark:text-green-400 text-lg mb-1 flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Current Prayer
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {islamicData.currentPrayer.name === 'Dhuhr' && new Date().getDay() === 5 ? 'Jummah' : islamicData.currentPrayer.name}
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg mb-1">Next Prayer</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {islamicData?.nextPrayer.name === 'Dhuhr' && new Date().getDay() === 5 ? 'Jummah' : islamicData?.nextPrayer.name}
-                </p>
-              </>
-            )}
-          </div>
-          
-          {/* Dual Analog Clocks */}
-          <div className="flex justify-center gap-8 mb-6">
-            {/* Current Time Clock */}
-            <div className="text-center">
-              <div className="relative w-28 h-28 mb-2">
-                {/* Clock face */}
-                <div className="w-full h-full rounded-full border-4 border-blue-200 dark:border-blue-600 bg-white dark:bg-gray-800 relative">
-                  {/* Clock numbers */}
-                  {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
-                    const angle = (index * 30 - 90) * (Math.PI / 180);
-                    const x = 50 + 35 * Math.cos(angle);
-                    const y = 50 + 35 * Math.sin(angle);
-                    return (
-                      <div
-                        key={num}
-                        className="absolute text-xs font-medium text-gray-600 dark:text-gray-400"
-                        style={{
-                          left: `${x}%`,
-                          top: `${y}%`,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                      >
-                        {num}
-                      </div>
-                    );
-                  })}
-                  
-                  {/* Hour hand */}
-                  <div
-                    className="absolute w-1.5 h-10 bg-blue-600 dark:bg-blue-400 rounded-full origin-bottom"
-                    style={{
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -100%) rotate(${clockTime.hours * 30 + clockTime.minutes * 0.5}deg)`
-                    }}
-                  />
-                  
-                  {/* Minute hand */}
-                  <div
-                    className="absolute w-1 h-14 bg-blue-500 dark:bg-blue-300 rounded-full origin-bottom"
-                    style={{
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -100%) rotate(${clockTime.minutes * 6}deg)`
-                    }}
-                  />
-                  
-                  {/* Center dot */}
-                  <div className="absolute w-2.5 h-2.5 bg-blue-600 dark:bg-blue-400 rounded-full" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
-                </div>
-              </div>
-              <div className="text-xs font-medium text-blue-600 dark:text-blue-400">Current Time</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {new Date().toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  hour12: true 
-                })}
-              </div>
-            </div>
 
-            {/* Prayer Time Clock */}
-            <div className="text-center">
-              <div className="relative w-28 h-28 mb-2">
-                {/* Clock face */}
-                <div className="w-full h-full rounded-full border-4 border-green-200 dark:border-green-600 bg-white dark:bg-gray-800 relative">
-                  {/* Clock numbers */}
-                  {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
-                    const angle = (index * 30 - 90) * (Math.PI / 180);
-                    const x = 50 + 35 * Math.cos(angle);
-                    const y = 50 + 35 * Math.sin(angle);
-                    return (
-                      <div
+          
+          {/* Analog Clock - Centered */}
+          <div className="flex justify-center mb-8">
+            <div className="relative w-56 h-56">
+              {/* Clock face */}
+              <div className="w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 relative">
+                {/* Clock numbers */}
+                {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
+                  const angle = (index * 30 - 90) * (Math.PI / 180);
+                  const x = 50 + 38 * Math.cos(angle);
+                  const y = 50 + 38 * Math.sin(angle);
+                  return (
+                                          <div
                         key={num}
-                        className="absolute text-xs font-medium text-gray-600 dark:text-gray-400"
+                        className="absolute text-lg font-semibold text-gray-600 dark:text-gray-400"
                         style={{
                           left: `${x}%`,
                           top: `${y}%`,
                           transform: 'translate(-50%, -50%)'
                         }}
                       >
-                        {num}
-                      </div>
-                    );
-                  })}
-                  
-                  {/* Hour hand */}
-                  <div
-                    className="absolute w-1.5 h-10 bg-green-600 dark:bg-green-400 rounded-full origin-bottom"
-                    style={{
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -100%) rotate(${prayerClockTime.hours * 30 + prayerClockTime.minutes * 0.5}deg)`
-                    }}
-                  />
-                  
-                  {/* Minute hand */}
-                  <div
-                    className="absolute w-1 h-14 bg-green-500 dark:bg-green-300 rounded-full origin-bottom"
-                    style={{
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -100%) rotate(${prayerClockTime.minutes * 6}deg)`
-                    }}
-                  />
-                  
-                  {/* Center dot */}
-                  <div className="absolute w-2.5 h-2.5 bg-green-600 dark:bg-green-400 rounded-full" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
-                </div>
-              </div>
-              <div className="text-xs font-medium text-green-600 dark:text-green-400">
-                {islamicData?.currentPrayer ? 'Prayer Ends' : 'Next Prayer'}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {islamicData?.currentPrayer 
-                  ? islamicData.currentPrayer.endTimeString
-                  : islamicData?.nextPrayer.timeString
-                }
+                      {num}
+                    </div>
+                  );
+                })}
+                
+                {/* Hour hand */}
+                <div
+                  className="absolute w-3 h-20 bg-gray-800 dark:bg-gray-200 rounded-full origin-bottom"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(-50%, -100%) rotate(${(clockTime.hours % 12) * 30 + (clockTime.minutes * 0.5)}deg)`
+                  }}
+                />
+                
+                {/* Minute hand */}
+                <div
+                  className="absolute w-2 h-28 bg-gray-600 dark:bg-gray-300 rounded-full origin-bottom"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(-50%, -100%) rotate(${clockTime.minutes * 6}deg)`
+                  }}
+                />
+                
+                {/* Second hand */}
+                <div
+                  className="absolute w-0.5 h-32 bg-red-500 dark:bg-red-400 rounded-full origin-bottom"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(-50%, -100%) rotate(${clockTime.seconds * 6}deg)`
+                  }}
+                />
+                
+                {/* Center dot */}
+                <div className="absolute w-5 h-5 bg-gray-800 dark:bg-gray-200 rounded-full" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
               </div>
             </div>
           </div>
           
+          {/* Time and Message - Bottom */}
           <div className="text-center">
-            {islamicData?.currentPrayer ? (
-              <>
-                <div className="text-lg font-semibold text-green-600 dark:text-green-400 mb-2">
-                  Ends at {islamicData.currentPrayer.endTimeString}
-                </div>
-                
-                {timeRemaining && !timeRemaining.isNegative && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
-                    {timeRemaining.minutes}m {timeRemaining.seconds}s {countdownLabel}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                  {islamicData?.nextPrayer.timeString}
-                </div>
-                
-                {timeRemaining && !timeRemaining.isNegative && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
-                    {timeRemaining.minutes}m {timeRemaining.seconds}s {countdownLabel}
-                  </div>
-                )}
-              </>
-            )}
+            <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+              {currentTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+              })}
+            </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+              Time is life's most precious gift
+            </div>
           </div>
+
           
 
         </motion.div>
