@@ -195,76 +195,15 @@ export async function GET(request: NextRequest) {
     const clientIP = getClientIP(request);
     console.log('Client IP detected:', clientIP);
     
-    let locationData: {
-      lat: number;
-      lng: number;
-      city: string;
-      country: string;
-      timezone: string;
-      region: string;
-    } | null = null;
-    
-    if (clientIP && clientIP !== 'unknown') {
-      console.log('Using detected client IP for geolocation:', clientIP);
-      locationData = await getLocationFromIP(clientIP);
-    } else {
-      console.log('IP detection failed, trying direct ipapi.co call...');
-      try {
-        // Try to get location directly from ipapi.co (it will auto-detect the caller's IP)
-        const response = await fetch('https://ipapi.co/json/', {
-          headers: {
-            'User-Agent': 'QuranGPT/1.0'
-          },
-          signal: AbortSignal.timeout(5000)
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          locationData = {
-            lat: data.latitude,
-            lng: data.longitude,
-            city: data.city,
-            country: data.country_name,
-            timezone: data.timezone,
-            region: data.region
-          };
-          console.log('Successfully got location from direct ipapi.co call:', locationData);
-        } else {
-          console.log('Direct ipapi.co call failed, using Kolkata fallback...');
-          locationData = {
-            lat: 22.5726,
-            lng: 88.3639,
-            city: 'Kolkata',
-            country: 'India',
-            timezone: 'Asia/Kolkata',
-            region: 'West Bengal'
-          };
-        }
-      } catch (error) {
-        console.log('Direct ipapi.co call error, using Kolkata fallback...');
-        locationData = {
-          lat: 22.5726,
-          lng: 88.3639,
-          city: 'Kolkata',
-          country: 'India',
-          timezone: 'Asia/Kolkata',
-          region: 'West Bengal'
-        };
-      }
-    }
-    
-    // Ensure we have valid location data
-    if (!locationData) {
-      console.log('No location data obtained, using Kolkata fallback...');
-      locationData = {
-        lat: 22.5726,
-        lng: 88.3639,
-        city: 'Kolkata',
-        country: 'India',
-        timezone: 'Asia/Kolkata',
-        region: 'West Bengal'
-      };
-    }
+    // Force Kolkata location for consistent prayer times
+    const locationData = {
+      lat: 22.5726,
+      lng: 88.3639,
+      city: 'Kolkata',
+      country: 'India',
+      timezone: 'Asia/Kolkata',
+      region: 'West Bengal'
+    };
     
     const lat = locationData.lat.toString();
     const lng = locationData.lng.toString();
@@ -360,24 +299,26 @@ export async function GET(request: NextRequest) {
       return prayerName;
     };
     
-    // Get current time in IST timezone
+    // Get current time in user's timezone
     const currentTime = new Date();
     
-    // Convert current time to IST for accurate comparison
+    // Convert current time to user's timezone for accurate comparison
     const userCurrentTime = new Date(currentTime.toLocaleString('en-US', { timeZone: userTimezone }));
     
-    // Parse all prayer times for today in IST
+    // Parse all prayer times for today in user's timezone
     const prayerTimes: { [key: string]: Date } = {};
     for (const prayerName of prayerNames) {
       if (prayers[prayerName]) {
         const timeStr = prayers[prayerName].split(' ')[0]; // Remove timezone if present
         const [hours, minutes] = timeStr.split(':');
         
-        // Create today's date and set the prayer time
+        // Create today's date in user's timezone and set the prayer time
         const prayerTime = new Date();
-        prayerTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        // Set to user's timezone first
+        const userDate = new Date(prayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
+        userDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
         
-        prayerTimes[prayerName] = prayerTime;
+        prayerTimes[prayerName] = userDate;
       }
     }
 

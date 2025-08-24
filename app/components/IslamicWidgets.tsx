@@ -255,6 +255,11 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           transition={{ duration: 0.5 }}
           className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 islamic-border prayer-widget"
         >
+          {/* Location indicator - Top Right */}
+          <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
+            Kolkata, IN
+          </div>
+          
           {/* Prayer Info - Centered */}
           <div className="text-center mb-6">
             {islamicData?.currentPrayer ? (
@@ -439,6 +444,11 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 shadow-sm overflow-hidden islamic-border eid-fitr-widget"
         >
+          {/* Location indicator - Top Right */}
+          <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
+            India
+          </div>
+          
           {/* Calendar Header */}
           <div className="text-center mb-4">
             <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">Eid-ul-Fitr</h3>
@@ -496,6 +506,11 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 overflow-hidden islamic-border eid-adha-widget"
         >
+          {/* Location indicator - Top Right */}
+          <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
+            India
+          </div>
+          
           {/* Calendar Header */}
           <div className="text-center mb-4">
             <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-lg">Eid-al-Adha</h3>
