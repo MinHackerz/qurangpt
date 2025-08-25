@@ -146,8 +146,6 @@ body {
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 8px rgba(17, 24, 39, 0.3);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
 
   .gpt-word {
@@ -191,6 +189,11 @@ body {
     font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif;
     font-weight: 700;
   }
+  
+  /* Override font-weight for simple, balanced title */
+  .quran-word {
+    font-weight: 200 !important;
+  }
 
   /* Enhanced Cairo font loading and fallbacks */
   .cairo-title {
@@ -208,7 +211,6 @@ body {
     -webkit-text-fill-color: transparent;
     -webkit-background-clip: text;
     background-clip: text;
-    text-shadow: 0 4px 8px rgba(209, 213, 219, 0.3);
   }
 
   .dark .gpt-word {
@@ -873,4 +875,65 @@ body {
     -2px 2px 0px rgba(255, 255, 255, 0.1),
     -4px 4px 8px rgba(0, 0, 0, 0.5),
     1px -1px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Override tafsir content styling to remove bold and green colors */
+.tafsir-content h5 {
+  color: rgb(31 41 55) !important; /* gray-800 */
+  font-weight: normal !important;
+}
+
+.dark .tafsir-content h5 {
+  color: rgb(229 231 235) !important; /* gray-200 */
+}
+
+.tafsir-content strong {
+  color: rgb(55 65 81) !important; /* gray-700 */
+  font-weight: normal !important;
+}
+
+.dark .tafsir-content strong {
+  color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+.tafsir-content em {
+  color: rgb(55 65 81) !important; /* gray-700 */
+  font-style: italic !important;
+}
+
+.dark .tafsir-content em {
+  color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+/* Override prose styling specifically for tafsir content */
+.tafsir-content.prose h5,
+.tafsir-content .prose h5 {
+  color: rgb(31 41 55) !important; /* gray-800 */
+  font-weight: normal !important;
+}
+
+.dark .tafsir-content.prose h5,
+.dark .tafsir-content .prose h5 {
+  color: rgb(229 231 235) !important; /* gray-200 */
+}
+
+.tafsir-content.prose strong,
+.tafsir-content .prose strong {
+  color: rgb(55 65 81) !important; /* gray-700 */
+  font-weight: normal !important;
+}
+
+.dark .tafsir-content.prose strong,
+.dark .tafsir-content .prose strong {
+  color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+/* Force override for any remaining bold text in tafsir */
+.tafsir-content * {
+  font-weight: normal !important;
+}
+
+.tafsir-content h5,
+.tafsir-content strong {
+  font-weight: normal !important;
 }

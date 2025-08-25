@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import Head from 'next/head';
 import Script from 'next/script';
 import {
@@ -481,9 +482,9 @@ export default function Home() {
             const tafsirId = `tafsir-${ayahId}-${index}`;
             const formattedContent = tafsir.content
               .replace(/\n/g, '<br>')
-              .replace(/##\s*(.*?)$/gm, '<h5 class="font-semibold text-gray-800 dark:text-gray-200 mt-3 mb-2">$1</h5>')
-              .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-              .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+              .replace(/##\s*(.*?)$/gm, '<h5 class="text-gray-800 dark:text-gray-200 mt-3 mb-2">$1</h5>')
+              .replace(/\*\*(.*?)\*\*/g, '<span class="text-gray-700 dark:text-gray-300">$1</span>')
+              .replace(/\*(.*?)\*/g, '<span class="text-gray-700 dark:text-gray-300 italic">$1</span>');
             
             tafsirButtonsHTML += `
               <button 
@@ -724,10 +725,17 @@ CRITICAL FORMAT REQUIREMENTS:
 - After each verse reference, provide your AI-generated explanation and interpretation
 - The authentic tafsir from Islamic scholars will be automatically displayed
 
+CRITICAL AI EXPLANATION REQUIREMENTS:
+- Your AI explanation MUST directly connect the specific ayah to the user's question
+- Explain how the verse answers or relates to what the user asked
+- Provide context and interpretation that makes the connection clear
+- Show the relevance of the verse to the specific question being asked
+- Make sure the explanation bridges the gap between the verse and the user's inquiry
+
 Example format:
 "Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
 
-[AI Explanation: This verse teaches us about patience and divine support. When we remain steadfast in difficult times, Allah promises to be with us, providing strength and guidance. This is a powerful reminder that patience is not just about waiting, but about maintaining faith and trust in Allah's plan.]
+[AI Explanation: This verse directly addresses your question about patience by teaching us that Allah's divine support is guaranteed for those who remain steadfast. When you asked about how to handle difficult situations, this verse provides the answer: maintain patience and trust that Allah will be with you. This is not just about waiting passively, but about actively maintaining faith and trust in Allah's plan while facing your challenges.]
 
 Question: ${content}`;
   }, [content]);
@@ -901,6 +909,8 @@ Question: ${content}`;
               showSummary={showSummary}
             />
 
+
+
             {/* Islamic Widgets */}
             <div className="mb-12">
               <IslamicWidgets showWidgets={!isProcessing && !showSummary} />
@@ -921,6 +931,34 @@ Question: ${content}`;
                   translationProgress={translationProgress}
                 />
               </div>
+            )}
+
+            {/* Professional Warning Banner - Above Response */}
+            {showSummary && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="mb-6 max-w-6xl mx-auto px-4"
+              >
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                        Important Notice
+                      </h4>
+                      <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
+                        Don't follow each response blindly. These are AI-generated responses that may contain inaccuracies. Always verify important religious information with qualified scholars and authentic sources.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {/* Response Section */}

@@ -219,7 +219,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 islamic-border prayer-widget"
+          className="relative bg-white dark:bg-transparent rounded-2xl p-6 border border-gray-200 dark:border-gray-600 islamic-border prayer-widget"
         >
           {/* Location indicator - Top Right */}
           <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -232,7 +232,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           <div className="flex justify-center mb-8">
             <div className="relative w-56 h-56">
               {/* Clock face */}
-              <div className="w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 relative">
+              <div className="w-full h-full rounded-full border-4 border-gray-200 dark:border-gray-600 bg-white dark:bg-transparent relative">
                 {/* Clock numbers */}
                 {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((num, index) => {
                   const angle = (index * 30 - 90) * (Math.PI / 180);
@@ -312,7 +312,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 overflow-hidden islamic-border eid-fitr-widget"
+          className="relative bg-white dark:bg-transparent rounded-2xl p-6 border border-gray-200 dark:border-gray-600 overflow-hidden islamic-border eid-fitr-widget"
         >
           {/* Location indicator - Top Right */}
           <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -328,7 +328,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           {/* Calendar Design */}
           <div className="relative">
             {/* Calendar Page Effect */}
-            <div className="relative bg-white dark:bg-gray-700 rounded-lg border-2 border-gray-300 dark:border-gray-500">
+            <div className="relative bg-white dark:bg-transparent rounded-lg border-2 border-gray-300 dark:border-gray-500">
               {/* Calendar Ring Binding */}
               <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-16 bg-gray-400 dark:bg-gray-500 rounded-r-full"></div>
               
@@ -374,7 +374,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 overflow-hidden islamic-border eid-adha-widget"
+          className="relative bg-white dark:bg-transparent rounded-2xl p-6 border border-gray-200 dark:border-gray-600 overflow-hidden islamic-border eid-adha-widget"
         >
           {/* Location indicator - Top Right */}
           <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -390,7 +390,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           {/* Calendar Design */}
           <div className="relative">
             {/* Calendar Page Effect */}
-            <div className="relative bg-white dark:bg-gray-700 rounded-lg border-2 border-gray-300 dark:border-gray-500">
+            <div className="relative bg-white dark:bg-transparent rounded-lg border-2 border-gray-300 dark:border-gray-500">
               {/* Calendar Ring Binding */}
               <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-16 bg-gray-400 dark:bg-gray-500 rounded-r-full"></div>
               

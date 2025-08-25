@@ -94,11 +94,10 @@ export default function ChatSection({
         // Allow new line with Shift+Enter
         return;
       } else {
-        // Submit with Enter
+        // Prevent default Enter behavior - don't submit
         e.preventDefault();
-        if (content.trim() && !isProcessing) {
-          askQuran();
-        }
+        // Only allow Shift+Enter for new lines
+        return;
       }
     }
   };
@@ -124,7 +123,7 @@ export default function ChatSection({
             
             <textarea
               ref={textareaRef}
-              placeholder="Message Quran GPT... (Press Enter to send, Shift+Enter for new line)"
+              placeholder="Message Quran GPT... (Shift+Enter for new line)"
               value={content}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -238,18 +237,7 @@ export default function ChatSection({
             )}
           </AnimatePresence>
 
-          {/* Warning Text */}
-          <div className="mt-3">
-            <p className="text-xs text-gray-400 dark:text-gray-500 text-center max-w-3xl mx-auto px-2">
-              <span className="inline-flex items-center gap-1">
-                <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <strong className="text-amber-500 dark:text-amber-400">Important:</strong>
-              </span>
-              {' '}Don't follow each response blindly. These are AI-generated responses that may contain inaccuracies. Always verify important religious information with qualified scholars and authentic sources.
-            </p>
-          </div>
+
 
         </div>
       </div>
