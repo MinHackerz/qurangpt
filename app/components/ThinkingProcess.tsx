@@ -98,7 +98,7 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
         className="mb-8 max-w-6xl mx-auto px-4"
       >
         {/* Minimalistic Thinking Container - Grok Style */}
-        <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-600/50 shadow-sm">
+        <div className="relative bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 ">
           <div className="flex items-center justify-between px-6 py-4">
             
             {/* Left: Current step indicator */}

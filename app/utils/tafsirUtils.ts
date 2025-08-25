@@ -32,9 +32,9 @@ export const fetchTafsir = async (surahNumber: number, ayahNumber: number): Prom
 export const formatTafsirContent = (content: string): string => {
   return content
     .replace(/\n/g, '<br>')
-    .replace(/##\s*(.*?)$/gm, '<h4 class="font-semibold text-emerald-700 dark:text-emerald-300 mt-3 mb-2">$1</h4>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+    .replace(/##\s*(.*?)$/gm, '<h4 class="font-semibold text-gray-800 dark:text-gray-200 mt-3 mb-2">$1</h4>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>');
 };
 
 // Surah name to number mapping

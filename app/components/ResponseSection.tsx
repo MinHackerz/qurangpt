@@ -203,7 +203,7 @@ export default function ResponseSection({
             pauseIcon.classList.add('hidden');
             statusText.textContent = 'Click to play';
             statusIndicator.classList.add('hidden');
-            newPlayBtn.classList.remove('hover:shadow-xl');
+
           } else {
             // Play audio
             await onAudioPlay(ayahId, globalAyahNumber);
@@ -211,7 +211,7 @@ export default function ResponseSection({
             pauseIcon.classList.remove('hidden');
             statusText.textContent = 'Playing';
             statusIndicator.classList.remove('hidden');
-            newPlayBtn.classList.add('hover:shadow-xl');
+
           }
         } catch (error) {
           console.error('Audio player error:', error);
@@ -426,57 +426,53 @@ export default function ResponseSection({
           exit={{ opacity: 0, y: 30, scale: 0.95 }}
           className="relative mb-20 max-w-6xl mx-auto px-4"
         >
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-600 overflow-hidden">
-            {/* Top accent bar */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gray-800 dark:bg-gray-200"></div>
+          <div className="relative bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700  overflow-hidden">
+            {/* Subtle background pattern */}
+
             
             {/* Header */}
-            <div className="relative p-6 md:p-8 pb-4 md:pb-6 bg-gray-50 dark:bg-gray-900">
+            <div className="relative p-6 md:p-8 pb-4 md:pb-6 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               
               <div className="flex items-center mb-3">
-                {/* Modern Icon Container */}
+                {/* Enhanced Icon Container */}
                 <div className="relative mr-4">
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white dark:bg-white rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-300">
-                    <svg className="w-6 h-6 md:w-7 md:h-7 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-600 ">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
-                  {/* Subtle accent line */}
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-transparent via-slate-400 dark:via-slate-500 to-transparent rounded-full"></div>
                 </div>
                 
                 {/* Header Content */}
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-1">
-                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-200 tracking-tight">
+                    <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100 tracking-tight">
                       QuranGPT
                     </h2>
                     <div className="flex items-center space-x-1">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 tracking-wide uppercase">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 tracking-wide">
                       Divine Guidance from the Holy Quran
                     </p>
-                    <div className="w-1 h-1 bg-slate-400 dark:bg-slate-500 rounded-full"></div>
                   </div>
                 </div>
 
-                {/* Copy AI Content Button */}
+                {/* Enhanced Copy AI Content Button */}
                 {onCopyAIContent && (
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={onCopyAIContent}
-                    className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-300 ${
+                    className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-200 ${
                       showCopySuccess 
                         ? 'bg-emerald-500 border-emerald-500 text-white' 
-                        : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-                    } shadow-sm hover:shadow-md`}
+                        : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 '
+                    }`}
                     title="Copy AI-generated content only"
                   >
                     <AnimatePresence mode="wait">
@@ -487,7 +483,7 @@ export default function ResponseSection({
                           animate={{ scale: 1, rotate: 0 }}
                           exit={{ scale: 0, rotate: 90 }}
                           transition={{ duration: 0.2 }}
-                          className="w-5 h-5"
+                          className="w-4 h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -501,7 +497,7 @@ export default function ResponseSection({
                           animate={{ scale: 1, rotate: 0 }}
                           exit={{ scale: 0, rotate: -90 }}
                           transition={{ duration: 0.2 }}
-                          className="w-5 h-5"
+                          className="w-4 h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -513,24 +509,23 @@ export default function ResponseSection({
                   </motion.button>
                 )}
               </div>
-
-              {/* Remove the separate copy success notification since it's now integrated into the button */}
             </div>
 
-            {/* Content with sophisticated typography */}
-            <div className="px-6 md:px-8 pb-6 md:pb-8">
-              <div className="prose dark:prose-invert prose-gray max-w-none">
+            {/* Content with enhanced typography and background */}
+            <div className="relative px-6 md:px-8 pb-6 md:pb-8">
+              {/* Subtle content background */}
+
+              
+              <div className="prose dark:prose-invert prose-gray max-w-none relative z-10">
                 <div 
                   ref={containerRef}
-                  className="text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed text-base md:text-lg"
+                  className="text-gray-700 dark:text-gray-200 space-y-6 leading-relaxed text-base md:text-lg pt-[10px]"
                   dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
                 />
                 
                 {/* Audio players are now rendered inline with each ayah */}
               </div>
             </div>
-
-
           </div>
         </motion.div>
       )}

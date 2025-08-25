@@ -127,10 +127,10 @@ export default function AyahBox({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-600 overflow-hidden"
+      className="bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden "
     >
       {/* Top accent bar */}
-      <div className="w-full h-1 bg-gradient-to-r from-gray-800 via-gray-600 to-gray-400 dark:from-gray-200 dark:via-gray-300 dark:to-gray-400"></div>
+      <div className="w-full h-1 bg-gray-800 dark:bg-gray-200"></div>
       
       {/* Main content container */}
       <div className="p-6">
@@ -139,13 +139,13 @@ export default function AyahBox({
           <div className="flex items-center space-x-4">
             {/* Surah number badge with gradient */}
             <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 rounded-2xl flex items-center justify-center shadow-sm">
+              <div className="w-14 h-14 bg-gray-800 dark:bg-gray-200 rounded-2xl flex items-center justify-center ">
                 <span className="text-white dark:text-gray-800 text-sm font-bold font-mono">
                   {surahNumber}:{ayahNumber}
                 </span>
               </div>
               {/* Subtle glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 rounded-2xl opacity-20 blur-sm"></div>
+              <div className="absolute inset-0 bg-gray-800 dark:bg-gray-200 rounded-2xl opacity-20 blur-sm"></div>
             </div>
             
             {/* Surah information */}
@@ -176,14 +176,14 @@ export default function AyahBox({
 
         {/* Verse text with sophisticated styling */}
         {verseText && (
-          <div className="mb-8 p-6 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 relative overflow-hidden">
+          <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-700 relative overflow-hidden ">
             {/* Subtle background pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.1)_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)]" style={{ backgroundSize: '20px 20px' }}></div>
+            <div className="absolute inset-0 opacity-5 dark:opacity-10">
+              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.1)_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)]" style={{ backgroundSize: '20px 20px' }}></div>
             </div>
             
             <div className="relative z-10 text-center">
-              <p className="text-xl md:text-2xl text-gray-800 dark:text-gray-200 leading-relaxed font-[var(--font-amiri)] italic tracking-wide">
+              <p className="text-xl md:text-2xl text-gray-800 dark:text-gray-100 leading-relaxed font-[var(--font-amiri)] italic tracking-wide">
                 "{verseText}"
               </p>
             </div>
@@ -191,19 +191,19 @@ export default function AyahBox({
         )}
 
         {/* Enhanced audio player section */}
-        <div className="mb-6 p-5 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl border border-gray-200 dark:border-gray-500">
+        <div className="mb-6 p-5 bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-700 ">
           {/* Audio header with status */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-500 dark:from-gray-400 dark:to-gray-300 rounded-lg flex items-center justify-center">
                 <SpeakerWaveIcon className="w-4 h-4 text-white dark:text-gray-800" />
               </div>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Audio Recitation</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Audio Recitation</span>
             </div>
             
             {/* Enhanced status indicator */}
             {isPlaying && (
-              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900/40 rounded-full border border-green-200 dark:border-green-800/40">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-xs text-green-700 dark:text-green-400 font-medium">Playing</span>
               </div>
@@ -217,7 +217,7 @@ export default function AyahBox({
               <select
                 value={selectedEdition}
                 onChange={(e) => setSelectedEdition(e.target.value)}
-                className="w-full text-sm bg-white dark:bg-gray-600 border-2 border-gray-200 dark:border-gray-500 rounded-lg px-4 py-3 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-800 dark:focus:ring-gray-200 focus:border-gray-800 dark:focus:border-gray-200 transition-all duration-200"
+                className="w-full text-sm bg-gray-50 dark:bg-gray-950 border-2 border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-800 dark:focus:ring-gray-200 focus:border-gray-800 dark:focus:border-gray-200 transition-all duration-200"
               >
                 {audioEditions.map((edition) => (
                   <option key={edition.identifier} value={edition.identifier}>
@@ -230,14 +230,14 @@ export default function AyahBox({
 
           {/* Enhanced progress indicator */}
           {isPlaying && (
-            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
               <div className="bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 h-2 rounded-full animate-pulse transition-all duration-300" style={{ width: '30%' }}></div>
             </div>
           )}
         </div>
 
         {/* Sophisticated footer with enhanced information */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-4">
             <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
               Global Ayah #{globalAyahNumber}

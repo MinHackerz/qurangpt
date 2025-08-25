@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+      },
       colors: {
         emerald: {
           50: '#ecfdf5',
@@ -20,6 +23,9 @@ const config: Config = {
           700: '#047857',
           800: '#065f46',
           900: '#064e3b',
+        },
+        gray: {
+          750: '#374151', // Custom gray shade for better dark mode
         },
       },
       typography: (theme: any) => ({
@@ -57,7 +63,7 @@ const config: Config = {
   plugins: [
     require('@tailwindcss/typography'),
   ],
-  darkMode: 'media',
+  darkMode: 'class',
 };
 
 export default config;

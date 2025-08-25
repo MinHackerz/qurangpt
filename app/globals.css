@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&display=swap');
@@ -23,18 +23,63 @@
 }
 
 body {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variant-numeric: oldstyle-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
 }
 
 @layer base {
   body {
-    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+    @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+  }
+  
+  /* Improve text rendering */
+  * {
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Better letter spacing for Inter */
+  body {
+    letter-spacing: -0.011em;
   }
 }
 
 @layer components {
+  /* Consistent background colors */
+  .bg-surface {
+    @apply bg-white dark:bg-gray-900;
+  }
+  
+  .bg-surface-elevated {
+    @apply bg-white dark:bg-gray-800;
+  }
+  
+  .bg-surface-subtle {
+    @apply bg-gray-50 dark:bg-gray-800;
+  }
+  
+  /* Consistent border colors */
+  .border-surface {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+  
+  .border-surface-subtle {
+    @apply border-gray-200 dark:border-gray-800;
+  }
+  
+  /* Consistent text colors */
+  .text-surface {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+  
+  .text-surface-secondary {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+  
   .prose {
     @apply max-w-none;
   }
@@ -57,7 +102,7 @@ body {
   }
   
   .divine-quote {
-    @apply border-none relative pl-8 pr-6 py-6 my-6 bg-emerald-50 dark:bg-emerald-900/20 text-gray-800 dark:text-gray-200 rounded-lg shadow-sm font-['Amiri'] text-lg md:text-xl leading-relaxed italic;
+    @apply border-none relative pl-8 pr-6 py-6 my-6 bg-emerald-50 dark:bg-emerald-900/20 text-gray-800 dark:text-gray-200 rounded-lg font-['Amiri'] text-lg md:text-xl leading-relaxed italic;
   }
   
   .divine-quote::before {
@@ -239,7 +284,7 @@ body {
   /* Animation for section headers */
   .explanation-section .flex,
   .tafsir-section .flex {
-    @apply transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl;
+    @apply transform transition-all duration-300 hover:scale-[1.02];
   }
 
   /* Subtle background patterns */
@@ -422,19 +467,88 @@ body {
   @apply bg-emerald-500 text-white;
 }
 
-/* Dark mode improvements */
-@media (prefers-color-scheme: dark) {
-  .prose {
-    @apply text-gray-300;
-  }
-  
-  .prose strong {
-    @apply text-gray-100;
-  }
-  
-  .prose blockquote {
-    @apply border-emerald-500 bg-emerald-900/30 text-gray-300;
-  }
+/* Dark mode improvements - Updated for class-based approach */
+.dark .prose {
+  @apply text-gray-200;
+}
+
+.dark .prose strong {
+  @apply text-gray-100;
+}
+
+.dark .prose blockquote {
+  @apply border-emerald-500 bg-emerald-900/20 text-gray-200;
+}
+
+/* Additional dark mode enhancements */
+.dark .copy-button {
+  @apply bg-gray-700 hover:bg-gray-600 text-gray-200;
+}
+
+.dark .copy-button.copied {
+  @apply bg-emerald-500 text-white;
+}
+
+/* Enhanced dark mode background patterns */
+.dark body {
+  /* Removed gradient background for consistency */
+}
+
+/* Dark mode specific component styling */
+.dark .stylish-ayah-reference {
+  /* Removed gradient background for consistency */
+}
+
+.dark .enhanced-audio-player {
+  /* Removed gradient background for consistency */
+}
+
+/* Ensure AyahBox padding area matches global background */
+.stylish-ayah-reference {
+  background-color: rgb(249 250 251); /* gray-50 */
+}
+
+.dark .stylish-ayah-reference {
+  background-color: rgb(10 15 23); /* gray-950 */
+}
+
+/* Dark mode text improvements */
+.dark .text-gray-700 {
+  @apply text-gray-200;
+}
+
+.dark .text-gray-600 {
+  @apply text-gray-300;
+}
+
+.dark .text-gray-500 {
+  @apply text-gray-400;
+}
+
+/* Dark mode border improvements */
+.dark .border-gray-200 {
+  @apply border-gray-700;
+}
+
+.dark .border-gray-300 {
+  @apply border-gray-600;
+}
+
+.dark .border-gray-400 {
+  @apply border-gray-500;
+}
+
+/* Dark mode shadow improvements */
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+.dark .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
 /* Hide scrollbars for chat input textarea */
@@ -723,4 +837,40 @@ body {
 .ai-explanation-section:hover .text-gray-700,
 .authentic-tafsir-section:hover .text-gray-700 {
   @apply text-gray-800 dark:text-gray-200;
+}
+
+/* Enhanced dark mode for interactive elements */
+.dark .interactive-border::before {
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(59, 130, 246, 0.8), 
+    rgba(147, 51, 234, 0.8), 
+    rgba(236, 72, 153, 0.8), 
+    transparent
+  );
+}
+
+.dark .interactive-border.question-button::before {
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(16, 185, 129, 0.8), 
+    rgba(59, 130, 246, 0.8), 
+    rgba(147, 51, 234, 0.8), 
+    transparent
+  );
+}
+
+/* Dark mode specific Arabic title styling */
+.dark .arabic-styled-title .quran-word {
+  text-shadow: 
+    2px 2px 0px rgba(255, 255, 255, 0.1),
+    4px 4px 8px rgba(0, 0, 0, 0.5),
+    -1px -1px 0px rgba(0, 0, 0, 0.3);
+}
+
+.dark .arabic-styled-title .gpt-word {
+  text-shadow: 
+    -2px 2px 0px rgba(255, 255, 255, 0.1),
+    -4px 4px 8px rgba(0, 0, 0, 0.5),
+    1px -1px 0px rgba(0, 0, 0, 0.3);
 }

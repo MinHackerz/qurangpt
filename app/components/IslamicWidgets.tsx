@@ -312,7 +312,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 shadow-sm overflow-hidden islamic-border eid-fitr-widget"
+          className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 overflow-hidden islamic-border eid-fitr-widget"
         >
           {/* Location indicator - Top Right */}
           <div className="absolute top-4 right-4 text-xs text-gray-500 dark:text-gray-400 font-medium">

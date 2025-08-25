@@ -13,6 +13,7 @@ import {
   IslamicWidgets,
   LanguageTabs
 } from './components';
+import ThemeToggle from './components/ThemeToggle';
 import { useAudioManager } from './hooks/useAudioManager';
 import { getSurahNumber, surahAyahCounts, calculateGlobalAyahNumber, fetchTafsir } from './utils/tafsirUtils';
 import { useTranslation } from './hooks/useTranslation';
@@ -63,6 +64,11 @@ export default function Home() {
     setShowSummary(false);
     setIsProcessing(false);
     setError('');
+    setCopied(false);
+    setDisplayedContent('');
+    setCurrentLanguage('en');
+    setIsTranslating(false);
+    setTranslationProgress(0);
     
     // Clean up audio state
     stopAudio();
@@ -464,10 +470,10 @@ export default function Home() {
         if (tafsirData && tafsirData.tafsirs && tafsirData.tafsirs.length > 0) {
                       tafsirButtonsHTML = `
             <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
-              <svg class="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <span class="text-emerald-700 dark:text-emerald-300">Tafsir</span>
+              <span class="text-gray-700 dark:text-gray-300">Tafsir</span>
             </h4>
             <div class="flex flex-wrap gap-1.5 md:gap-2 flex-1">`;
           
@@ -482,9 +488,9 @@ export default function Home() {
             tafsirButtonsHTML += `
               <button 
                 data-tafsir-id="${tafsirId}"
-                class="tafsir-toggle-btn px-2 md:px-3 py-1.5 md:py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 flex items-center space-x-1.5 md:space-x-2 text-left focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-500 rounded-lg flex-shrink-0 border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md active:scale-95"
+                class="tafsir-toggle-btn px-2 md:px-3 py-1.5 md:py-2 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 flex items-center space-x-1.5 md:space-x-2 text-left focus:outline-none rounded-lg flex-shrink-0 border border-gray-200 dark:border-gray-600  hover: active:scale-95"
               >
-                <div class="w-4 md:w-5 h-4 md:h-5 bg-gradient-to-br from-gray-400 to-gray-500 dark:from-gray-500 dark:to-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <div class="w-4 md:w-5 h-4 md:h-5 bg-gray-400 dark:bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <svg class="w-2.5 md:w-3 h-2.5 md:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -494,8 +500,8 @@ export default function Home() {
               
             tafsirContentHTML += `
               <div id="${tafsirId}" class="tafsir-content w-full mt-4" style="display: none;">
-                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm overflow-hidden">
-                  <div class="bg-gray-50 dark:bg-gray-700 px-3 md:px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                <div class="bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-700  overflow-hidden">
+                  <div class="bg-gray-100 dark:bg-gray-900 px-3 md:px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
                       <h5 class="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                         <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -503,7 +509,7 @@ export default function Home() {
                         </svg>
                         <span class="text-xs md:text-sm">${tafsir.author}</span>
                       </h5>
-                      <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                      <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -535,12 +541,12 @@ export default function Home() {
         return {
           match: match[0],
           replacement: `<div class="stylish-ayah-reference mb-8 max-w-none w-full pt-5 pb-5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full">
+            <div class="bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full ">
               <!-- Clean Header -->
-              <div class="bg-gray-50 dark:bg-gray-750 px-4 py-3">
+              <div class="bg-gray-100 dark:bg-gray-900 px-4 py-3">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                       <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                       </svg>
@@ -571,7 +577,7 @@ export default function Home() {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <!-- Audio Player -->
                   <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
-                    <div class="bg-gray-50 dark:bg-gray-750 rounded-xl p-3 border border-gray-200 dark:border-gray-600 min-h-[120px] md:min-h-[140px] flex flex-col justify-between">
+                    <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between ">
                       <div class="flex items-center space-x-3">
                         <button class="play-pause-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 hover:bg-gray-700 dark:hover:bg-gray-300 active:scale-95 transition-all duration-200" data-ayah-id="${ayahId}">
                           <svg class="play-icon w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -598,7 +604,7 @@ export default function Home() {
                           <span class="total-duration">--:--</span>
                         </div>
                         <div class="relative">
-                          <div class="progress-bg w-full h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                          <div class="progress-bg w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                             <div class="progress-fill h-full bg-gray-800 dark:bg-gray-200 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
                           </div>
                           <input type="range" class="progress-slider absolute inset-0 w-full h-1.5 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
@@ -608,7 +614,7 @@ export default function Home() {
                   </div>
                   
                   <!-- Tafsir Buttons -->
-                  <div class="bg-gray-50 dark:bg-gray-750 rounded-xl p-3 border border-gray-200 dark:border-gray-600 min-h-[120px] md:min-h-[140px] flex flex-col justify-between">
+                  <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between ">
                     ${tafsirButtonsHTML}
                   </div>
                 </div>
@@ -647,25 +653,25 @@ export default function Home() {
       .replace(/\_\_([^_]+)\_\_/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500">$1</span>')
       
       // Format numbered lists with enhanced styling and spacing
-      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-6 flex items-start p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all duration-200"><span class="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 text-white dark:text-gray-800 rounded-full text-sm font-bold mr-4 mt-0.5 flex-shrink-0 shadow-md">$1</span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$2</span></div>')
+      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-6 flex items-start p-4 bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-600  hover: transition-all duration-200"><span class="inline-flex items-center justify-center w-8 h-8 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 rounded-full text-sm font-bold mr-4 mt-0.5 flex-shrink-0 ">$1</span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$2</span></div>')
       
       // Format bullet points
-      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-5 flex items-start p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all duration-200"><span class="w-3 h-3 bg-gradient-to-br from-gray-600 to-gray-500 dark:from-gray-400 dark:to-gray-300 rounded-full mr-4 mt-3 flex-shrink-0 shadow-sm"></span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$1</span></div>')
+      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-5 flex items-start p-4 bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-600  hover: transition-all duration-200"><span class="w-3 h-3 bg-gray-600 dark:bg-gray-400 rounded-full mr-4 mt-3 flex-shrink-0 "></span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$1</span></div>')
       
       // Format specific Islamic terms with enhanced styling
-      .replace(/Allah\s*\(SWT\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (SWT)</span>')
-      .replace(/Allah\s*SWT/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah SWT</span>')
+      .replace(/Allah\s*\(SWT\)/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (SWT)</span>')
+      .replace(/Allah\s*SWT/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah SWT</span>')
       .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Prophet Muhammad (PBUH)</span>')
       .replace(/Prophet Muhammad\s*PBUH/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Prophet Muhammad PBUH</span>')
       .replace(/\(peace be upon him\)/g, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
       .replace(/Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Muhammad (PBUH)</span>')
       .replace(/Muhammad\s*PBUH/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Muhammad PBUH</span>')
-      .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (Subhanahu wa Ta\'ala)</span>')
-      .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah Subhanahu wa Ta\'ala</span>')
+      .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (Subhanahu wa Ta\'ala)</span>')
+      .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah Subhanahu wa Ta\'ala</span>')
       
       // Format Explanation headers with distinctive styling
       .replace(/^(Explanation):?\s*$/gmi, 
-        '<div class="explanation-section mt-12 mb-8"><div class="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl border-l-4 border-blue-500 dark:border-blue-400 shadow-lg"><div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-xl flex items-center justify-center shadow-md"><svg class="w-6 h-6 text-white dark:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div><div><h3 class="text-2xl md:text-3xl font-bold text-blue-800 dark:text-blue-200 font-[var(--font-amiri)] tracking-wide">💡 Explanation</h3><p class="text-sm text-blue-600 dark:text-blue-400 mt-1">Understanding the meaning and context</p></div></div></div>')
+        '<div class="explanation-section mt-12 mb-8"><div class="flex items-center gap-4 p-6 bg-blue-50 dark:bg-blue-900/30 rounded-2xl border-l-4 border-blue-500 dark:border-blue-400 "><div class="w-12 h-12 bg-blue-500 dark:bg-blue-400 rounded-xl flex items-center justify-center "><svg class="w-6 h-6 text-white dark:text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div><div><h3 class="text-2xl md:text-3xl font-bold text-blue-800 dark:text-blue-200 font-[var(--font-amiri)] tracking-wide">💡 Explanation</h3><p class="text-sm text-blue-600 dark:text-blue-400 mt-1">Understanding the meaning and context</p></div></div></div>')
       
       // Format Tafsir/Tafseer headers with simple styling (matching AI Explanation design)
       .replace(/^(Tafs[ie]r):?\s*$/gmi, 
@@ -685,7 +691,7 @@ export default function Home() {
       
       // Format Quranic section headers with enhanced styling
       .replace(/Allah\s*\(SWT\)\s*says\s*in\s*the\s*(Glorious\s*)?Quran:?/gi, 
-        '<div class="my-8 p-6 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600 rounded-2xl border-l-4 border-gray-800 dark:border-gray-200 shadow-lg"><h3 class="divine-quote-heading text-xl font-bold text-gray-800 dark:text-gray-200 mb-3 font-[var(--font-amiri)] tracking-wide flex items-center">📖 <span class="ml-3">Allah (SWT) says in the Glorious Quran:</span></h3><div class="w-16 h-1 bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 rounded-full"></div></div>')
+        '<div class="my-8 p-6 bg-gray-100 dark:bg-gray-900 rounded-2xl border-l-4 border-gray-800 dark:border-gray-200 "><h3 class="divine-quote-heading text-xl font-bold text-gray-800 dark:text-gray-200 mb-3 font-[var(--font-amiri)] tracking-wide flex items-center">📖 <span class="ml-3">Allah (SWT) says in the Glorious Quran:</span></h3><div class="w-16 h-1 bg-gray-800 dark:bg-gray-200 rounded-full"></div></div>')
       
       // Clean up any remaining formatting markers
       .replace(/###\s*Quran GPT's Answer:?\s*/gi, '')
@@ -865,7 +871,15 @@ Question: ${content}`;
         `}
       </Script>
       
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
+        {/* Subtle background pattern for visual depth */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-gray-100/30 to-transparent dark:from-transparent dark:via-gray-900/30 dark:to-transparent pointer-events-none"></div>
+        
+        {/* Theme Toggle Button - Fixed Position */}
+        <div className="fixed top-6 right-6 z-50">
+          <ThemeToggle />
+        </div>
+        
         {/* Hero Section */}
         <HeroSection getGreetingMessage={getGreetingMessage} />
 
@@ -897,7 +911,7 @@ Question: ${content}`;
 
             {/* Language Translation Tabs - Above Response */}
             {showSummary && (
-              <div className="mb-6 max-w-6xl mx-auto px-4">
+              <div className="mb-8 max-w-6xl mx-auto px-4 -mt-4">
                 <LanguageTabs
                   originalText={summary}
                   onTranslationChange={handleTranslationChange}

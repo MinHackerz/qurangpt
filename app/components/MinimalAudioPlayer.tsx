@@ -75,7 +75,7 @@ export default function MinimalAudioPlayer({
           disabled={isLoading}
           className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
             isActive
-              ? 'bg-blue-500 text-white shadow-lg'
+              ? 'bg-blue-500 text-white '
               : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
           }`}
         >

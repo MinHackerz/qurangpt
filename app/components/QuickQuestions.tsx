@@ -47,7 +47,7 @@ export default function QuickQuestions({ insertQuestion }: QuickQuestionsProps) 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => insertQuestion(item.question)}
-              className="group px-4 py-3 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 shadow-sm text-left interactive-border question-button"
+              className="group px-4 py-3 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 text-left "
             >
               <span className="mr-2">{item.icon}</span>
               <span className="break-words">{item.question}</span>

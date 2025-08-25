@@ -301,7 +301,7 @@ export default function LanguageTabs({
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-4 h-4 border border-gray-300 border-t-gray-600 rounded-full"
+          className="w-4 h-4 border border-emerald-300 dark:border-emerald-600 border-t-emerald-500 dark:border-t-emerald-400 rounded-full"
         />
       </div>
     );
@@ -312,7 +312,7 @@ export default function LanguageTabs({
   }
 
   return (
-    <div className={`relative language-tabs-container ${className}`}>
+    <div className={`relative language-tabs-container pt-2 ${className}`}>
       {/* Translation Progress Indicator */}
       <AnimatePresence>
         {isTranslating && (
@@ -321,89 +321,53 @@ export default function LanguageTabs({
             animate={{ opacity: 1, height: 'auto', y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm"
+            className="mb-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
           >
-            <div className="space-y-3">
+            <div className="px-4 py-3">
               {/* Header with stage and progress */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"
+                    className="w-3 h-3 border border-emerald-400 dark:border-emerald-500 border-t-emerald-500 dark:border-t-emerald-400 rounded-full"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {currentTranslationStage}
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
                   {Math.round(translationProgress)}%
                 </span>
               </div>
               
-              {/* Enhanced Progress Bar */}
+              {/* Clean Progress Bar */}
               <div className="relative">
-                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
-                  {/* Background gradient for depth */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full" />
-                  
-                  {/* Main progress bar with gradient */}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                   <motion.div
-                    className="relative h-2 bg-gradient-to-r from-gray-400 via-gray-600 to-gray-800 dark:from-gray-500 dark:via-gray-700 dark:to-gray-900 rounded-full shadow-sm"
+                    className="h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${translationProgress}%` }}
                     transition={{ 
                       duration: 0.4, 
-                      ease: "easeOut",
-                      type: "spring",
-                      stiffness: 100,
-                      damping: 20
+                      ease: "easeOut"
                     }}
-                  >
-                    {/* Progress bar shine effect */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      animate={{ 
-                        x: translationProgress === 100 ? 0 : [-20, 20],
-                      }}
-                      transition={{ 
-                        duration: 1.5, 
-                        repeat: translationProgress === 100 ? 0 : Infinity,
-                        ease: "easeInOut"
-                      }}
-                    />
-                    
-                    {/* Completion pulse effect */}
-                    {translationProgress === 100 && (
-                      <motion.div
-                        className="absolute inset-0 bg-white/30 rounded-full"
-                        initial={{ scale: 0.8, opacity: 0.8 }}
-                        animate={{ scale: 1.2, opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                      />
-                    )}
-                  </motion.div>
+                  />
                 </div>
                 
-                {/* Progress markers for stages */}
-                <div className="flex justify-between mt-2">
-                  {[15, 35, 70, 85, 95].map((marker) => (
-                    <motion.div
-                      key={marker}
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        translationProgress >= marker 
-                          ? 'bg-gray-800 dark:bg-gray-200' 
-                          : 'bg-gray-400 dark:bg-gray-500'
-                      }`}
-                      initial={{ scale: 0 }}
-                      animate={{ 
-                        scale: translationProgress >= marker ? 1 : 0.5,
-                        opacity: translationProgress >= marker ? 1 : 0.3
-                      }}
-                      transition={{ duration: 0.3, delay: 0.1 }}
-                    />
-                  ))}
-                </div>
+                {/* Completion indicator */}
+                {translationProgress === 100 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute -right-0.5 -top-0.5 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center"
+                  >
+                    <svg className="w-1.5 h-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </motion.div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -417,7 +381,7 @@ export default function LanguageTabs({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="mb-2 text-xs text-red-500 dark:text-red-400 text-center"
+            className="mb-4 text-xs text-red-500 dark:text-red-400 text-center"
           >
             {error}
             {error.includes('quota') || error.includes('rate limit') || error.includes('Too many') ? (
@@ -441,10 +405,10 @@ export default function LanguageTabs({
       </AnimatePresence>
 
       {/* Minimalistic Language Tabs */}
-      <div className="relative h-16">
+      <div className="relative h-20">
         <div
           ref={scrollContainerRef}
-          className="flex gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide py-2 scroll-smooth h-12 items-center"
+          className="flex gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide py-3 scroll-smooth h-16 items-center"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {getLanguageOrder().map((langCode) => {
@@ -464,14 +428,14 @@ export default function LanguageTabs({
                 className={`
                   relative group px-3 py-1.5 text-xs font-medium transition-all duration-300 whitespace-nowrap rounded-full border
                   ${isSelected
-                    ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? 'bg-emerald-600 dark:bg-emerald-400 text-white dark:text-emerald-900 border-emerald-600 dark:border-emerald-400'
+                    : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300'
                   }
                   ${isLoading || isCurrentlyTranslating
                     ? 'cursor-not-allowed border-gray-400 dark:border-gray-500 text-gray-500 dark:text-gray-400' 
                     : 'cursor-pointer hover:scale-105'
                   }
-                  ${hasCachedTranslation && !isSelected ? 'border-green-400 dark:border-green-500' : ''}
+                  ${hasCachedTranslation && !isSelected ? 'border-emerald-400 dark:border-emerald-500' : ''}
                 `}
                 whileHover={!isLoading && !isTranslating ? { scale: 1.05 } : {}}
                 whileTap={!isLoading && !isTranslating ? { scale: 0.95 } : {}}
@@ -489,7 +453,7 @@ export default function LanguageTabs({
                 {/* Cached Translation Indicator */}
                 {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
                   <motion.div
-                    className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.2 }}
@@ -539,7 +503,7 @@ export default function LanguageTabs({
                 {isSelected && (
                   <motion.div
                     layoutId="selectedLanguage"
-                    className="absolute inset-0 bg-gray-900 dark:bg-gray-100 rounded-full"
+                    className="absolute inset-0 bg-emerald-600 dark:bg-emerald-400 rounded-full"
                     style={{ zIndex: -1 }}
                     transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
                   />
@@ -549,9 +513,9 @@ export default function LanguageTabs({
           })}
         </div>
 
-        {/* Natural Vanishing Fade Effects */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 via-white/60 dark:via-gray-800/60 via-white/30 dark:via-gray-800/30 to-transparent pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-800 via-white/60 dark:via-gray-800/60 via-white/30 dark:via-gray-800/30 to-transparent pointer-events-none" />
+        {/* Natural Vanishing Fade Effects - Removed for infinite look */}
+        {/* <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 via-white/60 dark:via-gray-800/60 via-white/30 dark:via-gray-800/30 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-800 via-white/60 dark:via-gray-800/60 via-white/30 dark:via-gray-800/30 to-transparent pointer-events-none" /> */}
       </div>
 
       {/* Hidden scrollbar styles */}
@@ -567,7 +531,7 @@ export default function LanguageTabs({
         /* Prevent vertical scrolling */
         .language-tabs-container {
           overflow-y: hidden;
-          max-height: 4rem;
+          max-height: 5rem;
         }
       `}</style>
     </div>

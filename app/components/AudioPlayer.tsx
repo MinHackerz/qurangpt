@@ -178,14 +178,14 @@ export default function AudioPlayer({
       animate={{ opacity: 1, y: 0 }}
       className={`relative p-6 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl border-2 transition-all duration-300 ${
         isActive 
-          ? 'border-blue-500 dark:border-blue-400 shadow-lg shadow-blue-500/20' 
+          ? 'border-blue-500 dark:border-blue-400 ' 
           : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
       }`}
     >
       {/* Header with surah info */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-xl flex items-center justify-center shadow-md">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-xl flex items-center justify-center ">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
@@ -231,7 +231,7 @@ export default function AudioPlayer({
           whileTap={{ scale: 0.95 }}
           onClick={togglePlayPause}
           disabled={isLoading}
-          className={`relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${
+          className={`relative w-16 h-16 rounded-full flex items-center justify-center  transition-all duration-200 ${
             isActive
               ? 'bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 text-white'
               : 'bg-gradient-to-br from-gray-600 to-gray-700 dark:from-gray-500 dark:to-gray-600 text-gray-200 hover:from-gray-500 hover:to-gray-600 dark:hover:from-gray-400 dark:hover:to-gray-500'

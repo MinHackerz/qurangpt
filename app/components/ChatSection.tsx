@@ -120,7 +120,8 @@ export default function ChatSection({
       <div className="max-w-6xl mx-auto px-4">
         <div className="relative">
           {/* Main Input Field - ChatGPT Style */}
-          <div className="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow duration-200 interactive-border">
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all duration-200">
+            
             <textarea
               ref={textareaRef}
               placeholder="Message Quran GPT... (Press Enter to send, Shift+Enter for new line)"
@@ -128,7 +129,7 @@ export default function ChatSection({
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               rows={1}
-              className={`chat-input-textarea w-full p-4 sm:p-5 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 border-none resize-none focus:outline-none text-base sm:text-lg leading-relaxed min-h-[56px] sm:min-h-[60px] max-h-[300px] sm:max-h-[240px] transition-all duration-200 ${
+              className={`chat-input-textarea w-full p-4 sm:p-5 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed min-h-[56px] sm:min-h-[60px] max-h-[300px] sm:max-h-[240px] transition-all duration-200 ${
                 (content.trim() || showSummary) ? 'pr-28 sm:pr-32' : 'pr-16 sm:pr-20'
               }`}
               style={{ 
@@ -138,7 +139,7 @@ export default function ChatSection({
             />
             
             {/* Action buttons container */}
-            <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center gap-3">
+            <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
               {/* Send Button - Minimalistic Professional Design */}
               <motion.button
                 whileHover={{ 
@@ -150,14 +151,14 @@ export default function ChatSection({
                 disabled={isProcessing || !content.trim()}
                 className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
                   content.trim() && !isProcessing
-                    ? 'bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 text-gray-900 dark:text-gray-900 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-300'
+                    ? 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
                 title="Send message"
               >
                 {/* Subtle inner glow */}
                 {content.trim() && !isProcessing && (
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200/30 to-transparent dark:from-gray-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 )}
                 
                 {/* Icon container */}
@@ -166,19 +167,20 @@ export default function ChatSection({
                     <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                     </svg>
                   )}
                 </div>
                 
                 {/* Professional border accent */}
                 {content.trim() && !isProcessing && (
-                  <div className="absolute inset-0 rounded-full border border-gray-300/40 group-hover:border-gray-400/60 transition-colors duration-200"></div>
+                  <div className="absolute inset-0 rounded-full border border-gray-300/40 dark:border-gray-500/40 group-hover:border-gray-400/60 dark:group-hover:border-gray-400/60 transition-colors duration-200"></div>
                 )}
               </motion.button>
 
               {/* Clear Button - Minimalistic Professional Design */}
-              {(content.trim() || showSummary) && (
+              <AnimatePresence>
+                {(content.trim() || showSummary) && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -190,31 +192,32 @@ export default function ChatSection({
                   whileTap={{ scale: 0.98 }}
                   onClick={resetForm}
                   disabled={isProcessing}
-                                  className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
-                  !isProcessing
-                    ? 'bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 text-gray-900 dark:text-gray-900 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-300'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                }`}
+                  className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    !isProcessing
+                      ? 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  }`}
                   title="Clear and reset"
                 >
-                  {/* Subtle inner glow */}
+                                    {/* Subtle inner glow */}
                   {!isProcessing && (
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-200/30 to-transparent dark:from-gray-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   )}
                   
                   {/* Icon container */}
                   <div className="relative z-10 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   </div>
                   
                   {/* Professional border accent */}
                   {!isProcessing && (
-                    <div className="absolute inset-0 rounded-full border border-gray-400/30 group-hover:border-gray-300/50 transition-colors duration-200"></div>
+                    <div className="absolute inset-0 rounded-full border border-gray-400/30 dark:border-gray-500/40 group-hover:border-gray-300/50 dark:group-hover:border-gray-400/60 transition-colors duration-200"></div>
                   )}
                 </motion.button>
-              )}
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -225,7 +228,7 @@ export default function ChatSection({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center border border-red-200 dark:border-red-800 text-sm"
+                className="mt-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center border border-red-200 dark:border-red-800 text-xs"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />

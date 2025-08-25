@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Scheherazade_New, Amiri, Noto_Naskh_Arabic, Cairo } from 'next/font/google';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 const inter = Inter({ subsets: ['latin'] });
 const scheherazade = Scheherazade_New({ 
@@ -43,14 +44,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/png" href="https://qurangpt.life/wp-content/uploads/2023/04/Quran-GPT-Favicon.png" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
         <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
         <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
       </head>
-      <body className={`${inter.className} ${scheherazade.variable} ${amiri.variable} ${notoNaskh.variable} ${cairo.variable}`}>{children}</body>
+      <body className={`${inter.className} ${scheherazade.variable} ${amiri.variable} ${notoNaskh.variable} ${cairo.variable}`}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
