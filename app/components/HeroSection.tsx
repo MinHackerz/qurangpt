@@ -40,6 +40,27 @@ export default function HeroSection({ getGreetingMessage }: HeroSectionProps) {
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-lg mx-auto mb-6 font-[var(--font-noto-naskh)]">
             AI-powered Islamic knowledge from the Holy Quran
           </p>
+
+          {/* Palestine Support Element */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            className="flex items-center justify-center gap-2 mb-6"
+          >
+            <div className="relative overflow-hidden px-3 py-2 rounded-md">
+              {/* Minimalist Palestinian Flag Background - Black top, White center, Green bottom */}
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-800/40 via-gray-100/60 to-emerald-600/40 dark:from-gray-700/50 dark:via-gray-200/40 dark:to-emerald-500/50"></div>
+              
+              {/* Red Triangle (left side) - Minimal */}
+              <div className="absolute left-0 top-0 w-0 h-0 border-l-[12px] border-l-rose-600/60 border-t-[14px] border-t-transparent border-b-[14px] border-b-transparent"></div>
+              
+              {/* Content */}
+              <div className="relative z-10 flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-800 dark:text-gray-200">Free Palestine</span>
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </div>
     </header>
