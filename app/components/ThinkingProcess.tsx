@@ -95,10 +95,10 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="mb-8 max-w-6xl mx-auto px-4"
+        className="mb-8 max-w-7xl mx-auto px-0 -mx-1"
       >
         {/* Minimalistic Thinking Container - Grok Style */}
-        <div className="relative bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 ">
+        <div className="relative bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between px-6 py-4">
             
             {/* Left: Current step indicator */}
@@ -182,15 +182,16 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
             </div>
           </div>
 
-          {/* Expandable process details */}
+          {/* Expandable process details - Expanding upward */}
           <AnimatePresence>
             {isExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0, y: 0 }}
+                animate={{ height: "auto", opacity: 1, y: 0 }}
+                exit={{ height: 0, opacity: 0, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden border-t border-gray-200/50 dark:border-gray-600/50"
+                className="overflow-hidden border-t border-gray-200/50 dark:border-gray-600/50 absolute bottom-full left-0 right-0 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 mb-4"
+                style={{ zIndex: 20, maxHeight: '80vh', overflowY: 'auto' }}
               >
                 <div className="px-6 py-4 space-y-3">
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -208,9 +209,9 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
                         <div key={index} className="flex items-start space-x-3">
                           <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors duration-300 ${
                             isCurrent 
-                              ? 'bg-blue-500 text-white' 
+                              ? 'bg-gray-600 dark:bg-gray-400 text-white dark:text-black' 
                               : isCompleted 
-                              ? 'bg-green-500 text-white' 
+                              ? 'bg-gray-500 dark:bg-gray-300 text-white dark:text-black' 
                               : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                           }`}>
                             {isCompleted ? (
@@ -226,9 +227,9 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
                           <div className="flex-1">
                             <div className={`text-sm font-medium transition-colors duration-300 ${
                               isCurrent 
-                                ? 'text-blue-600 dark:text-blue-400' 
+                                ? 'text-gray-800 dark:text-gray-200' 
                                 : isCompleted 
-                                ? 'text-green-600 dark:text-green-400' 
+                                ? 'text-gray-700 dark:text-gray-300' 
                                 : 'text-gray-700 dark:text-gray-300'
                             }`}>
                               {process.step}
@@ -236,7 +237,7 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               {process.description}
                               {isCurrent && (
-                                <span className="ml-2 text-blue-500 font-medium">
+                                <span className="ml-2 text-gray-600 dark:text-gray-400 font-medium">
                                   • In progress...
                                 </span>
                               )}
@@ -248,7 +249,7 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
                               <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ duration: 1, repeat: Infinity }}
-                                className="w-2 h-2 bg-blue-500 rounded-full"
+                                className="w-2 h-2 bg-gray-600 dark:bg-gray-400 rounded-full"
                               />
                             )}
                           </div>
@@ -270,8 +271,8 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
                   </div>
                   
                   {/* Additional info */}
-                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="text-xs text-blue-700 dark:text-blue-300">
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       <strong>Note:</strong> This shows the actual AI processing workflow. The AI connects to Gemini, 
                       processes your question, generates a response with Quranic references, and formats it with 
                       interactive elements like audio players.

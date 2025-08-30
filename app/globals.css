@@ -937,3 +937,39 @@ body {
 .tafsir-content strong {
   font-weight: normal !important;
 }
+
+  /* Suggested questions spacing to prevent overlap with Translate container */
+  .suggested-questions-safe-margin {
+    margin-bottom: 3rem; /* 48px for suggested questions */
+  }
+  
+  /* Main content area spacing when chat is active */
+  .chat-active-content-spacing {
+    padding-bottom: 8rem; /* 128px to ensure content doesn't overlap with fixed ChatSection */
+  }
+  
+  /* Response section spacing to prevent overlap with Translate container */
+  .response-section-safe-margin {
+    margin-bottom: 5.5rem; /* 88px to ensure no overlap with Translate container */
+  }
+  
+  /* Responsive adjustments for different screen sizes */
+  @media (min-width: 640px) {
+    .response-section-safe-margin {
+      margin-bottom: 6rem; /* 96px on larger screens for better spacing */
+    }
+    
+    .suggested-questions-safe-margin {
+      margin-bottom: 3.5rem; /* 56px on larger screens */
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .response-section-safe-margin {
+      margin-bottom: 7rem; /* 112px on large screens for optimal spacing */
+    }
+    
+    .suggested-questions-safe-margin {
+      margin-bottom: 4rem; /* 64px on larger screens */
+    }
+  }

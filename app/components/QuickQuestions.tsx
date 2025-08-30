@@ -36,7 +36,7 @@ export default function QuickQuestions({ insertQuestion }: QuickQuestionsProps) 
       className="mb-8"
     >
       {/* Questions Container - Exact match to Chat Input Width */}
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-0 -mx-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {questions.map((item, index) => (
             <motion.button

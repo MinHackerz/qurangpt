@@ -136,7 +136,7 @@ export default function LanguageTabs({
       onTranslationChange(originalText, targetLanguage);
       
     } catch (err) {
-      console.error('Translation error:', err);
+      // Translation error - silent fail for security
       
       // Show user-friendly error message
       const errorMessage = err instanceof Error ? err.message : 'Translation failed';
@@ -211,7 +211,7 @@ export default function LanguageTabs({
         setError('');
       }
     } catch (err) {
-      console.error('Error loading languages:', err);
+      // Error loading languages - silent fail for security
       setError('Failed to load languages');
     } finally {
       setIsLoadingLanguages(false);
@@ -312,8 +312,48 @@ export default function LanguageTabs({
   }
 
   return (
-    <div className={`relative language-tabs-container pt-2 ${className}`}>
-      {/* Translation Progress Indicator */}
+    <motion.div 
+      initial={{ opacity: 0, y: 15, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 15, scale: 0.98 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className={`relative language-tabs-container pt-1.5 bg-transparent ${className}`}
+    >
+
+      
+
+
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mb-4 text-xs text-red-500 dark:text-red-400 text-center"
+          >
+            {error}
+            {error.includes('quota') || error.includes('rate limit') || error.includes('Too many') ? (
+              <button
+                onClick={() => setError('')}
+                className="ml-2 underline hover:no-underline"
+              >
+                Dismiss
+              </button>
+            ) : null}
+            {error.includes('failed') && !error.includes('quota') && !error.includes('rate limit') ? (
+              <button
+                onClick={() => handleTranslation(selectedLanguage)}
+                className="ml-2 underline hover:no-underline"
+              >
+                Retry
+              </button>
+            ) : null}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Translation Progress Indicator - Above language buttons */}
       <AnimatePresence>
         {isTranslating && (
           <motion.div
@@ -321,7 +361,7 @@ export default function LanguageTabs({
             animate={{ opacity: 1, height: 'auto', y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="mb-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+            className="mb-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
           >
             <div className="px-4 py-3">
               {/* Header with stage and progress */}
@@ -374,144 +414,104 @@ export default function LanguageTabs({
         )}
       </AnimatePresence>
 
-      {/* Error Message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="mb-4 text-xs text-red-500 dark:text-red-400 text-center"
-          >
-            {error}
-            {error.includes('quota') || error.includes('rate limit') || error.includes('Too many') ? (
-              <button
-                onClick={() => setError('')}
-                className="ml-2 underline hover:no-underline"
-              >
-                Dismiss
-              </button>
-            ) : null}
-            {error.includes('failed') && !error.includes('quota') && !error.includes('rate limit') ? (
-              <button
-                onClick={() => handleTranslation(selectedLanguage)}
-                className="ml-2 underline hover:no-underline"
-              >
-                Retry
-              </button>
-            ) : null}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Minimalistic Language Tabs */}
-      <div className="relative h-20">
+      {/* Language Tabs */}
+      <div className="relative h-14">
         <div
           ref={scrollContainerRef}
-          className="flex gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide py-3 scroll-smooth h-16 items-center"
+          className="flex gap-1 overflow-x-auto overflow-y-hidden scrollbar-hide py-2 scroll-smooth h-12 items-center"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {getLanguageOrder().map((langCode) => {
-            const isSelected = selectedLanguage === langCode;
-            const isLoading = loadingLanguages.has(langCode);
-            const displayName = getLanguageDisplayName(langCode);
-            const hasCachedTranslation = getCachedTranslation(originalText, langCode);
-            const isCurrentlyTranslating = isTranslating && selectedLanguage === langCode;
+            {getLanguageOrder().map((langCode) => {
+              const isSelected = selectedLanguage === langCode;
+              const isLoading = loadingLanguages.has(langCode);
+              const displayName = getLanguageDisplayName(langCode);
+              const hasCachedTranslation = getCachedTranslation(originalText, langCode);
+              const isCurrentlyTranslating = isTranslating && selectedLanguage === langCode;
 
-            return (
-              <motion.button
-                key={langCode}
-                onClick={() => {
-                  setSelectedLanguage(langCode);
-                }}
-                disabled={isLoading || isTranslating}
-                className={`
-                  relative group px-3 py-1.5 text-xs font-medium transition-all duration-300 whitespace-nowrap rounded-full border
-                  ${isSelected
-                    ? 'bg-emerald-600 dark:bg-emerald-400 text-white dark:text-emerald-900 border-emerald-600 dark:border-emerald-400'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300'
-                  }
-                  ${isLoading || isCurrentlyTranslating
-                    ? 'cursor-not-allowed border-gray-400 dark:border-gray-500 text-gray-500 dark:text-gray-400' 
-                    : 'cursor-pointer hover:scale-105'
-                  }
-                  ${hasCachedTranslation && !isSelected ? 'border-emerald-400 dark:border-emerald-500' : ''}
-                `}
-                whileHover={!isLoading && !isTranslating ? { scale: 1.05 } : {}}
-                whileTap={!isLoading && !isTranslating ? { scale: 0.95 } : {}}
-              >
-                {/* Translation Progress Indicator for Selected Language */}
-                {isCurrentlyTranslating && (
-                  <motion.div
-                    className="absolute inset-0 bg-gray-200/30 dark:bg-gray-600/30 rounded-full"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                )}
+              return (
+                <motion.button
+                  key={langCode}
+                  onClick={() => {
+                    setSelectedLanguage(langCode);
+                  }}
+                  disabled={isLoading || isTranslating}
+                  className={`
+                    relative group px-2.5 py-1 text-xs font-medium transition-all duration-300 whitespace-nowrap rounded-lg border
+                    ${isSelected
+                      ? 'bg-emerald-600 dark:bg-emerald-400 text-white dark:text-emerald-900 border-emerald-600 dark:border-emerald-400 shadow-sm'
+                      : 'bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white dark:hover:bg-gray-700'
+                    }
+                    ${isLoading || isCurrentlyTranslating
+                      ? 'cursor-not-allowed bg-gray-100 dark:bg-gray-700 border-gray-400 dark:border-gray-500 text-gray-500 dark:text-gray-400' 
+                      : 'cursor-pointer hover:scale-105'
+                    }
+                    ${hasCachedTranslation && !isSelected ? 'border-emerald-400 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20' : ''}
+                  `}
+                  whileHover={!isLoading && !isTranslating ? { scale: 1.02, y: -1 } : {}}
+                  whileTap={!isLoading && !isTranslating ? { scale: 0.98 } : {}}
+                >
+                  {/* Cached Translation Indicator */}
+                  {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                    />
+                  )}
 
-                {/* Cached Translation Indicator */}
-                {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
-                  <motion.div
-                    className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                  />
-                )}
+                  {/* Loading Effect - Subtle dots animation */}
+                  {isLoading && (
+                    <motion.div
+                      className="absolute inset-0 flex items-center justify-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="flex space-x-0.5">
+                        <motion.div
+                          className="w-1 h-1 bg-current rounded-full"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                        />
+                        <motion.div
+                          className="w-1 h-1 bg-current rounded-full"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                        />
+                        <motion.div
+                          className="w-1 h-1 bg-current rounded-full"
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
 
-                {/* Loading Effect - Subtle dots animation */}
-                {isLoading && (
-                  <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    <div className="flex space-x-0.5">
-                      <motion.div
-                        className="w-1 h-1 bg-current rounded-full"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                      />
-                      <motion.div
-                        className="w-1 h-1 bg-current rounded-full"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                      />
-                      <motion.div
-                        className="w-1 h-1 bg-current rounded-full"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-                      />
+                  {/* Language Name */}
+                  <span className={`${isLoading || isCurrentlyTranslating ? 'opacity-30' : 'opacity-100'} transition-opacity duration-300`}>
+                    {displayName}
+                  </span>
+                  
+                  {/* Tooltip for translation status */}
+                  {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
+                    <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      Cached translation available
                     </div>
-                  </motion.div>
-                )}
+                  )}
 
-                {/* Language Name */}
-                <span className={`${isLoading || isCurrentlyTranslating ? 'opacity-30' : 'opacity-100'} transition-opacity duration-300`}>
-                  {displayName}
-                </span>
-                
-                {/* Tooltip for translation status */}
-                {hasCachedTranslation && !isLoading && !isCurrentlyTranslating && (
-                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                    Cached translation available
-                  </div>
-                )}
-
-                {/* Selection Indicator */}
-                {isSelected && (
-                  <motion.div
-                    layoutId="selectedLanguage"
-                    className="absolute inset-0 bg-emerald-600 dark:bg-emerald-400 rounded-full"
-                    style={{ zIndex: -1 }}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                  />
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
+                                     {/* Selection Indicator */}
+                   {isSelected && (
+                     <motion.div
+                       layoutId="selectedLanguage"
+                       className="absolute inset-0 bg-emerald-600 dark:bg-emerald-400 rounded-lg"
+                       style={{ zIndex: -1 }}
+                       transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                     />
+                   )}
+                 </motion.button>
+               );
+             })}
+           </div>
 
         {/* Natural Vanishing Fade Effects - Removed for infinite look */}
         {/* <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 via-white/60 dark:via-gray-800/60 via-white/30 dark:via-gray-800/30 to-transparent pointer-events-none" />
@@ -531,9 +531,11 @@ export default function LanguageTabs({
         /* Prevent vertical scrolling */
         .language-tabs-container {
           overflow-y: hidden;
-          max-height: 5rem;
+          max-height: 3.5rem;
         }
       `}</style>
-    </div>
+      
+
+    </motion.div>
   );
 }

@@ -1,6 +1,7 @@
 export { default as HeroSection } from './HeroSection';
 export { default as QuickQuestions } from './QuickQuestions';
 export { default as ChatSection } from './ChatSection';
+export { default as ChatSectionOutput } from './ChatSectionOutput';
 export { default as ThinkingProcess } from './ThinkingProcess';
 export { default as ResponseSection } from './ResponseSection';
 export { default as AyahBox } from './AyahBox';
@@ -12,3 +13,6 @@ export { default as AyahAudioPlayer } from './AyahAudioPlayer';
 export { default as LanguageTabs } from './LanguageTabs';
 export { default as TafsirDropdown } from './TafsirDropdown';
 export { default as ThemeToggle } from './ThemeToggle';
+export { default as SuggestedQuestions } from './SuggestedQuestions';
+export { default as MinimalHeader } from './MinimalHeader';
+export { default as TransparencySection } from './TransparencySection';

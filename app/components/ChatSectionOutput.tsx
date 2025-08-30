@@ -5,7 +5,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 
-interface ChatSectionProps {
+interface ChatSectionOutputProps {
   content: string;
   setContent: (content: string) => void;
   askQuran: () => void;
@@ -24,7 +24,7 @@ interface ChatSectionProps {
   onCacheTranslation?: (langCode: string, translatedText: string) => void; // Callback to cache translation
 }
 
-export default function ChatSection({ 
+export default function ChatSectionOutput({ 
   content, 
   setContent, 
   askQuran, 
@@ -41,7 +41,7 @@ export default function ChatSection({
   // Cache management
   translatedText,
   onCacheTranslation
-}: ChatSectionProps) {
+}: ChatSectionOutputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Language management - same as LanguageTabs
@@ -247,170 +247,177 @@ export default function ChatSection({
     setContent(target.value);
     autoResize(target);
   };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-      className="mb-0 relative"
+      className="mb-0 fixed bottom-[-100px] left-0 right-0 overflow-hidden z-50"
     >
-
-
-      {/* ChatGPT-style Input Container - Clean Home Page Version */}
-      <div className="max-w-4xl mx-auto px-0 -mx-1 pb-4">
+      {/* Full-width background color from warning text to extreme bottom of page */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-950 z-0" style={{ height: '1000vh', width: '100%', bottom: '-900vh' }}></div>
+      
+      {/* Spacer to prevent content from going behind fixed footer */}
+      <div className="h-8 sm:h-12"></div>
+      
+      {/* ChatGPT-style Input Container - Fixed Footer Effect */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-0 pb-4 sticky bottom-0 bg-gray-50 dark:bg-gray-950 pt-4 z-20">
         <div className="relative">
 
 
-          {/* Translate Section - Left side top with exact LanguageTabs styling */}
+                    {/* Translate Section - Left side top with exact LanguageTabs styling */}
           {showSummary && (
-            <div className="absolute -top-12 -left-1 -right-1 z-10 w-full">
-              <div className="flex items-center space-x-3 w-full">
-                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex-shrink-0">Translate:</span>
-                
-                {/* Language buttons with exact LanguageTabs styling - Dynamic from API */}
-                {isLoadingLanguages ? (
-                  <div className="flex items-center justify-center py-1 flex-1">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                      className="w-3 h-3 border border-emerald-300 dark:border-emerald-600 border-t-emerald-500 dark:border-emerald-400 rounded-full"
-                    />
-                  </div>
-                ) : (isTranslating && !isUsingCachedTranslation) ? (
-                  /* Translation Progress Animation - Extended full width */
-                  <div className="flex-1 flex items-center py-1">
-                    <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-1.5 rounded-lg">
-                      {/* Left side - Progress info */}
-                      <div className="flex items-center space-x-3">
-                        {/* Progress indicator */}
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                          className="w-3 h-3 border border-emerald-400 dark:border-emerald-500 border-t-emerald-500 dark:border-t-emerald-400 rounded-full"
-                        />
-                        
-                        {/* Progress message */}
-                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                          {translationProgress && translationProgress <= 30 ? 'Translating...' :
-                           translationProgress && translationProgress <= 80 ? 'Processing...' :
-                           translationProgress && translationProgress <= 95 ? 'Finalizing...' : 'Complete!'}
-                        </span>
-                      </div>
-                      
-                      {/* Right side - Progress tracking */}
-                      <div className="flex items-center space-x-3">
-                        {/* Progress percentage */}
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-100 dark:bg-emerald-800/30 px-2 py-0.5 rounded">
-                          {translationProgress ? Math.round(translationProgress) : 0}%
-                        </span>
-                        
-                        {/* Progress bar */}
-                        <div className="w-32 bg-emerald-200 dark:bg-emerald-700 rounded-full h-1.5 overflow-hidden">
+            <div className="absolute -top-12 left-0 right-0 z-10 w-full px-4 sm:px-0">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-center space-x-3 w-full">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex-shrink-0">Translate:</span>
+                  
+                  {/* Language buttons with exact LanguageTabs styling - Dynamic from API */}
+                  {isLoadingLanguages ? (
+                    <div className="flex items-center justify-center py-1 flex-1">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                        className="w-3 h-3 border border-emerald-300 dark:border-emerald-600 border-t-emerald-500 dark:border-emerald-400 rounded-full"
+                      />
+                    </div>
+                  ) : (isTranslating && !isUsingCachedTranslation) ? (
+                    /* Translation Progress Animation - Extended full width */
+                    <div className="flex-1 flex items-center py-1">
+                      <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-1.5 rounded-lg">
+                        {/* Left side - Progress info */}
+                        <div className="flex items-center space-x-3">
+                          {/* Progress indicator */}
                           <motion.div
-                            className="h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${translationProgress || 0}%` }}
-                            transition={{ duration: 0.1, ease: "easeOut" }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                            className="w-3 h-3 border border-emerald-400 dark:border-emerald-500 border-t-emerald-500 dark:border-t-emerald-400 rounded-full"
                           />
+                          
+                          {/* Progress message */}
+                          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                            {translationProgress && translationProgress <= 30 ? 'Translating...' :
+                             translationProgress && translationProgress <= 80 ? 'Processing...' :
+                             translationProgress && translationProgress <= 95 ? 'Finalizing...' : 'Complete!'}
+                          </span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : isUsingCachedTranslation ? (
-                  /* Instant Cached Translation Success - Extended full width */
-                  <div className="flex-1 flex items-center py-1">
-                    <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-1.5 rounded-lg">
-                      {/* Left side - Instant success */}
-                      <div className="flex items-center space-x-3">
-                        {/* Instant success indicator */}
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ duration: 0.2, ease: "backOut" }}
-                          className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center"
-                        >
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </motion.div>
                         
-                        {/* Instant success message */}
-                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                          Translation Loaded Instantly! 🚀
-                        </span>
-                      </div>
-                      
-                      {/* Right side - Success indicator */}
-                      <div className="flex items-center space-x-3">
-                        {/* Success badge */}
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-100 dark:bg-emerald-800/30 px-2 py-0.5 rounded">
-                          Cached
-                        </span>
-                        
-                        {/* Success icon */}
-                        <div className="w-8 h-6 bg-emerald-200 dark:bg-emerald-700 rounded flex items-center justify-center">
-                          <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-1 items-center flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide py-1 scroll-smooth w-full">
-                    {getLanguageOrder().map((langCode) => {
-                      const isSelected = currentLanguage === langCode;
-                      
-                      return (
-                        <motion.button
-                          key={langCode}
-                          onClick={() => {
-                            handleInstantTranslation(langCode);
-                          }}
-                          disabled={isTranslating}
-                          className={`
-                            relative group px-2.5 py-1 text-xs font-medium transition-all duration-300 whitespace-nowrap rounded-lg border flex-shrink-0
-                            ${isSelected
-                              ? 'bg-emerald-600 dark:bg-emerald-400 text-white dark:text-emerald-900 border-emerald-600 dark:border-emerald-400 shadow-sm'
-                              : 'bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white dark:hover:bg-gray-700'
-                            }
-                            ${isTranslating
-                              ? 'cursor-not-allowed bg-gray-100 dark:bg-gray-700 border-gray-400 dark:border-gray-500 text-gray-500 dark:text-gray-400' 
-                              : 'cursor-pointer'
-                            }
-                          `}
-                          whileHover={!isTranslating ? { scale: 1.02, y: -1 } : {}}
-                          whileTap={!isTranslating ? { scale: 0.98 } : {}}
-                        >
-                          {/* Language Name */}
-                          <span className="opacity-100 transition-opacity duration-300">
-                            {getLanguageDisplayName(langCode)}
+                        {/* Right side - Progress tracking */}
+                        <div className="flex items-center space-x-3">
+                          {/* Progress percentage */}
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-100 dark:bg-emerald-800/30 px-2 py-0.5 rounded">
+                            {translationProgress ? Math.round(translationProgress) : 0}%
                           </span>
                           
-                          {/* Cached Translation Indicator */}
-                          {isTranslationCached(langCode) && !isSelected && (
+                          {/* Progress bar */}
+                          <div className="w-32 bg-emerald-200 dark:bg-emerald-700 rounded-full h-1.5 overflow-hidden">
                             <motion.div
-                              className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ delay: 0.2 }}
+                              className="h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${translationProgress || 0}%` }}
+                              transition={{ duration: 0.1, ease: "easeOut" }}
                             />
-                          )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : isUsingCachedTranslation ? (
+                    /* Instant Cached Translation Success - Extended full width */
+                    <div className="flex-1 flex items-center py-1">
+                      <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-1.5 rounded-lg">
+                        {/* Left side - Instant success */}
+                        <div className="flex items-center space-x-3">
+                          {/* Instant success indicator */}
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ duration: 0.2, ease: "backOut" }}
+                            className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center"
+                          >
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </motion.div>
                           
-                          {/* Selection Indicator */}
-                          {isSelected && (
-                            <motion.div
-                              layoutId="selectedLanguage"
-                              className="absolute inset-0 bg-emerald-600 dark:bg-emerald-400 rounded-lg"
-                              style={{ zIndex: -1 }}
-                              transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                            />
-                          )}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                )}
+                          {/* Instant success message */}
+                          <span className="text-xs font-medium text-emerald-300">
+                            Translation Loaded Instantly! 🚀
+                          </span>
+                        </div>
+                        
+                        {/* Right side - Success indicator */}
+                        <div className="flex items-center space-x-3">
+                          {/* Success badge */}
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-100 dark:bg-emerald-800/30 px-2 py-0.5 rounded">
+                            Cached
+                          </span>
+                          
+                          {/* Success icon */}
+                          <div className="w-8 h-6 bg-emerald-200 dark:bg-emerald-700 rounded flex items-center justify-center">
+                            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1 items-center flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide py-1 scroll-smooth w-full">
+                      {getLanguageOrder().map((langCode) => {
+                        const isSelected = currentLanguage === langCode;
+                        
+                        return (
+                          <motion.button
+                            key={langCode}
+                            onClick={() => {
+                              handleInstantTranslation(langCode);
+                            }}
+                            disabled={isTranslating}
+                            className={`
+                              relative group px-2.5 py-1 text-xs font-medium transition-all duration-300 whitespace-nowrap rounded-lg border flex-shrink-0
+                              ${isSelected
+                                ? 'bg-emerald-600 dark:bg-emerald-400 text-white dark:text-emerald-900 border-emerald-600 dark:border-emerald-400 shadow-sm'
+                                : 'bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-white dark:hover:bg-gray-700'
+                              }
+                              ${isTranslating
+                                ? 'cursor-not-allowed bg-gray-100 dark:bg-gray-700 border-gray-400 dark:border-gray-500 text-gray-500 dark:text-gray-400' 
+                                : 'cursor-pointer'
+                              }
+                            `}
+                            whileHover={!isTranslating ? { scale: 1.02, y: -1 } : {}}
+                            whileTap={!isTranslating ? { scale: 0.98 } : {}}
+                          >
+                            {/* Language Name */}
+                            <span className="opacity-100 transition-opacity duration-300">
+                              {getLanguageDisplayName(langCode)}
+                            </span>
+                            
+                            {/* Cached Translation Indicator */}
+                            {isTranslationCached(langCode) && !isSelected && (
+                              <motion.div
+                                className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.2 }}
+                              />
+                            )}
+                            
+                            {/* Selection Indicator */}
+                            {isSelected && (
+                              <motion.div
+                                layoutId="selectedLanguage"
+                                className="absolute inset-0 bg-emerald-600 dark:bg-emerald-400 rounded-lg"
+                                style={{ zIndex: -1 }}
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                              />
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -434,18 +441,6 @@ export default function ChatSection({
               }}
             />
             
-            {/* Subtle highlight animation when content changes */}
-            {content.trim() && (
-              <motion.div
-                key={content}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="absolute inset-0 rounded-2xl bg-emerald-50/20 dark:bg-emerald-900/5 border border-emerald-200/30 dark:border-emerald-700/30 pointer-events-none"
-                style={{ zIndex: -1 }}
-              />
-            )}
-            
             {/* Action buttons container */}
             <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
               {/* Send Button - Minimalistic Professional Design */}
@@ -464,8 +459,6 @@ export default function ChatSection({
                 }`}
                 title="Send message"
               >
-
-                
                 {/* Icon container */}
                 <div className="relative z-10 flex items-center justify-center">
                   {isProcessing ? (
@@ -504,8 +497,6 @@ export default function ChatSection({
                   }`}
                   title="Clear and reset"
                 >
-                  
-                  
                   {/* Icon container */}
                   <div className="relative z-10 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -523,29 +514,20 @@ export default function ChatSection({
             </div>
           </div>
 
-          {/* Error Message */}
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center border border-red-200 dark:border-red-800 text-xs"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Content Clipping Container - Prevents scrolled content from showing below input area */}
           <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-t from-white dark:from-gray-900 to-transparent pointer-events-none z-20"></div>
         </div>
       </div>
       
-
+      {/* Warning Text - One liner below input section */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-0 -mt-2 pb-10 relative z-30">
+        <div className="text-center">
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            <span className="text-amber-600 dark:text-amber-400 font-semibold mr-1">⚠️ Warning:</span>
+            AI responses may contain inaccuracies. Verify religious information with authentic sources.
+          </p>
+        </div>
+      </div>
       
       {/* Hidden scrollbar styles for language buttons */}
       <style jsx>{`

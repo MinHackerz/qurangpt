@@ -46,7 +46,7 @@ export default function TafsirDropdown({ surahNumber, ayahNumber }: TafsirDropdo
       const data = await response.json();
       setTafsirData(data);
     } catch (err) {
-      console.error('Error fetching tafsir:', err);
+      // Error fetching tafsir - silent fail for security
       setError('Unable to load tafsir at this time');
     } finally {
       setIsLoading(false);

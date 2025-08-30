@@ -45,7 +45,7 @@ export default function AyahBox({
           }
         }
       } catch (error) {
-        console.error('Error fetching audio editions:', error);
+        // Error fetching audio editions - silent fail for security
         // Fallback to default
         setSelectedEdition('ar.alafasy');
       } finally {
@@ -96,7 +96,7 @@ export default function AyahBox({
       
       audioRef.current.addEventListener('error', () => {
         setIsLoading(false);
-        console.error('Error loading audio');
+        // Error loading audio - silent fail for security
       });
       
       audioRef.current.addEventListener('canplay', () => {

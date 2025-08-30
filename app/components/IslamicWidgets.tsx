@@ -130,7 +130,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
         });
         
         // Only show error for debugging, but still show widgets
-        console.warn('Using fallback Islamic data due to error:', err instanceof Error ? err.message : String(err));
+        // Using fallback Islamic data due to error - silent fail for security
       } finally {
         setLoading(false);
       }
@@ -210,7 +210,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
   const clockTime = getCurrentTimeForClock();
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
+    <div className="max-w-4xl mx-auto px-0 -mx-1">
 
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

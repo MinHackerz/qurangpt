@@ -119,7 +119,7 @@ export class GeminiApiManager {
       const keyIndex = this.currentKeyIndex;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       
-      console.log(`Attempting API call with key ${keyIndex + 1} (attempt ${attempt + 1})`);
+      // Attempting API call with current key
       
       const result = await this.makeApiCall(apiKey, apiUrl, body);
       
@@ -138,7 +138,7 @@ export class GeminiApiManager {
         this.markKeyAsFailed(keyIndex, result.error || 'API limit exceeded');
       } else {
         // For other errors, don't mark the key as failed (might be temporary)
-        console.warn(`API call failed with key ${keyIndex + 1}: ${result.error}`);
+        // API call failed with current key - silent fail for security
       }
 
       // Move to next key for next attempt
@@ -218,7 +218,7 @@ export class GeminiApiManager {
       const keyIndex = this.currentKeyIndex;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       
-      console.log(`Attempting translation with key ${keyIndex + 1} (attempt ${attempt + 1})`);
+      // Attempting translation with current key
       
       const result = await this.makeApiCall(apiKey, apiUrl, body);
       
@@ -236,7 +236,7 @@ export class GeminiApiManager {
           (result.data?.error?.message?.toLowerCase().includes('rate limit'))) {
         this.markKeyAsFailed(keyIndex, result.error || 'API limit exceeded');
       } else {
-        console.warn(`Translation failed with key ${keyIndex + 1}: ${result.error}`);
+        // API call failed with current key - silent fail for security
       }
 
       // Move to next key for next attempt

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Using ${apiManager.getKeyCount()} API keys for content generation`);
+    // Using API keys for content generation
     
     const result = await apiManager.generateContent(prompt, model);
     
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json({ response: generatedText });
   } catch (error) {
-    console.error('API error:', error);
+    // API error - silent fail for security
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

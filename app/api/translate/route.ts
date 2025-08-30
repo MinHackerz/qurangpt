@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
     // Check cache first
     const cachedTranslation = getCachedTranslation(text, targetLanguage, context);
     if (cachedTranslation) {
-      console.log(`Cache hit for: ${detectedSourceLang} -> ${targetLanguage} (context: ${context})`);
+      // Cache hit - returning cached translation
       return NextResponse.json({
         translatedText: cachedTranslation.translatedText,
         sourceLanguage: detectedSourceLang,
@@ -426,7 +426,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Using ${apiManager.getKeyCount()} API keys for translation`);
+    // Using API keys for translation
 
     const translationResult = await apiManager.translateText(
       text,
@@ -438,7 +438,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!translationResult.success) {
-      console.error('Translation API error:', translationResult.error);
+      // Translation API error - silent fail for security
       
       // Handle specific error types
       if (translationResult.statusCode === 429) {
@@ -505,12 +505,10 @@ export async function POST(request: NextRequest) {
       translationId: generateTranslationId()
     });
 
-    console.log(`Translation completed: ${detectedSourceLang} -> ${targetLanguage} (confidence: ${confidence.toFixed(2)})`);
-    
     return NextResponse.json(translationResponse);
 
   } catch (error) {
-    console.error('Translation error:', error);
+    // Error handling for unexpected issues
     return NextResponse.json(
       { error: 'Failed to process translation request' },
       { status: 500 }
@@ -527,7 +525,7 @@ export async function GET() {
       model: 'gemini-1.5-pro'
     });
   } catch (error) {
-    console.error('Error fetching supported languages:', error);
+    // Error handling for unexpected issues
     return NextResponse.json(
       { error: 'Failed to fetch supported languages' },
       { status: 500 }

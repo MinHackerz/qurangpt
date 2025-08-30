@@ -18,6 +18,8 @@ interface ResponseSectionProps {
   seekToTime: (timeInSeconds: number) => boolean;
   displayedContent?: string; // Content to display (could be translated)
   onCopyAIContent?: () => void; // New prop for copying AI content
+  userQuestion?: string; // New prop for the user's question
+  onQuestionEdit?: (newQuestion: string) => void; // New prop for editing the user's question
 }
 
 export default function ResponseSection({ 
@@ -32,7 +34,9 @@ export default function ResponseSection({
   getAudioProgress,
   seekToTime,
   displayedContent,
-  onCopyAIContent
+  onCopyAIContent,
+  userQuestion,
+  onQuestionEdit
 }: ResponseSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
@@ -45,6 +49,48 @@ export default function ResponseSection({
       return () => clearTimeout(timer);
     }
   }, [copied, onCopyAIContent]);
+
+  // New state for question editing
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
+  const [editedQuestion, setEditedQuestion] = useState('');
+  const [isHoveringQuestion, setIsHoveringQuestion] = useState(false);
+
+  // Function to handle question editing
+  const handleEditQuestion = () => {
+    setIsEditingQuestion(true);
+    setEditedQuestion(userQuestion || '');
+  };
+
+  // Function to handle question save
+  const handleSaveQuestion = () => {
+    if (editedQuestion.trim() && editedQuestion !== userQuestion && onQuestionEdit) {
+      // Call parent function to get new response for edited question
+      onQuestionEdit(editedQuestion);
+    }
+    setIsEditingQuestion(false);
+    setEditedQuestion('');
+  };
+
+  // Function to handle question cancel
+  const handleCancelEdit = () => {
+    setIsEditingQuestion(false);
+    setEditedQuestion('');
+  };
+
+  // Function to copy question to clipboard
+  const handleCopyQuestion = async () => {
+    try {
+      await navigator.clipboard.writeText(userQuestion || '');
+      // Show brief success feedback for question copy
+      setShowQuestionCopySuccess(true);
+      setTimeout(() => setShowQuestionCopySuccess(false), 1500);
+    } catch (error) {
+      // Failed to copy question - silent fail for security
+    }
+  };
+
+  // State for question copy success feedback
+  const [showQuestionCopySuccess, setShowQuestionCopySuccess] = useState(false);
 
   // Function to process content and convert markdown links to HTML links
   const processContentLinks = (content: string): string => {
@@ -113,7 +159,7 @@ export default function ResponseSection({
           updateDurationDisplay(player, duration);
         }
       } catch (error) {
-        console.warn(`Failed to preload metadata for ayah ${globalAyahNumber}:`, error);
+        // Failed to preload metadata for ayah - silent fail
       }
     });
   }, [updateDurationDisplay]);
@@ -154,7 +200,7 @@ export default function ResponseSection({
               await onAudioPlay(ayahId, globalAyahNumber);
             }
           } catch (error) {
-            console.error('Audio player error after translation:', error);
+            // Audio player error after translation - silent fail
           }
         });
       });
@@ -214,7 +260,7 @@ export default function ResponseSection({
 
           }
         } catch (error) {
-          console.error('Audio player error:', error);
+          // Audio player error - silent fail
           statusText.textContent = 'Error';
         }
       });
@@ -424,108 +470,196 @@ export default function ResponseSection({
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.95 }}
-          className="relative mb-20 max-w-6xl mx-auto px-4"
+          className="relative max-w-4xl mx-auto px-0 -mx-1 response-section-safe-margin"
         >
-          <div className="relative bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700  overflow-hidden">
+          
+
+          {/* Content without borders or headers - Clean design */}
+          <div className="relative group">
             {/* Subtle background pattern */}
 
-            
-            {/* Header */}
-            <div className="relative p-6 md:p-8 pb-4 md:pb-6 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-              
-              <div className="flex items-center mb-3">
-                {/* Enhanced Icon Container */}
-                <div className="relative mr-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center border border-gray-200 dark:border-gray-600 ">
-                    <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
+            {/* Content with minimal typography - Matching SuggestedQuestions text sizes */}
+            <div className="relative z-10">
+              {/* Asked Question Display - Professional and Minimalistic */}
+              {userQuestion && (
+                <div 
+                  className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 relative group"
+                  onMouseEnter={() => setIsHoveringQuestion(true)}
+                  onMouseLeave={() => setIsHoveringQuestion(false)}
+                >
+                  {/* Interactive Icons - Top Right Corner */}
+                  <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {!isEditingQuestion ? (
+                      <>
+                        {/* Edit Icon */}
+                        <button
+                          onClick={handleEditQuestion}
+                          className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+                          title="Edit question"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        
+                        {/* Copy Question Icon */}
+                        <button
+                          onClick={handleCopyQuestion}
+                          className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+                          title="Copy question"
+                        >
+                          <AnimatePresence mode="wait">
+                            {showQuestionCopySuccess ? (
+                              <motion.svg
+                                key="tick"
+                                initial={{ scale: 0, rotate: -90 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                exit={{ scale: 0, rotate: 90 }}
+                                transition={{ duration: 0.2 }}
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </motion.svg>
+                            ) : (
+                              <motion.svg
+                                key="copy"
+                                initial={{ scale: 0, rotate: 90 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                exit={{ scale: 0, rotate: -90 }}
+                                transition={{ duration: 0.2 }}
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                              </motion.svg>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Save (Tick) Icon */}
+                        <button
+                          onClick={handleSaveQuestion}
+                          className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+                          title="Save changes"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        
+                        {/* Cancel (Cross) Icon */}
+                        <button
+                          onClick={handleCancelEdit}
+                          className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+                          title="Cancel editing"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
                   </div>
-                </div>
-                
-                {/* Header Content */}
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-1">
-                    <h2 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100 tracking-tight">
-                      QuranGPT
-                    </h2>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
-                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+
+                  <div className="flex items-start gap-3 pr-16">
+                    {/* Question Icon */}
+                    <div className="flex-shrink-0 w-5 h-5 mt-0.5 text-gray-500 dark:text-gray-400">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Question Text or Edit Input */}
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Your Question
+                      </h3>
+                      
+                      {!isEditingQuestion ? (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                          {userQuestion}
+                        </p>
+                      ) : (
+                        <textarea
+                          value={editedQuestion}
+                          onChange={(e) => setEditedQuestion(e.target.value)}
+                          className="w-full p-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 focus:border-gray-400 dark:focus:border-gray-500 resize-none"
+                          rows={2}
+                          placeholder="Edit your question..."
+                          autoFocus
+                        />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 tracking-wide">
-                      Divine Guidance from the Holy Quran
-                    </p>
-                  </div>
                 </div>
-
-                {/* Enhanced Copy AI Content Button */}
-                {onCopyAIContent && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={onCopyAIContent}
-                    className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-200 ${
-                      showCopySuccess 
-                        ? 'bg-emerald-500 border-emerald-500 text-white' 
-                        : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 '
-                    }`}
-                    title="Copy AI-generated content only"
-                  >
-                    <AnimatePresence mode="wait">
-                      {showCopySuccess ? (
-                        <motion.svg
-                          key="tick"
-                          initial={{ scale: 0, rotate: -90 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0, rotate: 90 }}
-                          transition={{ duration: 0.2 }}
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </motion.svg>
-                      ) : (
-                        <motion.svg
-                          key="copy"
-                          initial={{ scale: 0, rotate: 90 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0, rotate: -90 }}
-                          transition={{ duration: 0.2 }}
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </motion.svg>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-                )}
-              </div>
-            </div>
-
-            {/* Content with enhanced typography and background */}
-            <div className="relative px-6 md:px-8 pb-6 md:pb-8">
-              {/* Subtle content background */}
-
+              )}
               
-              <div className="prose dark:prose-invert prose-gray max-w-none relative z-10">
-                <div 
-                  ref={containerRef}
-                  className="text-gray-700 dark:text-gray-200 space-y-6 leading-relaxed text-base md:text-lg pt-[10px]"
-                  dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
-                />
-                
-                {/* Audio players are now rendered inline with each ayah */}
-              </div>
+              <div 
+                ref={containerRef}
+                className="text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed text-sm p-4 -m-4"
+                dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
+              />
+              
+              {/* Audio players are now rendered inline with each ayah */}
             </div>
+
+            {/* Bottom Copy Button - Bottom Right Corner of Response */}
+            {onCopyAIContent && userQuestion && (
+              <div className="absolute -bottom-2 right-4 z-20">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onCopyAIContent}
+                  className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm ${
+                    showCopySuccess 
+                      ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' 
+                      : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                  }`}
+                  title="Copy AI response content"
+                >
+                  <AnimatePresence mode="wait">
+                    {showCopySuccess ? (
+                      <motion.svg
+                        key="tick"
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: 90 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </motion.svg>
+                    ) : (
+                      <motion.svg
+                        key="copy"
+                        initial={{ scale: 0, rotate: 90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: -90 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                      </motion.svg>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
+            )}
           </div>
         </motion.div>
       )}

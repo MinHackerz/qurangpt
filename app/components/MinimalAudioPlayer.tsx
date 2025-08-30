@@ -51,7 +51,7 @@ export default function MinimalAudioPlayer({
         setIsLoading(false);
       }
     } catch (err) {
-      console.error('Audio playback error:', err);
+      // Audio playback error - silent fail for security
       setError('Playback failed');
       setIsLoading(false);
     }

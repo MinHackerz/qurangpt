@@ -11,19 +11,6 @@ function getClientIP(request: NextRequest): string {
   const trueClientIP = request.headers.get('x-true-client-ip'); // Akamai
   const via = request.headers.get('via');
   
-  // Log IP headers for debugging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('IP Headers found:', {
-      'x-forwarded-for': forwardedFor,
-      'x-real-ip': realIP,
-      'cf-connecting-ip': cfConnectingIP,
-      'x-forwarded': forwarded,
-      'x-client-ip': clientIP,
-      'x-true-client-ip': trueClientIP,
-      'via': via
-    });
-  }
-  
   // Try to extract IP from x-forwarded-for (most common)
   if (forwardedFor) {
     // x-forwarded-for can contain multiple IPs, take the first one
@@ -31,7 +18,6 @@ function getClientIP(request: NextRequest): string {
     for (const ip of ips) {
       if (ip && ip !== 'unknown' && ip !== '::1' && ip !== '127.0.0.1' && 
           !ip.startsWith('10.') && !ip.startsWith('172.') && !ip.startsWith('192.168.')) {
-        console.log('Using x-forwarded-for IP:', ip);
         return ip;
       }
     }
@@ -40,25 +26,21 @@ function getClientIP(request: NextRequest): string {
   // Try other headers
   if (realIP && realIP !== 'unknown' && realIP !== '::1' && realIP !== '127.0.0.1' &&
       !realIP.startsWith('10.') && !realIP.startsWith('172.') && !realIP.startsWith('192.168.')) {
-    console.log('Using x-real-ip:', realIP);
     return realIP;
   }
   
   if (cfConnectingIP && cfConnectingIP !== 'unknown' && cfConnectingIP !== '::1' && cfConnectingIP !== '127.0.0.1' &&
       !cfConnectingIP.startsWith('10.') && !cfConnectingIP.startsWith('172.') && !cfConnectingIP.startsWith('192.168.')) {
-    console.log('Using cf-connecting-ip:', cfConnectingIP);
     return cfConnectingIP;
   }
   
   if (clientIP && clientIP !== 'unknown' && clientIP !== '::1' && clientIP !== '127.0.0.1' &&
       !clientIP.startsWith('10.') && !clientIP.startsWith('172.') && !clientIP.startsWith('192.168.')) {
-    console.log('Using x-client-ip:', clientIP);
     return clientIP;
   }
   
   if (trueClientIP && trueClientIP !== 'unknown' && trueClientIP !== '::1' && trueClientIP !== '127.0.0.1' &&
       !trueClientIP.startsWith('10.') && !trueClientIP.startsWith('172.') && !trueClientIP.startsWith('192.168.')) {
-    console.log('Using x-true-client-ip:', trueClientIP);
     return trueClientIP;
   }
   
@@ -66,7 +48,6 @@ function getClientIP(request: NextRequest): string {
   const connection = (request as any).connection;
   if (connection?.remoteAddress && connection.remoteAddress !== '::1' && connection.remoteAddress !== '127.0.0.1' &&
       !connection.remoteAddress.startsWith('10.') && !connection.remoteAddress.startsWith('172.') && !connection.remoteAddress.startsWith('192.168.')) {
-    console.log('Using connection remote address:', connection.remoteAddress);
     return connection.remoteAddress;
   }
   
@@ -75,15 +56,13 @@ function getClientIP(request: NextRequest): string {
     const socket = (request as any).socket;
     if (socket?.remoteAddress && socket.remoteAddress !== '::1' && socket.remoteAddress !== '127.0.0.1' &&
         !socket.remoteAddress.startsWith('10.') && !socket.remoteAddress.startsWith('192.168.')) {
-      console.log('Using socket remote address:', socket.remoteAddress);
       return socket.remoteAddress;
     }
   } catch (error) {
-    console.log('Could not access socket remote address');
+    // Could not access socket remote address - silent fail for security
   }
   
   // If all else fails, return a placeholder that will trigger fallback
-  console.log('No valid client IP found, will use fallback location');
   return 'unknown';
 }
 
@@ -98,7 +77,6 @@ async function getLocationFromIP(clientIP: string): Promise<{
 } | null> {
   // If no valid IP found, return null to trigger fallback logic
   if (!clientIP || clientIP === 'unknown') {
-    console.log('No valid client IP provided, will use fallback logic');
     return null;
   }
   
@@ -141,7 +119,6 @@ async function getLocationFromIP(clientIP: string): Promise<{
 
   for (const service of services) {
     try {
-      console.log(`Trying geolocation service: ${service.url}`);
       const response = await fetch(service.url, {
         headers: {
           'User-Agent': 'QuranGPT/1.0'
@@ -152,7 +129,6 @@ async function getLocationFromIP(clientIP: string): Promise<{
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`Service ${service.url} response:`, data);
         
         const location = service.parser(data);
         
@@ -160,24 +136,20 @@ async function getLocationFromIP(clientIP: string): Promise<{
         if (location.lat && location.lng && 
             typeof location.lat === 'number' && typeof location.lng === 'number' &&
             location.lat !== 0 && location.lng !== 0) {
-          console.log(`Successfully got location: ${location.city}, ${location.region}, ${location.country} (${location.lat}, ${location.lng}) - ${location.timezone}`);
           return location;
         } else {
-          console.warn(`Invalid location data from ${service.url}:`, location);
+          // Invalid location data from service - silent fail for security
         }
       } else {
-        console.warn(`Service ${service.url} returned status: ${response.status}`);
-        const errorText = await response.text();
-        console.warn(`Error response:`, errorText);
+        // Service returned error status - silent fail for security
       }
     } catch (error) {
-      console.warn(`Failed to get location from ${service.url}:`, error);
+      // Failed to get location from service - silent fail for security
       continue;
     }
   }
   
   // Fallback to Kolkata coordinates when geolocation fails
-  console.log('All geolocation services failed, using Kolkata as fallback');
   return {
     lat: 22.5726,
     lng: 88.3639,
@@ -191,9 +163,7 @@ async function getLocationFromIP(clientIP: string): Promise<{
 export async function GET(request: NextRequest) {
   try {
     // Get user's location from IP address
-    console.log('Attempting IP-based geolocation...');
     const clientIP = getClientIP(request);
-    console.log('Client IP detected:', clientIP);
     
     // Force Kolkata location for consistent prayer times
     const locationData = {
@@ -257,9 +227,6 @@ export async function GET(request: NextRequest) {
     
     const timezoneAbbr = getTimezoneAbbr(userTimezone);
     
-    console.log(`Using detected location: ${locationData.city}, ${locationData.country} (${lat}, ${lng})`);
-    console.log(`Using detected timezone: ${userTimezone} (${timezoneAbbr})`);
-
     // Use a simpler API endpoint for today's prayers
     const currentDate = new Date();
     const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -273,16 +240,13 @@ export async function GET(request: NextRequest) {
       }
     );
     
-    console.log('Prayer API response status:', prayerResponse.status);
-    
     if (!prayerResponse.ok) {
       console.error('Prayer API failed:', prayerResponse.statusText);
       throw new Error(`Prayer API failed: ${prayerResponse.status}`);
     }
     
     const prayerData = await prayerResponse.json();
-    console.log('Prayer data received:', prayerData);
-
+    
     // Calculate current and next prayer
     const prayers = prayerData.data?.timings || {};
     const prayerNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -351,18 +315,6 @@ export async function GET(request: NextRequest) {
     let nextPrayer = 'Fajr';
     let nextPrayerTime = new Date();
     
-    // Debug: Log prayer times and current time
-    console.log('Prayer times in IST timezone:', userTimezone);
-    console.log('User current time:', userCurrentTime.toLocaleString('en-US', { timeZone: userTimezone }));
-    console.log('Today\'s date:', new Date().toLocaleDateString('en-US', { timeZone: userTimezone }));
-    console.log('Raw prayer data from API:', prayers);
-    
-    for (const prayerName of prayerNames) {
-      if (prayerTimes[prayerName]) {
-        console.log(`${prayerName}: ${prayerTimes[prayerName].toLocaleString('en-US', { timeZone: userTimezone })}`);
-      }
-    }
-
     // Simplified prayer detection logic - use IST time
     const currentHour = userCurrentTime.getHours();
     const currentMinute = userCurrentTime.getMinutes();
@@ -377,26 +329,6 @@ export async function GET(request: NextRequest) {
         prayerTimesInMinutes[timingName] = parseInt(hours) * 60 + parseInt(minutes);
       }
     }
-    
-    // Debug: Log current time and prayer times in minutes
-    console.log('Current time in minutes:', currentTimeInMinutes);
-    console.log('Prayer times in minutes:', prayerTimesInMinutes);
-    
-    // Validate prayer times
-    console.log('Prayer times validation:');
-    for (const timingName of allTimings) {
-      if (prayers[timingName]) {
-        console.log(`${timingName}: ${prayers[timingName]} -> ${prayerTimesInMinutes[timingName]} minutes`);
-      }
-    }
-    
-    console.log('Prayer times in minutes:', prayerTimesInMinutes);
-    console.log('Current time in minutes:', currentTimeInMinutes);
-    
-    // Reliable prayer time period detection
-    console.log('=== PRAYER TIME DETECTION ===');
-    console.log('Current time in minutes:', currentTimeInMinutes);
-    console.log('Prayer times in minutes:', prayerTimesInMinutes);
     
     // Define prayer periods with proper end times
     const prayerPeriods = [
@@ -449,8 +381,6 @@ export async function GET(request: NextRequest) {
         isInPeriod = currentTimeInMinutes >= period.start && currentTimeInMinutes < period.end;
       }
       
-      console.log(`Checking ${period.name}: ${period.start} to ${period.end} (${period.endTimeName}) - In period: ${isInPeriod}`);
-      
       if (isInPeriod) {
         currentPrayer = period.name;
         
@@ -468,30 +398,20 @@ export async function GET(request: NextRequest) {
           currentPrayerEndTime = endTime;
         }
         
-        console.log(`✅ ${period.name} is current prayer, ends at:`, currentPrayerEndTime.toLocaleString('en-US', { timeZone: userTimezone }));
-        foundCurrentPrayer = true;
         break;
       }
     }
     
     if (!foundCurrentPrayer) {
-      console.log('❌ No current prayer found - time is between prayers');
-    }
-    
-    // Find next prayer
-    console.log('Current prayer is null, finding next prayer...');
-    if (!currentPrayer) {
       // Find the next prayer that hasn't started yet for today
       let foundNextPrayerToday = false;
       for (const prayerName of prayerNames) {
-        console.log(`Checking ${prayerName}: ${prayerTimesInMinutes[prayerName]} > ${currentTimeInMinutes}?`);
         if (prayerTimesInMinutes[prayerName] && prayerTimesInMinutes[prayerName] > currentTimeInMinutes) {
           nextPrayer = prayerName;
           // Create next prayer time
           const nextTime = new Date();
           nextTime.setHours(Math.floor(prayerTimesInMinutes[prayerName] / 60), prayerTimesInMinutes[prayerName] % 60, 0, 0);
           nextPrayerTime = nextTime;
-          console.log(`Next prayer is ${prayerName} at ${nextTime.toLocaleString('en-US', { timeZone: userTimezone })}`);
           foundNextPrayerToday = true;
           break;
         }
@@ -505,21 +425,20 @@ export async function GET(request: NextRequest) {
           const nextTime = new Date();
           nextTime.setHours(Math.floor(prayerTimesInMinutes['Isha'] / 60), prayerTimesInMinutes['Isha'] % 60, 0, 0);
           nextPrayerTime = nextTime;
-          console.log(`Next prayer is Isha at ${nextTime.toLocaleString('en-US', { timeZone: userTimezone })}`);
         } else {
           // All prayers for today have passed, get tomorrow's Fajr
           nextPrayer = 'Fajr';
           nextPrayerTime = new Date();
           nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
           nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
-          console.log(`All prayers passed for today, next prayer is tomorrow's Fajr at ${nextPrayerTime.toLocaleString('en-US', { timeZone: userTimezone })}`);
         }
       }
     } else {
       // If we have a current prayer, find the next one
-      const currentPrayerIndex = prayerNames.indexOf(currentPrayer);
-      const nextPrayerIndex = (currentPrayerIndex + 1) % prayerNames.length;
-      const nextPrayerName = prayerNames[nextPrayerIndex];
+      if (currentPrayer) {
+        const currentPrayerIndex = prayerNames.indexOf(currentPrayer);
+        const nextPrayerIndex = (currentPrayerIndex + 1) % prayerNames.length;
+        const nextPrayerName = prayerNames[nextPrayerIndex];
       
       if (nextPrayerName === 'Fajr' && currentPrayer !== 'Isha') {
         // If next prayer is Fajr but current isn't Isha, it should be tomorrow's Fajr
@@ -532,22 +451,16 @@ export async function GET(request: NextRequest) {
         // Create next prayer time
         if (prayerTimesInMinutes[nextPrayerName]) {
           const nextTime = new Date();
-          nextTime.setHours(Math.floor(prayerTimesInMinutes[nextPrayerName] / 60), prayerTimesInMinutes[nextPrayerName] % 60, 0, 0);
-          nextPrayerTime = nextTime;
+          const nextPrayerMinutes = prayerTimesInMinutes[nextPrayerName];
+          if (nextPrayerMinutes) {
+            nextTime.setHours(Math.floor(nextPrayerMinutes / 60), nextPrayerMinutes % 60, 0, 0);
+            nextPrayerTime = nextTime;
+          }
         }
       }
     }
-    
-    // Debug: Log final prayer detection results
-    console.log('Prayer detection results:');
-    console.log('Current prayer:', currentPrayer);
-    console.log('Next prayer:', nextPrayer);
-    console.log('Next prayer time:', nextPrayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
-    console.log('Next prayer date:', nextPrayerTime.toLocaleDateString('en-US', { timeZone: userTimezone }));
-    if (currentPrayerEndTime) {
-      console.log('Current prayer end time:', currentPrayerEndTime.toLocaleString('en-US', { timeZone: userTimezone }));
     }
-
+    
     // Calculate Eid dates for 2025 (updated dates)
     const currentYear = currentDate.getFullYear();
     
@@ -623,7 +536,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error fetching Islamic data:', error);
+    // Error fetching Islamic data - silent fail for security
     
     // Return fallback data instead of error
     const currentDate = new Date();
