@@ -137,7 +137,9 @@ export default function ResponseSection({
   const preloadAllAudioMetadata = useCallback(async () => {
     if (!containerRef.current) return;
     
-    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player');
+    // Look for actual audio player elements, not just any element with data-ayah-id
+    // This prevents tafsir buttons and other elements from being affected
+    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
     
     audioPlayers.forEach(async (player) => {
       const globalAyahNumber = player.getAttribute('data-global-ayah');
@@ -209,63 +211,103 @@ export default function ResponseSection({
     return () => clearTimeout(timer);
   }, [displayedContent, onAudioPlay, onAudioPause, isAudioPlaying, contentToShow]);
 
+  // Create a stable reference to the audio handler functions
+  const audioHandlers = useCallback(() => ({
+    onAudioPlay,
+    onAudioPause,
+    isAudioPlaying
+  }), [onAudioPlay, onAudioPause, isAudioPlaying]);
+
+  // Helper function to setup click handler for a specific element
+  const setupElementClickHandler = useCallback((element: HTMLElement, ayahId: string, globalAyahNumber: string) => {
+    const handlers = audioHandlers();
+    
+    // Remove existing event listeners by cloning the element
+    const newElement = element.cloneNode(true) as HTMLElement;
+    
+    // Copy all attributes
+    Array.from(element.attributes).forEach(attr => {
+      newElement.setAttribute(attr.name, attr.value);
+    });
+    
+    // Replace the old element
+    element.parentNode?.replaceChild(newElement, element);
+    
+    // Add click event listener
+    newElement.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      try {
+        if (handlers.isAudioPlaying(ayahId)) {
+          handlers.onAudioPause(ayahId);
+        } else {
+          await handlers.onAudioPlay(ayahId, globalAyahNumber);
+        }
+      } catch (error) {
+        console.error('Audio player error:', error);
+      }
+    });
+  }, [audioHandlers]);
+
   // Comprehensive audio setup function
   const setupAudioPlayers = useCallback(() => {
     if (!containerRef.current) return;
     
-    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player');
+    // Look for actual audio player elements, not just any element with data-ayah-id
+    // This prevents tafsir buttons and other elements from being treated as audio players
+    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
     
-    audioPlayers.forEach((player, index) => {
-      const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-      const playIcon = player.querySelector('.play-icon') as HTMLElement;
-      const pauseIcon = player.querySelector('.pause-icon') as HTMLElement;
-      const statusText = player.querySelector('.status-text') as HTMLElement;
-      const statusIndicator = player.querySelector('.status-indicator') as HTMLElement;
-      
-      if (!playBtn || !playIcon || !pauseIcon || !statusText || !statusIndicator) {
-        return;
-      }
-      
-      const ayahId = playBtn.getAttribute('data-ayah-id');
+    audioPlayers.forEach((player) => {
+      const ayahId = player.getAttribute('data-ayah-id');
       const globalAyahNumber = player.getAttribute('data-global-ayah');
       
       if (!ayahId || !globalAyahNumber) {
         return;
       }
       
-      // Remove existing event listeners by cloning the button
-      const newPlayBtn = playBtn.cloneNode(true) as HTMLButtonElement;
-      newPlayBtn.className = playBtn.className;
-      newPlayBtn.setAttribute('data-ayah-id', ayahId);
-      playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
+      // Find actual audio control buttons within this player
+      // Look for specific audio-related button classes and attributes
+      const audioButtons = player.querySelectorAll(
+        '.play-pause-btn, .play-btn, .audio-btn, .audio-control, [data-audio-control="true"], [role="button"][data-audio-action]'
+      );
       
-      // Add click event listener for play/pause
-      newPlayBtn.addEventListener('click', async () => {
-        try {
-          if (isAudioPlaying(ayahId)) {
-            // Pause audio
-            onAudioPause(ayahId);
-            playIcon.classList.remove('hidden');
-            pauseIcon.classList.add('hidden');
-            statusText.textContent = 'Click to play';
-            statusIndicator.classList.add('hidden');
-
-          } else {
-            // Play audio
-            await onAudioPlay(ayahId, globalAyahNumber);
-            playIcon.classList.add('hidden');
-            pauseIcon.classList.remove('hidden');
-            statusText.textContent = 'Playing';
-            statusIndicator.classList.remove('hidden');
-
-          }
-        } catch (error) {
-          // Audio player error - silent fail
-          statusText.textContent = 'Error';
-        }
+      if (audioButtons.length === 0) {
+        // If no specific audio buttons found, don't make the entire player clickable
+        // This prevents tafsir buttons from being affected
+        return;
+      }
+      
+      // Setup click handlers for actual audio buttons only
+      audioButtons.forEach((button) => {
+        setupElementClickHandler(button as HTMLElement, ayahId, globalAyahNumber);
       });
     });
-  }, [onAudioPlay, onAudioPause, isAudioPlaying]);
+  }, [setupElementClickHandler]);
+
+  // Helper function to setup click handler for the entire player
+  const setupPlayerClickHandler = useCallback((player: Element, ayahId: string, globalAyahNumber: string) => {
+    const handlers = audioHandlers();
+    
+    // Add click handler to the parent player element for better accessibility
+    player.addEventListener('click', async (e) => {
+      // Only handle if the click wasn't on a button or input element
+      if (!(e.target as Element).closest('button, [role="button"], input, textarea, select')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        try {
+          if (handlers.isAudioPlaying(ayahId)) {
+            handlers.onAudioPause(ayahId);
+          } else {
+            await handlers.onAudioPlay(ayahId, globalAyahNumber);
+          }
+        } catch (error) {
+          console.error('Audio player error:', error);
+        }
+      }
+    });
+  }, [audioHandlers]);
 
   // Use the comprehensive setup function
   useEffect(() => {
@@ -339,36 +381,38 @@ export default function ResponseSection({
     const setupSeekFunctionality = () => {
       if (!containerRef.current) return;
       
-      const progressSliders = containerRef.current.querySelectorAll('.progress-slider');
+      // Look for progress sliders in actual audio players only
+      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
       
-      progressSliders.forEach((slider) => {
-        const inputElement = slider as HTMLInputElement;
-        const ayahId = inputElement.getAttribute('data-ayah-id');
-        
+      audioPlayers.forEach((player) => {
+        const ayahId = player.getAttribute('data-ayah-id');
         if (!ayahId) return;
         
-        // Remove existing event listeners by cloning
-        const newSlider = inputElement.cloneNode(true) as HTMLInputElement;
-        inputElement.parentNode?.replaceChild(newSlider, inputElement);
+        // Find progress sliders within this audio player
+        const progressSliders = player.querySelectorAll('input[type="range"], .progress-slider, [data-seek]');
         
-        // Add seek functionality
-        newSlider.addEventListener('input', (e) => {
-          const target = e.target as HTMLInputElement;
-          const seekPercentage = parseFloat(target.value);
+        progressSliders.forEach((slider) => {
+          const inputElement = slider as HTMLInputElement;
           
-          // Only allow seeking if this ayah is currently active
-          if (isAudioActive(ayahId)) {
-            const { duration } = getAudioProgress();
-            if (duration > 0) {
-              const seekTime = (seekPercentage / 100) * duration;
-              seekToTime(seekTime);
-            }
-          } else {
-            // Try to get cached duration for seeking even when not active
-            // Find the parent player element
-            const playerElement = newSlider.closest('.enhanced-audio-player');
-            if (playerElement) {
-              const globalAyahNumber = playerElement.getAttribute('data-global-ayah');
+          // Remove existing event listeners by cloning
+          const newSlider = inputElement.cloneNode(true) as HTMLInputElement;
+          inputElement.parentNode?.replaceChild(newSlider, inputElement);
+          
+          // Add seek functionality
+          newSlider.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            const seekPercentage = parseFloat(target.value);
+            
+            // Only allow seeking if this ayah is currently active
+            if (isAudioActive(ayahId)) {
+              const { duration } = getAudioProgress();
+              if (duration > 0) {
+                const seekTime = (seekPercentage / 100) * duration;
+                seekToTime(seekTime);
+              }
+            } else {
+              // Try to get cached duration for seeking even when not active
+              const globalAyahNumber = player.getAttribute('data-global-ayah');
               if (globalAyahNumber) {
                 const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
                 const cachedDuration = getCachedAudioMetadata(audioUrl);
@@ -378,7 +422,7 @@ export default function ResponseSection({
                 }
               }
             }
-          }
+          });
         });
       });
     };
@@ -396,7 +440,9 @@ export default function ResponseSection({
     const updateProgressBars = () => {
       if (!containerRef.current) return;
       
-      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player');
+      // Look for actual audio player elements, not just any element with data-ayah-id
+      // This prevents tafsir buttons and other elements from being affected
+      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
       
       audioPlayers.forEach((player) => {
         const ayahId = player.getAttribute('data-ayah-id');
@@ -405,14 +451,15 @@ export default function ResponseSection({
         const isCurrentlyPlaying = isAudioPlaying(ayahId);
         const isCurrentlyActive = isAudioActive(ayahId);
         
-        // Get progress elements
-        const progressFill = player.querySelector('.progress-fill') as HTMLElement;
-        const currentTimeEl = player.querySelector('.current-time') as HTMLElement;
-        const totalDurationEl = player.querySelector('.total-duration') as HTMLElement;
-        const timeDisplayEl = player.querySelector('.time-display') as HTMLElement;
-        const progressSlider = player.querySelector('.progress-slider') as HTMLInputElement;
+        // Get progress elements - look for various progress bar implementations
+        const progressFill = player.querySelector('.progress-fill, .progress-bar-fill, [data-progress]') as HTMLElement;
+        const currentTimeEl = player.querySelector('.current-time, .time-current') as HTMLElement;
+        const totalDurationEl = player.querySelector('.total-duration, .time-total, .duration') as HTMLElement;
+        const timeDisplayEl = player.querySelector('.time-display, .time') as HTMLElement;
+        const progressSlider = player.querySelector('.progress-slider, input[type="range"]') as HTMLInputElement;
         
-        if (!progressFill || !currentTimeEl || !totalDurationEl || !timeDisplayEl || !progressSlider) return;
+        // Only proceed if we have at least some progress elements
+        if (!progressFill && !currentTimeEl && !totalDurationEl && !timeDisplayEl && !progressSlider) return;
         
         if (isCurrentlyActive) {
           // Get audio progress from the audio manager

@@ -71,13 +71,12 @@ export default function LanguageTabs({
   const lastProcessedText = useRef<string>('');
   const isMountedRef = useRef(true);
 
-  // Translation stages mapping
+  // Real translation stages based on actual progress
   const getTranslationStage = (progress: number): string => {
-    if (progress <= 15) return 'Analyzing content...';
-    if (progress <= 35) return 'Extracting AI text...';
-    if (progress <= 70) return 'Translating...';
-    if (progress <= 85) return 'Processing...';
-    if (progress <= 95) return 'Finalizing...';
+    if (progress <= 10) return 'Starting translation...';
+    if (progress <= 30) return 'Preparing content...';
+    if (progress <= 80) return 'Translating...';
+    if (progress <= 100) return 'Finalizing...';
     return 'Complete';
   };
 
@@ -112,8 +111,7 @@ export default function LanguageTabs({
   }, [supportedLanguages]);
 
   const handleTranslation = useCallback(async (targetLanguage: string) => {
-    if (!originalText.trim() || targetLanguage === 'en' || targetLanguage === 'original') {
-      onTranslationChange(originalText, 'en');
+    if (!originalText.trim()) {
       return;
     }
 
@@ -236,21 +234,14 @@ export default function LanguageTabs({
         return;
       }
       
-      if (selectedLanguage === 'en' || selectedLanguage === 'original') {
-        // Only call onTranslationChange if the content is different
-        onTranslationChange(originalText, 'en');
+      // Add a small delay to prevent rapid API calls
+      const timeoutId = setTimeout(() => {
+        handleTranslation(selectedLanguage);
         lastProcessedLanguage.current = selectedLanguage;
         lastProcessedText.current = originalText;
-      } else {
-        // Add a small delay to prevent rapid API calls
-        const timeoutId = setTimeout(() => {
-          handleTranslation(selectedLanguage);
-          lastProcessedLanguage.current = selectedLanguage;
-          lastProcessedText.current = originalText;
-        }, 300);
-        
-        return () => clearTimeout(timeoutId);
-      }
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [selectedLanguage, originalText, onTranslationChange, handleTranslation]);
 
@@ -361,7 +352,7 @@ export default function LanguageTabs({
             animate={{ opacity: 1, height: 'auto', y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="mb-3 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
+            className="mb-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
           >
             <div className="px-4 py-3">
               {/* Header with stage and progress */}
@@ -370,7 +361,7 @@ export default function LanguageTabs({
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="w-3 h-3 border border-emerald-400 dark:border-emerald-500 border-t-emerald-500 dark:border-t-emerald-400 rounded-full"
+                    className="w-3 h-3 border border-gray-400 dark:border-gray-500 border-t-gray-600 dark:border-t-gray-300 rounded-full"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {currentTranslationStage}
@@ -383,9 +374,9 @@ export default function LanguageTabs({
               
               {/* Clean Progress Bar */}
               <div className="relative">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1 overflow-hidden">
                   <motion.div
-                    className="h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                    className="h-1 bg-gray-800 dark:bg-gray-200 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${translationProgress}%` }}
                     transition={{ 
@@ -401,9 +392,9 @@ export default function LanguageTabs({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3 }}
-                    className="absolute -right-0.5 -top-0.5 w-3 h-3 bg-emerald-500 rounded-full flex items-center justify-center"
+                    className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 bg-gray-800 dark:bg-gray-200 rounded-full flex items-center justify-center"
                   >
-                    <svg className="w-1.5 h-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-1.5 h-1.5 text-white dark:text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </motion.div>

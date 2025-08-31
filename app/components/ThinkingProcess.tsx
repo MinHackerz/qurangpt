@@ -7,37 +7,31 @@ interface ThinkingProcessProps {
   isProcessing: boolean;
 }
 
-// Move processingSteps outside component to prevent recreation on every render
+// Processing steps for display (no fake durations)
 const processingSteps = [
   { 
     step: "Processing user question", 
-    description: "Analyzing the question and preparing the structured prompt for AI", 
-    duration: 800 
+    description: "Analyzing the question and preparing the structured prompt for AI"
   },
   { 
     step: "Connecting to Gemini AI", 
-    description: "Establishing connection with Google's Gemini API for response generation", 
-    duration: 1200 
+    description: "Establishing connection with Google's Gemini API for response generation"
   },
   { 
     step: "Generating AI response", 
-    description: "AI is analyzing the question and searching through Quranic knowledge base", 
-    duration: 4000 
+    description: "AI is analyzing the question and searching through Quranic knowledge base"
   },
   { 
     step: "Fetching Tafsir data", 
-    description: "Retrieving authentic tafsir interpretations from Islamic scholars via API", 
-    duration: 2000 
+    description: "Retrieving authentic tafsir interpretations from Islamic scholars via API"
   },
   { 
     step: "Formatting response", 
-    description: "Processing AI response and adding Quranic references with audio players", 
-    duration: 1500 
+    description: "Processing AI response and adding Quranic references with audio players"
   },
   { 
     step: "Preparing final output", 
-    description: "Structuring the response with proper formatting, tafsir, and Islamic styling", 
-    duration: 1000 
+    description: "Structuring the response with proper formatting, tafsir, and Islamic styling"
   }
 ];
 
@@ -47,29 +41,12 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
   const [isExpanded, setIsExpanded] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  // Memoize the processStep function to prevent recreation
-  const processStep = useCallback((currentStepIndex: number, stepStartTime: number) => {
-    if (currentStepIndex < processingSteps.length) {
-      setCurrentStep(currentStepIndex);
-      
-      // Mark step as completed after its duration
-      setTimeout(() => {
-        setCompletedSteps(prev => new Set(Array.from(prev).concat(currentStepIndex)));
-        
-        // Move to next step
-        const nextStepIndex = currentStepIndex + 1;
-        if (nextStepIndex < processingSteps.length) {
-          processStep(nextStepIndex, Date.now());
-        }
-      }, processingSteps[currentStepIndex].duration);
-    }
-  }, []);
-
-  // Simulate realistic step progression based on actual processing
+  // Real processing step tracking
   useEffect(() => {
     if (isProcessing) {
       // Start processing from step 0
-      processStep(0, Date.now());
+      setCurrentStep(0);
+      setCompletedSteps(new Set());
     } else {
       // Reset when processing stops
       setCurrentStep(0);
@@ -84,7 +61,7 @@ export default function ThinkingProcess({ isProcessing }: ThinkingProcessProps) 
     return () => {
       clearInterval(dotInterval);
     };
-  }, [isProcessing, processStep]);
+  }, [isProcessing]);
 
   if (!isProcessing) return null;
 

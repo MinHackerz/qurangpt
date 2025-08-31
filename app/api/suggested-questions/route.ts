@@ -27,7 +27,45 @@ export async function POST(request: Request) {
     // Create a prompt for generating relevant questions
     const prompt = createSuggestedQuestionsPrompt(userQuestion, language);
     
-    const result = await apiManager.generateContent(prompt, model);
+    // First attempt
+    let result = await apiManager.generateContent(prompt, model);
+    
+    // If first attempt fails or returns unexpected content, try with a more explicit prompt
+    const firstResponseText = result.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const unexpectedContent = [
+      'translation', 'translate', 'translating', 'translated',
+      'nothing to translate', 'already in', 'preserving', 'religious accuracy',
+      'islamic terms', 'bangla', 'bengali', 'arabic', 'urdu', 'hindi', 'persian',
+      'turkish', 'indonesian', 'malay', 'chinese', 'japanese', 'korean', 'russian',
+      'spanish', 'french', 'german', 'portuguese', 'italian', 'dutch', 'swedish',
+      'danish', 'norwegian', 'finnish', 'polish', 'czech', 'slovak', 'hungarian',
+      'romanian', 'bulgarian', 'croatian', 'serbian', 'bosnian', 'slovenian',
+      'macedonian', 'albanian', 'greek', 'georgian', 'armenian', 'hebrew',
+      'yiddish', 'kurdish', 'pashto', 'sindhi', 'uyghur', 'mongolian', 'thai',
+      'vietnamese', 'khmer', 'lao', 'myanmar', 'tamil', 'telugu', 'malayalam',
+      'kannada', 'gujarati', 'punjabi', 'odia', 'assamese', 'marathi', 'nepali',
+      'sinhala', 'swahili', 'hausa', 'yoruba', 'igbo', 'amharic', 'somali',
+      'afrikaans', 'zulu', 'xhosa', 'sotho', 'tswana', 'swati', 'venda',
+      'tsonga', 'ndebele', 'kinyarwanda', 'kirundi', 'luganda', 'akan', 'twi',
+      'fulah', 'wolof', 'bambara', 'dyula', 'ewe', 'ga', 'tigrinya', 'oromo',
+      'quechua', 'guarani', 'nahuatl', 'aymara', 'maori', 'samoan', 'tongan',
+      'fijian', 'hawaiian', 'esperanto', 'latin', 'javanese', 'sundanese',
+      'cebuano', 'filipino', 'hmong', 'corsican', 'frisian', 'haitian',
+      'luxembourgish', 'malagasy', 'chichewa', 'shona', 'belarusian', 'ukrainian',
+      'catalan', 'galician', 'basque', 'icelandic', 'maltese', 'irish', 'welsh',
+      'latvian', 'lithuanian', 'estonian'
+    ];
+    
+    if (!result.success || unexpectedContent.some(term => firstResponseText.toLowerCase().includes(term))) {
+      
+      console.log(`SuggestedQuestions API: First attempt failed or returned unexpected content for language: ${language}, trying with fallback prompt`);
+      
+      const fallbackPrompt = `Generate 5 follow-up questions about Islam or the Quran based on this question: "${userQuestion}". 
+      Generate questions in ${language} language. 
+      IMPORTANT: Do not translate anything. Do not mention language detection. Do not comment on the text or language. Just generate new questions.`;
+      
+      result = await apiManager.generateContent(fallbackPrompt, model);
+    }
     
     if (!result.success) {
       return NextResponse.json(
@@ -37,6 +75,10 @@ export async function POST(request: Request) {
     }
 
     const generatedText = result.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Debug logging
+    console.log('SuggestedQuestions API: Generated text:', generatedText);
+    console.log('SuggestedQuestions API: Language requested:', language);
     
     if (!generatedText.trim()) {
       return NextResponse.json(
@@ -48,7 +90,47 @@ export async function POST(request: Request) {
     // Parse the generated text to extract questions
     const questions = parseGeneratedQuestions(generatedText);
     
+    // Debug logging
+    console.log('SuggestedQuestions API: Parsed questions:', questions);
+    
     if (questions.length === 0) {
+      // Check if the generated text contains unexpected content for any language
+      const unexpectedContent = [
+        'translation', 'translate', 'translating', 'translated',
+        'nothing to translate', 'already in', 'preserving', 'religious accuracy',
+        'islamic terms', 'bangla', 'bengali', 'arabic', 'urdu', 'hindi', 'persian',
+        'turkish', 'indonesian', 'malay', 'chinese', 'japanese', 'korean', 'russian',
+        'spanish', 'french', 'german', 'portuguese', 'italian', 'dutch', 'swedish',
+        'danish', 'norwegian', 'finnish', 'polish', 'czech', 'slovak', 'hungarian',
+        'romanian', 'bulgarian', 'croatian', 'serbian', 'bosnian', 'slovenian',
+        'macedonian', 'albanian', 'greek', 'georgian', 'armenian', 'hebrew',
+        'yiddish', 'kurdish', 'pashto', 'sindhi', 'uyghur', 'mongolian', 'thai',
+        'vietnamese', 'khmer', 'lao', 'myanmar', 'tamil', 'telugu', 'malayalam',
+        'kannada', 'gujarati', 'punjabi', 'odia', 'assamese', 'marathi', 'nepali',
+        'sinhala', 'swahili', 'hausa', 'yoruba', 'igbo', 'amharic', 'somali',
+        'afrikaans', 'zulu', 'xhosa', 'sotho', 'tswana', 'swati', 'venda',
+        'tsonga', 'ndebele', 'kinyarwanda', 'kirundi', 'luganda', 'akan', 'twi',
+        'fulah', 'wolof', 'bambara', 'dyula', 'ewe', 'ga', 'tigrinya', 'oromo',
+        'quechua', 'guarani', 'nahuatl', 'aymara', 'maori', 'samoan', 'tongan',
+        'fijian', 'hawaiian', 'esperanto', 'latin', 'javanese', 'sundanese',
+        'cebuano', 'filipino', 'hmong', 'corsican', 'frisian', 'haitian',
+        'luxembourgish', 'malagasy', 'chichewa', 'shona', 'belarusian', 'ukrainian',
+        'catalan', 'galician', 'basque', 'icelandic', 'maltese', 'irish', 'welsh',
+        'latvian', 'lithuanian', 'estonian'
+      ];
+      
+      const hasUnexpectedContent = unexpectedContent.some(term => 
+        generatedText.toLowerCase().includes(term)
+      );
+      
+      if (hasUnexpectedContent) {
+        console.warn(`SuggestedQuestions API: Gemini returned language/translation-related content for language: ${language}`);
+        return NextResponse.json(
+          { success: false, error: `AI returned unexpected content for ${language}. Please try again.` },
+          { status: 500 }
+        );
+      }
+      
       return NextResponse.json(
         { success: false, error: 'Failed to parse generated questions' },
         { status: 500 }
@@ -89,6 +171,9 @@ IMPORTANT REQUIREMENTS:
 7. Do not include numbers, bullet points, or any formatting
 8. Do not include explanations or additional text
 9. Focus on Islamic knowledge, Quranic teachings, and practical guidance
+10. DO NOT translate anything - just generate new questions
+11. DO NOT mention translation or language detection
+12. DO NOT provide any commentary about the text or language
 
 USER'S QUESTION: "${userQuestion}"
 
@@ -97,7 +182,7 @@ LANGUAGE: ${language}
 Generate 5 relevant follow-up questions:`;
 
   if (isNonEnglish) {
-    prompt += `\n\nIMPORTANT: Generate all questions in ${language} language.`;
+    prompt += `\n\nIMPORTANT: Generate all questions in ${language} language. Do not translate the user's question - just generate new related questions.`;
   }
 
   return prompt;
@@ -105,31 +190,46 @@ Generate 5 relevant follow-up questions:`;
 
 function parseGeneratedQuestions(text: string): string[] {
   try {
-    // Split by lines and clean up
-    const lines = text
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .filter(line => !line.match(/^\d+\./)) // Remove numbered lines
-      .filter(line => !line.match(/^[-•*]/)) // Remove bullet points
-      .filter(line => line.length > 10) // Filter out very short lines
-      .filter(line => line.endsWith('?')) // Only include questions
-      .slice(0, 5); // Take only first 5 questions
+    // Clean up the text first
+    let cleanedText = text.trim();
     
-    // If we don't have enough questions ending with ?, try a different approach
-    if (lines.length < 3) {
-      const allLines = text
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 20) // Longer lines are more likely to be questions
-        .filter(line => !line.match(/^\d+\./))
-        .filter(line => !line.match(/^[-•*]/))
-        .slice(0, 5);
+    // Remove any numbering, bullet points, or formatting artifacts
+    cleanedText = cleanedText.replace(/^\d+\.\s*/gm, ''); // Remove "1. " etc.
+    cleanedText = cleanedText.replace(/^[-*•]\s*/gm, ''); // Remove "- " or "* " etc.
+    cleanedText = cleanedText.replace(/^[a-z]\)\s*/gm, ''); // Remove "a) " etc.
+    
+    // Split by line breaks and clean each line
+    const lines = cleanedText.split(/\n+/).map(line => line.trim()).filter(line => line.length > 0);
+    
+    // Filter out incomplete or malformed questions
+    const validQuestions = lines.filter(line => {
+      // Check if the line looks like a complete question
+      const isComplete = line.length > 10 && // Minimum length
+                        line.endsWith('?') && // Ends with question mark
+                        !line.includes('...') && // No ellipsis
+                        !line.includes('..') && // No double dots
+                        !line.match(/[a-z]\s*$/i) && // Doesn't end with single letter
+                        line.split(' ').length >= 3; // At least 3 words
       
-      return allLines;
+      return isComplete;
+    });
+    
+    // If we have valid questions, return them (limit to 5)
+    if (validQuestions.length > 0) {
+      return validQuestions.slice(0, 5);
     }
     
-    return lines;
+    // Fallback: try to extract meaningful content even if not perfectly formatted
+    const fallbackQuestions = lines
+      .filter(line => line.length > 5 && line.includes('?'))
+      .map(line => {
+        // Clean up any remaining artifacts
+        return line.replace(/\s+/g, ' ').trim();
+      })
+      .slice(0, 5);
+    
+    return fallbackQuestions;
+    
   } catch (error) {
     console.error('Error parsing generated questions:', error);
     return [];

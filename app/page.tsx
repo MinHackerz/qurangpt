@@ -37,6 +37,46 @@ export default function Home() {
   const { askQuran } = useAIResponse();
   const { copyAIContentOnly, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent } = useTranslationManager();
   
+  // Simple language detection function
+  const detectLanguage = useCallback((text: string): string => {
+    // Unicode script-based detection for major languages
+    const patterns = {
+      ar: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/,
+      hi: /[\u0900-\u097F]/,
+      bn: /[\u0980-\u09FF]/,
+      ur: /[\u0600-\u06FF]/,
+      fa: /[\u0600-\u06FF]/,
+      tr: /[\u00C7\u00E7\u011E\u011F\u0130\u0131\u015E\u015F]/,
+      es: /[áéíóúñü]/,
+      fr: /[àâäéèêëïîôöùûüÿç]/,
+      de: /[äöüß]/,
+      ru: /[\u0400-\u04FF]/,
+      zh: /[\u4e00-\u9fff]/,
+      ja: /[\u3040-\u309f\u30a0-\u30ff]/,
+      ko: /[\uac00-\ud7af]/,
+      th: /[\u0E00-\u0E7F]/
+    };
+    
+    for (const [lang, pattern] of Object.entries(patterns)) {
+      if (pattern.test(text)) {
+        return lang;
+      }
+    }
+    
+    // Default to English
+    return 'en';
+  }, []);
+  
+  // Cache for original language output to restore when switching back
+  const [originalLanguageCache, setOriginalLanguageCache] = useState<{
+    content: string;
+    questions: string[];
+    language: string;
+  } | null>(null);
+  
+  // Store the original AI-generated questions for translation
+  const [originalAIQuestions, setOriginalAIQuestions] = useState<string[]>([]);
+  
 
   
   // Audio management
@@ -76,6 +116,18 @@ export default function Home() {
         chatManager.setCurrentLanguage,
         stopAudio
       );
+      
+      // Cache the original output for future restoration
+      const detectedLanguage = chatManager.currentLanguage;
+      if (detectedLanguage && detectedLanguage !== 'en') {
+        // Cache non-English output for restoration
+        setOriginalLanguageCache({
+          content: chatManager.summary,
+          questions: chatManager.translatedQuestions || [],
+          language: detectedLanguage
+        });
+      }
+      
       chatManager.setIsChatActive(true);
       console.log('Question processed successfully');
     } catch (error) {
@@ -97,7 +149,7 @@ export default function Home() {
     chatManager.setError('');
     chatManager.setCopied(false);
     chatManager.setDisplayedContent('');
-    chatManager.setCurrentLanguage('en');
+    // Language will be set by askQuran based on detected language
     chatManager.setIsTranslating(false);
     chatManager.setTranslationProgress(0);
     
@@ -139,6 +191,18 @@ export default function Home() {
     // Process the question immediately without waiting for state updates
     processQuestionDirectly(question);
   }, [chatManager, stopAudio, askQuran]);
+  
+  // Handle when new AI questions are generated
+  const handleQuestionsGenerated = useCallback((questions: string[]) => {
+    console.log('handleQuestionsGenerated called with questions:', questions);
+    setOriginalAIQuestions(questions);
+    
+    // Also store in chatManager for immediate access
+    if (questions && questions.length > 0) {
+      chatManager.setTranslatedQuestions(questions);
+      console.log('Questions stored in chatManager:', questions.length);
+    }
+  }, [chatManager]);
 
   // Handle copying AI content
   const handleCopyAIContent = useCallback(async () => {
@@ -151,47 +215,159 @@ export default function Home() {
 
   // Handle translation changes
   const handleTranslationChange = useCallback(async (translatedText: string, language: string) => {
-    if (language === 'en' || language === 'original') {
-      // Show original content
-      chatManager.setDisplayedContent(chatManager.summary);
-      chatManager.setCurrentLanguage('en');
+    // Check if we're switching back to the original language (restore from cache)
+    if (originalLanguageCache && language === originalLanguageCache.language) {
+      // Restore original content and questions from cache (no API call needed)
+      chatManager.setDisplayedContent(originalLanguageCache.content);
+      chatManager.setCurrentLanguage(originalLanguageCache.language);
+      chatManager.setTranslatedQuestions(originalLanguageCache.questions);
       chatManager.setIsTranslating(false);
       chatManager.setTranslationProgress(0);
-      chatManager.setTranslatedQuestions(undefined);
       return;
     }
 
-    try {
-      // Start translation progress animation
-      chatManager.setIsTranslating(true);
-      chatManager.setTranslationProgress(0);
+    if (language === 'en' || language === 'original') {
+      // Only translate to English if current content is NOT already in English
+      if (chatManager.currentLanguage === 'en') {
+        // Content is already in English, no need to translate
+        chatManager.setCurrentLanguage('en');
+        chatManager.setIsTranslating(false);
+        chatManager.setTranslationProgress(0);
+        return;
+      }
       
-      // Advanced progress simulation with realistic stages
-      const progressStages = [
-        { stage: 'Analyzing content', progress: 15 },
-        { stage: 'Extracting AI text', progress: 35 },
-        { stage: 'Translating', progress: 70 },
-        { stage: 'Processing', progress: 85 },
-        { stage: 'Finalizing', progress: 95 }
-      ];
-      
-      let currentStage = 0;
-      const progressInterval = setInterval(() => {
-        if (currentStage < progressStages.length) {
-          const { progress } = progressStages[currentStage];
-          chatManager.setTranslationProgress(progress);
-          currentStage++;
-        } else {
-          // Smooth progress to completion
-          const currentProgress = chatManager.translationProgress;
-          if (currentProgress < 95) {
-            chatManager.setTranslationProgress(currentProgress + 0.5);
+      // When English is selected, we need to translate the current content TO English
+      // The current content might be in Hindi/Bengali/etc., so we need to translate it
+      try {
+        // Start translation progress animation
+        chatManager.setIsTranslating(true);
+        chatManager.setTranslationProgress(0);
+        
+        // Advanced progress simulation with realistic stages
+        const progressStages = [
+          { stage: 'Analyzing content', progress: 15 },
+          { stage: 'Extracting AI text', progress: 35 },
+          { stage: 'Translating to English', progress: 70 },
+          { stage: 'Processing', progress: 85 },
+          { stage: 'Finalizing', progress: 95 }
+        ];
+        
+        let currentStage = 0;
+        const progressInterval = setInterval(() => {
+          if (currentStage < progressStages.length) {
+            const { progress } = progressStages[currentStage];
+            chatManager.setTranslationProgress(progress);
+            currentStage++;
+          } else {
+            // Smooth progress to completion
+            const currentProgress = chatManager.translationProgress;
+            if (currentProgress < 95) {
+              chatManager.setTranslationProgress(currentProgress + 0.5);
+            }
           }
-        }
-      }, 300);
+        }, 300);
 
+        // Extract only AI-generated content for translation (much faster)
+        // Use the current displayed content (which might be in Hindi/Bengali/etc.)
+        const aiContentToTranslate = extractAIContentForTranslation(chatManager.displayedContent || chatManager.summary);
+        
+        if (!aiContentToTranslate.trim()) {
+          // No AI content to translate, show original
+          chatManager.setDisplayedContent(chatManager.summary);
+          chatManager.setCurrentLanguage('en');
+          chatManager.setIsTranslating(false);
+          chatManager.setTranslationProgress(0);
+          clearInterval(progressInterval);
+          return;
+        }
+
+        // Use optimized translation for AI content only - translate TO English
+        // Detect source language from current content to translate back to English
+        const detectedSourceLang = detectLanguage(aiContentToTranslate);
+        const translation = await translateAIContent(aiContentToTranslate, 'en', detectedSourceLang);
+        
+        // Complete progress with smooth animation
+        chatManager.setTranslationProgress(100);
+        
+        // Merge translated AI content with preserved API components
+        const mergedContent = mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation);
+        
+        chatManager.setDisplayedContent(mergedContent);
+        chatManager.setCurrentLanguage('en');
+        
+        // Also translate suggested questions to English
+        try {
+          // First try to translate questions from the current displayed questions
+          let questionsToTranslate: string[] = [];
+          
+          // Check if we have questions from the SuggestedQuestions API
+          if (chatManager.translatedQuestions && chatManager.translatedQuestions.length > 0) {
+            questionsToTranslate = chatManager.translatedQuestions;
+          } else if (originalAIQuestions && originalAIQuestions.length > 0) {
+            // Fallback to original AI questions if no API questions
+            questionsToTranslate = originalAIQuestions;
+          }
+          
+          if (questionsToTranslate.length > 0) {
+            console.log(`Translating ${questionsToTranslate.length} questions to English`);
+            const questionsToTranslateText = questionsToTranslate.join('\n\n');
+            const translatedQuestionsText = await translateAIContent(questionsToTranslateText, 'en', detectedSourceLang);
+            const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
+            
+            console.log('Questions translation result (to English):', {
+              original: questionsToTranslate.length,
+              translated: translatedQuestionsArray.length,
+              sample: translatedQuestionsArray[0]
+            });
+            
+            chatManager.setTranslatedQuestions(translatedQuestionsArray);
+          } else {
+            // No questions to translate, clear translated questions
+            chatManager.setTranslatedQuestions(undefined);
+          }
+        } catch (error) {
+          console.error('Failed to translate suggested questions to English:', error);
+          // Keep original questions if translation fails
+          chatManager.setTranslatedQuestions(undefined);
+        }
+        
+        // Hide progress after a short delay
+        setTimeout(() => {
+          chatManager.setIsTranslating(false);
+          chatManager.setTranslationProgress(0);
+        }, 800);
+        
+        clearInterval(progressInterval);
+        return;
+      } catch (error) {
+        console.error('Translation to English error:', error);
+        // Fallback to original content on error
+        chatManager.setDisplayedContent(chatManager.summary);
+        chatManager.setCurrentLanguage('en');
+        chatManager.setIsTranslating(false);
+        chatManager.setTranslationProgress(0);
+        chatManager.setTranslatedQuestions(undefined);
+        return;
+      }
+    }
+
+    // For other languages (not English), translate to that language
+    try {
+      // Start translation progress
+      chatManager.setIsTranslating(true);
+      chatManager.setTranslationProgress(10); // Start at 10%
+      
       // Extract only AI-generated content for translation (much faster)
-      const aiContentToTranslate = extractAIContentForTranslation(chatManager.summary);
+      // Use current displayed content if available, otherwise fall back to summary
+      const contentToExtract = chatManager.displayedContent || chatManager.summary;
+      const aiContentToTranslate = extractAIContentForTranslation(contentToExtract);
+      
+      console.log('Translation Debug:', {
+        targetLanguage: language,
+        contentToExtract: contentToExtract.substring(0, 100) + '...',
+        aiContentToTranslate: aiContentToTranslate.substring(0, 100) + '...',
+        hasContent: !!aiContentToTranslate.trim()
+      });
       
       if (!aiContentToTranslate.trim()) {
         // No AI content to translate, show original
@@ -199,41 +375,71 @@ export default function Home() {
         chatManager.setCurrentLanguage(language);
         chatManager.setIsTranslating(false);
         chatManager.setTranslationProgress(0);
-        clearInterval(progressInterval);
         return;
       }
-
+      
+      // Update progress to show we're starting translation
+      chatManager.setTranslationProgress(30);
+      
       // Use optimized translation for AI content only
-      const translation = await translateAIContent(aiContentToTranslate, language);
+      // Source language is English (original content)
+      const translation = await translateAIContent(aiContentToTranslate, language, 'en');
       
-      // Complete progress with smooth animation
-      chatManager.setTranslationProgress(100);
+      // Update progress to show translation is complete
+      chatManager.setTranslationProgress(80);
       
-      // Merge translated AI content with preserved API components
-      const mergedContent = mergeTranslatedContent(chatManager.summary, translation);
+      console.log('Translation Result:', {
+        originalLength: aiContentToTranslate.length,
+        translatedLength: translation.length,
+        translation: translation.substring(0, 100) + '...'
+      });
+      
+            // Merge translated AI content with preserved API components
+      const mergedContent = mergeTranslatedContent(contentToExtract, translation);
+      
+      console.log('Merged Content:', {
+        originalLength: contentToExtract.length,
+        mergedLength: mergedContent.length,
+        merged: mergedContent.substring(0, 100) + '...'
+      });
       
       chatManager.setDisplayedContent(mergedContent);
       chatManager.setCurrentLanguage(language);
       
       // Also translate suggested questions for the new language
       try {
-        const defaultQuestions = [
-          "What does the Quran say about patience and perseverance?",
-          "How does Islam guide us in difficult times?",
-          "What are the key principles of Islamic ethics?",
-          "How does the Quran address modern challenges?",
-          "What guidance does Islam provide for daily life?"
-        ];
+        // First try to translate questions from the current displayed questions
+        let questionsToTranslate: string[] = [];
         
-        const questionsToTranslate = defaultQuestions.join('\n\n');
-        const translatedQuestionsText = await translateAIContent(questionsToTranslate, language);
-        const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
+        // Check if we have questions from the SuggestedQuestions API
+        if (chatManager.translatedQuestions && chatManager.translatedQuestions.length > 0) {
+          questionsToTranslate = chatManager.translatedQuestions;
+        } else if (originalAIQuestions && originalAIQuestions.length > 0) {
+          // Fallback to original AI questions if no API questions
+          questionsToTranslate = originalAIQuestions;
+        }
         
-        chatManager.setTranslatedQuestions(translatedQuestionsArray);
+        if (questionsToTranslate.length > 0) {
+          console.log(`Translating ${questionsToTranslate.length} questions to ${language}`);
+          const questionsToTranslateText = questionsToTranslate.join('\n\n');
+          const translatedQuestionsText = await translateAIContent(questionsToTranslateText, language, 'en');
+          const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
+          
+          console.log('Questions translation result:', {
+            original: questionsToTranslate.length,
+            translated: translatedQuestionsArray.length,
+            sample: translatedQuestionsArray[0]
+          });
+          
+          chatManager.setTranslatedQuestions(translatedQuestionsArray);
+        } else {
+          // No questions to translate, clear translated questions
+          chatManager.setTranslatedQuestions(undefined);
+        }
       } catch (error) {
         console.error('Failed to translate suggested questions:', error);
         // Keep original questions if translation fails
-        chatManager.setTranslatedQuestions([]);
+        chatManager.setTranslatedQuestions(undefined);
       }
       
       // Hide progress after a short delay
@@ -241,17 +447,15 @@ export default function Home() {
         chatManager.setIsTranslating(false);
         chatManager.setTranslationProgress(0);
       }, 800);
-      
-      clearInterval(progressInterval);
     } catch (error) {
       console.error('Translation error:', error);
       // Fallback to original content on error
       chatManager.setDisplayedContent(chatManager.summary);
-      chatManager.setCurrentLanguage('en');
+      // Language will be set by askQuran based on detected language
       chatManager.setIsTranslating(false);
       chatManager.setTranslationProgress(0);
     }
-  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent]);
+  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, originalLanguageCache, detectLanguage, originalAIQuestions]);
 
   // Audio management functions
   const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
@@ -491,6 +695,7 @@ export default function Home() {
                 isVisible={true}
                 currentLanguage={chatManager.currentLanguage}
                 translatedQuestions={chatManager.translatedQuestions}
+                onQuestionsGenerated={handleQuestionsGenerated}
               />
             )}
             

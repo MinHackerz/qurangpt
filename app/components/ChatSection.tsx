@@ -124,12 +124,6 @@ export default function ChatSection({
   
   // Handle instant translation with caching
   const handleInstantTranslation = useCallback((langCode: string) => {
-    if (langCode === 'en') {
-      // English is always instant (original text)
-      onTranslationChange?.(originalText || '', langCode);
-      return;
-    }
-    
     // Check if we have a cached translation
     if (translationCache[langCode]) {
       // Instant cached translation - NO API CALL
@@ -279,35 +273,36 @@ export default function ChatSection({
                 ) : (isTranslating && !isUsingCachedTranslation) ? (
                   /* Translation Progress Animation - Extended full width */
                   <div className="flex-1 flex items-center py-1">
-                    <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-1.5 rounded-lg">
+                    <div className="w-full flex items-center justify-between bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 px-4 py-1.5 rounded-lg">
                       {/* Left side - Progress info */}
                       <div className="flex items-center space-x-3">
                         {/* Progress indicator */}
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                          className="w-3 h-3 border border-emerald-400 dark:border-emerald-500 border-t-emerald-500 dark:border-t-emerald-400 rounded-full"
+                          className="w-3 h-3 border border-gray-400 dark:border-gray-500 border-t-gray-600 dark:border-t-gray-300 rounded-full"
                         />
                         
                         {/* Progress message */}
-                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                          {translationProgress && translationProgress <= 30 ? 'Translating...' :
-                           translationProgress && translationProgress <= 80 ? 'Processing...' :
-                           translationProgress && translationProgress <= 95 ? 'Finalizing...' : 'Complete!'}
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {translationProgress && translationProgress <= 10 ? 'Starting...' :
+                           translationProgress && translationProgress <= 30 ? 'Preparing...' :
+                           translationProgress && translationProgress <= 80 ? 'Translating...' :
+                           translationProgress && translationProgress <= 100 ? 'Finalizing...' : 'Complete!'}
                         </span>
                       </div>
                       
                       {/* Right side - Progress tracking */}
                       <div className="flex items-center space-x-3">
                         {/* Progress percentage */}
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-100 dark:bg-emerald-800/30 px-2 py-0.5 rounded">
+                        <span className="text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-800/30 px-2 py-0.5 rounded">
                           {translationProgress ? Math.round(translationProgress) : 0}%
                         </span>
                         
                         {/* Progress bar */}
-                        <div className="w-32 bg-emerald-200 dark:bg-emerald-700 rounded-full h-1.5 overflow-hidden">
+                        <div className="w-32 bg-gray-100 dark:bg-gray-800 rounded-full h-1 overflow-hidden">
                           <motion.div
-                            className="h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                            className="h-1 bg-gray-800 dark:bg-gray-200 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${translationProgress || 0}%` }}
                             transition={{ duration: 0.1, ease: "easeOut" }}
@@ -319,7 +314,7 @@ export default function ChatSection({
                 ) : isUsingCachedTranslation ? (
                   /* Instant Cached Translation Success - Extended full width */
                   <div className="flex-1 flex items-center py-1">
-                    <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-1.5 rounded-lg">
+                    <div className="w-full flex items-center justify-between bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 px-4 py-1.5 rounded-lg">
                       {/* Left side - Instant success */}
                       <div className="flex items-center space-x-3">
                         {/* Instant success indicator */}

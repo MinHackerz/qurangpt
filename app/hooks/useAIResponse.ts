@@ -1,6 +1,242 @@
 import { useCallback } from 'react';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
 
+// Comprehensive language detection function supporting 130+ languages
+const detectLanguage = (text: string): string => {
+  // Unicode script-based detection for non-Latin scripts
+  const scriptPatterns = {
+    // Arabic and related scripts
+    ar: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/,
+    fa: /[\u0600-\u06FF].*[\u06A9\u06AF\u06CC\u067E\u0686\u0698]/,
+    ur: /[\u0600-\u06FF].*[\u0627\u0628\u067E\u062A\u0679]/,
+    ku: /[\u0600-\u06FF].*[\u06A9\u06AF\u06CC\u067E\u0686\u0698]/,
+    ps: /[\u0600-\u06FF].*[\u067E\u0686\u0698\u06A9\u06AF\u06CC]/,
+    sd: /[\u0600-\u06FF].*[\u0633\u0646\u0688\u06CC]/,
+    ug: /[\u0600-\u06FF].*[\u0626\u06C7\u0649\u063A\u06C7\u0631]/,
+    ckb: /[\u0600-\u06FF].*[\u06A9\u06AF\u06CC\u067E\u0686\u0698]/,
+    
+    // Hebrew and Yiddish
+    he: /[\u0590-\u05FF]/,
+    yi: /[\u0590-\u05FF]/,
+    
+    // South Asian scripts
+    hi: /[\u0900-\u097F]/,
+    bn: /[\u0980-\u09FF]/,
+    ta: /[\u0B80-\u0BFF]/,
+    te: /[\u0C00-\u0C7F]/,
+    ml: /[\u0D00-\u0D7F]/,
+    kn: /[\u0C80-\u0CFF]/,
+    gu: /[\u0A80-\u0AFF]/,
+    pa: /[\u0A00-\u0A7F]/,
+    or: /[\u0B00-\u0B7F]/,
+    as: /[\u0980-\u09FF]/,
+    mr: /[\u0900-\u097F]/,
+    ne: /[\u0900-\u097F]/,
+    si: /[\u0D80-\u0DFF]/,
+    my: /[\u1000-\u109F]/,
+    km: /[\u1780-\u17FF]/,
+    lo: /[\u0E80-\u0EFF]/,
+    
+    // East Asian scripts
+    zh: /[\u4e00-\u9fff]/,
+    ja: /[\u3040-\u309f\u30a0-\u30ff]/,
+    ko: /[\uac00-\ud7af]/,
+    th: /[\u0E00-\u0E7F]/,
+    
+    // European scripts
+    ru: /[\u0400-\u04FF]/,
+    be: /[\u0400-\u04FF]/,
+    uk: /[\u0400-\u04FF]/,
+    bg: /[\u0400-\u04FF]/,
+    sr: /[\u0400-\u04FF]/,
+    mk: /[\u0400-\u04FF]/,
+    
+    // Georgian and Armenian
+    ka: /[\u10A0-\u10FF]/,
+    hy: /[\u0530-\u058F]/,
+    
+    // Central Asian scripts
+    kk: /[\u0400-\u04FF]/,
+    ky: /[\u0400-\u04FF]/,
+    uz: /[\u0400-\u04FF]/,
+    tk: /[\u0400-\u04FF]/,
+    tg: /[\u0400-\u04FF]/,
+    mn: /[\u1800-\u18AF]/,
+    
+    // African scripts
+    am: /[\u1200-\u137F]/,
+    ti: /[\u1200-\u137F]/,
+    om: /[\u1200-\u137F]/,
+    
+    // Remove duplicates - these are already covered above
+    // ar-eg, ar-sa, ckb, zh-cn, zh-tw are variants of existing languages
+  };
+
+  // Check for script-based detection first
+  for (const [lang, pattern] of Object.entries(scriptPatterns)) {
+    if (pattern.test(text)) {
+      return lang;
+    }
+  }
+
+  // Enhanced word-based detection for Latin script languages
+  const textLower = text.toLowerCase();
+  const words = textLower.split(/\s+/).filter(word => word.length > 2);
+  
+  if (words.length > 0) {
+    const languageIndicators = {
+      // Romance languages
+      es: ['que', 'con', 'una', 'por', 'para', 'como', 'más', 'pero', 'sus', 'les', 'del', 'las', 'los', 'este', 'esta', 'son', 'están', 'tienen', 'hacer', 'decir'],
+      fr: ['que', 'des', 'les', 'une', 'sur', 'avec', 'son', 'dans', 'pour', 'tout', 'est', 'pas', 'nous', 'vous', 'leur', 'être', 'avoir', 'faire', 'dire', 'cette'],
+      it: ['che', 'con', 'una', 'per', 'sono', 'come', 'più', 'dalla', 'anche', 'loro', 'questo', 'questa', 'della', 'essere', 'avere', 'fare', 'dire', 'questo'],
+      pt: ['que', 'com', 'uma', 'para', 'são', 'como', 'mais', 'pela', 'seus', 'tem', 'não', 'está', 'muito', 'ser', 'ter', 'fazer', 'dizer', 'este', 'essa'],
+      ro: ['ce', 'cu', 'o', 'pentru', 'sunt', 'cum', 'mai', 'din', 'și', 'lor', 'acest', 'această', 'este', 'a', 'avea', 'face', 'spune'],
+      ca: ['que', 'amb', 'una', 'per', 'són', 'com', 'més', 'de', 'i', 'llur', 'aquest', 'aquesta', 'és', 'tenir', 'fer', 'dir'],
+      gl: ['que', 'coa', 'unha', 'para', 'son', 'como', 'máis', 'de', 'e', 'seu', 'este', 'esta', 'é', 'ter', 'facer', 'dicir'],
+      
+      // Germanic languages
+      de: ['der', 'die', 'und', 'den', 'das', 'von', 'ist', 'mit', 'auf', 'für', 'sich', 'nicht', 'ein', 'eine', 'auch', 'sein', 'haben', 'machen', 'sagen'],
+      nl: ['dat', 'met', 'een', 'voor', 'zijn', 'hoe', 'meer', 'van', 'en', 'hun', 'dit', 'deze', 'is', 'hebben', 'doen', 'zeggen'],
+      sv: ['som', 'med', 'en', 'för', 'är', 'hur', 'mer', 'av', 'och', 'deras', 'detta', 'denna', 'är', 'ha', 'göra', 'säga'],
+      da: ['som', 'med', 'en', 'for', 'er', 'hvordan', 'mere', 'af', 'og', 'deres', 'dette', 'denne', 'er', 'have', 'gøre', 'sige'],
+      no: ['som', 'med', 'en', 'for', 'er', 'hvordan', 'mer', 'av', 'og', 'deres', 'dette', 'denne', 'er', 'ha', 'gjøre', 'si'],
+      is: ['sem', 'með', 'einn', 'fyrir', 'er', 'hvernig', 'meira', 'af', 'og', 'þeirra', 'þetta', 'þessi', 'er', 'hafa', 'gera', 'segja'],
+      fi: ['joka', 'kanssa', 'yksi', 'varten', 'on', 'miten', 'enemmän', 'ja', 'sekä', 'heidän', 'tämä', 'tämä', 'on', 'olla', 'tehdä', 'sanoa'],
+      
+      // Slavic languages
+      pl: ['który', 'z', 'jeden', 'dla', 'jest', 'jak', 'więcej', 'z', 'i', 'ich', 'ten', 'ta', 'jest', 'mieć', 'robić', 'mówić'],
+      cs: ['který', 's', 'jeden', 'pro', 'je', 'jak', 'více', 'z', 'a', 'jejich', 'tento', 'tato', 'je', 'mít', 'dělat', 'říkat'],
+      sk: ['ktorý', 's', 'jeden', 'pre', 'je', 'ako', 'viac', 'z', 'a', 'ich', 'tento', 'táto', 'je', 'mať', 'robiť', 'hovoriť'],
+      hu: ['amely', 'val', 'egy', 'számára', 'van', 'hogyan', 'több', 'a', 'és', 'azok', 'ez', 'ez', 'van', 'van', 'csinálni', 'mondani'],
+      hr: ['koji', 's', 'jedan', 'za', 'je', 'kako', 'više', 'od', 'i', 'njihov', 'ovaj', 'ova', 'je', 'imati', 'raditi', 'reći'],
+      sr: ['који', 'с', 'један', 'за', 'је', 'како', 'више', 'од', 'и', 'њихов', 'овај', 'ова', 'је', 'имати', 'радити', 'рећи'],
+      bs: ['koji', 's', 'jedan', 'za', 'je', 'kako', 'više', 'od', 'i', 'njihov', 'ovaj', 'ova', 'je', 'imati', 'raditi', 'reći'],
+      sl: ['ki', 'z', 'eden', 'za', 'je', 'kako', 'več', 'od', 'in', 'njihov', 'ta', 'ta', 'je', 'imeti', 'delati', 'reči'],
+      mk: ['кој', 'со', 'еден', 'за', 'е', 'како', 'повеќе', 'од', 'и', 'нивниот', 'овој', 'оваа', 'е', 'има', 'прави', 'кажува'],
+      sq: ['që', 'me', 'një', 'për', 'është', 'si', 'më', 'nga', 'dhe', 'tyre', 'ky', 'kjo', 'është', 'ka', 'bën', 'thotë'],
+      el: ['που', 'με', 'ένα', 'για', 'είναι', 'πώς', 'περισσότερο', 'από', 'και', 'τους', 'αυτό', 'αυτή', 'είναι', 'έχει', 'κάνει', 'λέει'],
+      
+      // Asian languages
+      id: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan'],
+      ms: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan'],
+      jv: ['sing', 'lan', 'iki', 'iku', 'kanggo', 'ing', 'jero', 'karo', 'saka', 'bakal', 'wis', 'bisa', 'ora', 'iku', 'ana', 'gawe', 'ngomong'],
+      su: ['anu', 'jeung', 'ieu', 'eta', 'pikeun', 'di', 'jero', 'jeung', 'ti', 'bakal', 'geus', 'bisa', 'henteu', 'eta', 'aya', 'nyieun', 'ngomong'],
+      ceb: ['nga', 'ug', 'kini', 'kana', 'para', 'sa', 'sa', 'ug', 'gikan', 'mahimong', 'na', 'makahimo', 'dili', 'kana', 'naa', 'buhat', 'ingon'],
+      tl: ['na', 'at', 'ito', 'iyan', 'para', 'sa', 'sa', 'at', 'mula', 'maaari', 'na', 'maaari', 'hindi', 'ito', 'may', 'gawin', 'sabihin'],
+      
+      // Southeast Asian languages
+      tr: ['bir', 'bu', 've', 'de', 'da', 'ile', 'için', 'var', 'olan', 'gibi', 'çok', 'daha', 'ama', 'ne', 'nasıl', 'olmak', 'sahip', 'yapmak', 'söylemek'],
+      vi: ['của', 'và', 'có', 'trong', 'với', 'để', 'được', 'cho', 'từ', 'này', 'đó', 'là', 'cũng', 'rất', 'như', 'là', 'có', 'làm', 'nói'],
+      th: ['ที่', 'และ', 'มี', 'ใน', 'กับ', 'เพื่อ', 'ได้', 'ให้', 'จาก', 'นี้', 'นั้น', 'เป็น', 'ก็', 'มาก', 'เหมือน', 'เป็น', 'มี', 'ทำ', 'พูด'],
+      km: ['ដែល', 'និង', 'មាន', 'ក្នុង', 'ជាមួយ', 'សម្រាប់', 'បាន', 'ឱ្យ', 'ពី', 'នេះ', 'នោះ', 'ជា', 'ក៏', 'ច្រើន', 'ដូច', 'ជា', 'មាន', 'ធ្វើ', 'និយាយ'],
+      lo: ['ທີ່', 'ແລະ', 'ມີ', 'ໃນ', 'ກັບ', 'ສຳລັບ', 'ໄດ້', 'ໃຫ້', 'ຈາກ', 'ນີ້', 'ນັ້ນ', 'ເປັນ', 'ກໍ', 'ຫຼາຍ', 'ຄື', 'ເປັນ', 'ມີ', 'ເຮັດ', 'ເວົ້າ'],
+      my: ['သော', 'နှင့်', 'ရှိ', 'အတွင်း', 'နှင့်အတူ', 'အတွက်', 'ရ', 'ပေး', 'မှ', 'ဤ', 'ထို', 'ဖြစ်', 'လည်း', 'များ', 'ကဲ့သို့', 'ဖြစ်', 'ရှိ', 'လုပ်', 'ပြော'],
+      
+      // African languages
+      sw: ['ambayo', 'na', 'hii', 'ile', 'kwa', 'katika', 'na', 'kwa', 'kutoka', 'hii', 'ile', 'ni', 'pia', 'sana', 'kama', 'kuwa', 'kuwa', 'kufanya', 'kusema'],
+      ha: ['wanda', 'da', 'wannan', 'wancan', 'ga', 'a', 'da', 'da', 'daga', 'wannan', 'wancan', 'ne', 'kuma', 'sosai', 'kamar', 'zama', 'da', 'yi', 'ce'],
+      yo: ['ti', 'ati', 'eyi', 'iyen', 'fun', 'ni', 'pẹlu', 'pẹlu', 'lati', 'eyi', 'iyen', 'jẹ', 'tun', 'gan', 'bi', 'jẹ', 'ní', 'ṣe', 'sọ'],
+      ig: ['nke', 'na', 'nke', 'nke', 'maka', 'na', 'na', 'na', 'site', 'nke', 'nke', 'bụ', 'kwa', 'nke', 'dị', 'bụ', 'nwere', 'mee', 'kwuo'],
+      am: ['የሚሆን', 'እና', 'ይህ', 'ያ', 'ለ', 'ውስጥ', 'እና', 'እና', 'ከ', 'ይህ', 'ያ', 'ነው', 'ም', 'በጣም', 'እንደ', 'ሆን', 'አለው', 'ያድርግ', 'ንገር'],
+      so: ['kaas', 'iyo', 'kani', 'kaas', 'u', 'ku', 'iyo', 'iyo', 'ka', 'kani', 'kaas', 'waa', 'sidoo', 'aad', 'sida', 'ah', 'leeyahay', 'samee', 'sheeg'],
+      
+      // Other languages
+      af: ['wat', 'met', 'een', 'vir', 'is', 'hoe', 'meer', 'van', 'en', 'hul', 'hierdie', 'hierdie', 'is', 'het', 'doen', 'sê'],
+      zu: ['okuthi', 'futhi', 'lena', 'leyo', 'uku', 'ngaphakathi', 'futhi', 'futhi', 'kusuka', 'lena', 'leyo', 'kukhona', 'futhi', 'kakhulu', 'njenga', 'ukuba', 'ukuba', 'ukwenza', 'ukusho'],
+      xh: ['okuthi', 'kunye', 'le', 'leyo', 'uku', 'ngaphakathi', 'kunye', 'kunye', 'ukusuka', 'le', 'leyo', 'kukhona', 'kunye', 'kakhulu', 'njenga', 'ukuba', 'ukuba', 'ukwenza', 'ukuthetha'],
+      st: ['e', 'le', 'ena', 'eona', 'bakeng', 'ka', 'le', 'le', 'ho', 'ena', 'eona', 'ke', 'le', 'haholo', 'joalo', 'ho', 'ho', 'ho', 'ho'],
+      tn: ['e', 'le', 'eno', 'eono', 'go', 'ka', 'le', 'le', 'go', 'eno', 'eono', 'ke', 'le', 'that', 'jaaka', 'go', 'go', 'go', 'go'],
+      ss: ['le', 'ne', 'leli', 'lelo', 'ku', 'ku', 'ne', 'ne', 'ku', 'leli', 'lelo', 'kukhona', 'ne', 'kakhulu', 'njenga', 'kuba', 'kuba', 'kwenta', 'kusho'],
+      ve: ['tshi', 'na', 'tshi', 'tsho', 'tsha', 'tsha', 'na', 'na', 'tsha', 'tshi', 'tsho', 'ndi', 'na', 'nga', 'sa', 'vha', 'vha', 'vha', 'vha'],
+      ts: ['loko', 'na', 'leri', 'lero', 'ku', 'ku', 'na', 'na', 'ku', 'leri', 'lero', 'ku', 'na', 'swinene', 'swa', 'ku', 'ku', 'ku', 'ku'],
+      nr: ['okuthi', 'kanye', 'le', 'leyo', 'uku', 'ngaphakathi', 'kanye', 'kanye', 'ukusuka', 'le', 'leyo', 'kukhona', 'kanye', 'kakhulu', 'njenga', 'ukuba', 'ukuba', 'ukwenza', 'ukuthetha'],
+      rw: ['ubwo', 'na', 'iyi', 'iyo', 'ku', 'mu', 'na', 'na', 'kuva', 'iyi', 'iyo', 'ni', 'kandi', 'cyane', 'nk', 'kuba', 'kuba', 'gukora', 'kuvuga'],
+      rn: ['ubwo', 'na', 'iyi', 'iyo', 'ku', 'mu', 'na', 'na', 'kuva', 'iyi', 'iyo', 'ni', 'kandi', 'cyane', 'nk', 'kuba', 'kuba', 'gukora', 'kuvuga'],
+      lg: ['ekyo', 'ne', 'kino', 'ekyo', 'oku', 'mu', 'ne', 'ne', 'okuva', 'kino', 'ekyo', 'kiri', 'ne', 'nyo', 'nga', 'okuba', 'okuba', 'okukola', 'okugamba'],
+      ak: ['a', 'ne', 'yi', 'yi', 'ma', 'mu', 'ne', 'ne', 'fi', 'yi', 'yi', 'yɛ', 'ne', 'pii', 'te', 'yɛ', 'wɔ', 'yɛ', 'ka'],
+      tw: ['a', 'ne', 'yi', 'yi', 'ma', 'mu', 'ne', 'ne', 'fi', 'yi', 'yi', 'yɛ', 'ne', 'pii', 'te', 'yɛ', 'wɔ', 'yɛ', 'ka'],
+      ff: ['ɗo', 'e', 'go', 'ɗo', 'ɓe', 'ɗo', 'e', 'e', 'ɓe', 'ɗo', 'ɗo', 'ɗo', 'e', 'ɗo', 'ɗo', 'ɗo', 'ɗo', 'ɗo', 'ɗo'],
+      wo: ['ku', 'ak', 'li', 'li', 'ngal', 'ci', 'ak', 'ak', 'ci', 'li', 'li', 'dafa', 'ak', 'gën', 'ci', 'dafa', 'am', 'def', 'wax'],
+      bm: ['min', 'fɛ', 'kelen', 'fɛ', 'bɛ', 'kɔnɔ', 'fɛ', 'fɛ', 'fɛ', 'min', 'min', 'bɛ', 'fɛ', 'cam', 'kɛ', 'bɛ', 'bɛ', 'kɛ', 'fɔ'],
+      dyu: ['min', 'fɛ', 'kelen', 'fɛ', 'bɛ', 'kɔnɔ', 'fɛ', 'fɛ', 'fɛ', 'min', 'min', 'bɛ', 'fɛ', 'cam', 'kɛ', 'bɛ', 'bɛ', 'kɛ', 'fɔ'],
+      ee: ['si', 'kple', 'e', 'e', 'na', 'le', 'kple', 'kple', 'tso', 'e', 'e', 'le', 'kple', 'gã', 'bĩ', 'le', 'le', 'wɔ', 'gblɔ'],
+      gaa: ['ke', 'kɛ', 'ke', 'ke', 'ma', 'le', 'kɛ', 'kɛ', 'le', 'ke', 'ke', 'le', 'kɛ', 'gã', 'bĩ', 'le', 'le', 'wɔ', 'gblɔ'],
+      ti: ['ዘ', 'ከ', 'ሓ', 'ን', 'ዘ', 'ከ', 'ከ', 'ከ', 'ከ', 'ዘ', 'ዘ', 'ዘ', 'ከ', 'ዘ', 'ዘ', 'ዘ', 'ዘ', 'ዘ', 'ዘ'],
+      om: ['kan', 'fi', 'tokko', 'fi', 'kan', 'keessa', 'fi', 'fi', 'irraa', 'kan', 'kan', 'dha', 'fi', 'baay', 'akka', 'dha', 'qaba', 'gochuu', 'jedhu'],
+      
+      // Pacific languages
+      mi: ['ko', 'me', 'tetahi', 'mo', 'he', 'pehea', 'atu', 'mai', 'me', 'o', 'tenei', 'tenei', 'he', 'whai', 'mahi', 'korero'],
+      sm: ['o', 'ma', 'se', 'mo', 'o', 'faapefea', 'sili', 'mai', 'ma', 'o', 'lenei', 'lenei', 'o', 'maua', 'faia', 'fai'],
+      to: ['oku', 'mo', 'e', 'ki', 'oku', 'pehea', 'atu', 'mai', 'mo', 'ona', 'eni', 'eni', 'oku', 'ma', 'faia', 'tala'],
+      fj: ['o', 'kei', 'e', 'vei', 'o', 'vaka', 'levu', 'mai', 'kei', 'ona', 'o', 'o', 'o', 'tiko', 'cakava', 'vosa'],
+      haw: ['ka', 'me', 'kekahi', 'no', 'he', 'pehea', 'oi', 'mai', 'me', 'ona', 'keia', 'keia', 'he', 'loaa', 'hana', 'olelo'],
+      
+      // Other languages
+      eo: ['kiu', 'kun', 'unu', 'por', 'estas', 'kiel', 'pli', 'de', 'kaj', 'ilia', 'tiu', 'tiu', 'estas', 'havi', 'fari', 'diri'],
+      la: ['qui', 'cum', 'unus', 'pro', 'est', 'quomodo', 'plus', 'de', 'et', 'eorum', 'hic', 'haec', 'est', 'habere', 'facere', 'dicere'],
+      hmn: ['uas', 'thiab', 'ib', 'rau', 'yog', 'li cas', 'ntau', 'los', 'thiab', 'lawv', 'no', 'no', 'yog', 'muaj', 'ua', 'hais'],
+      co: ['chì', 'cù', 'unu', 'per', 'hè', 'cum', 'più', 'da', 'è', 'so', 'questu', 'questa', 'hè', 'avè', 'fà', 'dì'],
+      fy: ['dy', 'mei', 'ien', 'foar', 'is', 'hoe', 'mear', 'fan', 'en', 'har', 'dit', 'dit', 'is', 'hawwe', 'dwaan', 'sizze'],
+      ht: ['ki', 'ak', 'yon', 'pou', 'se', 'kijan', 'plis', 'soti', 'ak', 'yo', 'sa', 'sa', 'se', 'gen', 'fè', 'di'],
+      lb: ['deen', 'mat', 'een', 'fir', 'ass', 'wéi', 'méi', 'vun', 'an', 'hir', 'dëst', 'dëst', 'ass', 'hunn', 'maachen', 'soen'],
+      mg: ['izay', 'sy', 'iray', 'ho', 'dia', 'ahoana', 'be', 'avy', 'sy', 'izy', 'ity', 'ity', 'dia', 'manana', 'manao', 'miteny'],
+      ny: ['yomwe', 'ndi', 'chimodzi', 'cha', 'ndi', 'bwanji', 'kwambiri', 'kuchokera', 'ndi', 'awo', 'ichi', 'ichi', 'ndi', 'kukhala', 'chita', 'nena'],
+      sn: ['iyo', 'uye', 'imwe', 'ye', 'iri', 'sei', 'zvikuru', 'kubva', 'uye', 'avo', 'ichi', 'ichi', 'iri', 'kuva', 'ita', 'taura'],
+      be: ['які', 'з', 'адзін', 'для', 'ёсць', 'як', 'больш', 'з', 'і', 'іх', 'гэты', 'гэта', 'ёсць', 'мець', 'рабіць', 'гаварыць'],
+      uk: ['який', 'з', 'один', 'для', 'є', 'як', 'більше', 'з', 'і', 'їх', 'цей', 'ця', 'є', 'мати', 'робити', 'говорити'],
+    };
+
+    let maxScore = 0;
+    let detectedLang = 'en';
+
+    for (const [lang, indicators] of Object.entries(languageIndicators)) {
+      const matches = words.filter(word => indicators.includes(word)).length;
+      const score = matches / Math.min(words.length, 20); // Normalize by text length
+      
+      if (score > maxScore) {
+        maxScore = score;
+        detectedLang = lang;
+      }
+    }
+
+    if (maxScore > 0.1) {
+      return detectedLang;
+    }
+  }
+
+  // Default to English
+  return 'en';
+};
+
+// Function to validate and clean AI responses
+const validateAndCleanResponse = (response: string): string => {
+  if (!response || typeof response !== 'string') {
+    return '';
+  }
+  
+  let cleanedResponse = response.trim();
+  
+  // Remove any incomplete sentences at the end
+  const sentences = cleanedResponse.split(/[.!?]+/);
+  const lastSentence = sentences[sentences.length - 1].trim();
+  
+  // If the last sentence is incomplete (less than 3 words or doesn't end with punctuation), remove it
+  if (lastSentence.split(' ').length < 3 || !/[.!?]$/.test(cleanedResponse)) {
+    // Find the last complete sentence
+    const lastCompleteIndex = cleanedResponse.lastIndexOf('.');
+    if (lastCompleteIndex > 0) {
+      cleanedResponse = cleanedResponse.substring(0, lastCompleteIndex + 1);
+    }
+  }
+  
+  // Remove any fragmented text patterns
+  cleanedResponse = cleanedResponse.replace(/\s*\.{2,}\s*/g, '.'); // Remove multiple dots
+  cleanedResponse = cleanedResponse.replace(/\s*[a-z]\s*$/gi, ''); // Remove single letters at end
+  cleanedResponse = cleanedResponse.replace(/\s+$/g, ''); // Remove trailing whitespace
+  
+  return cleanedResponse;
+};
+
 export const useAIResponse = () => {
   const generate_response_with_gemini = useCallback(async (prompt: string): Promise<string> => {
     try {
@@ -26,27 +262,46 @@ export const useAIResponse = () => {
   }, []);
 
   const getPrompt = useCallback((content: string) => {
+    const detectedLanguage = detectLanguage(content);
+    const languageInstructions = detectedLanguage !== 'en' ? 
+      `\n\n🚨 CRITICAL LANGUAGE REQUIREMENT - YOU MUST FOLLOW THIS EXACTLY: 
+- You MUST respond in the SAME LANGUAGE as the user's question (${detectedLanguage})
+- ALL your content must be in ${detectedLanguage} - introduction, explanations, conclusions, AND suggested questions
+- Only the Quranic verse references and technical formatting should remain in English
+- The suggested questions at the end must also be in ${detectedLanguage}
+- Do NOT mix languages - keep everything consistent
+- If you fail to follow this language requirement, your response will be rejected
+- This is a strict requirement - no exceptions allowed` : '';
+
     return `You are an AI-powered Islamic Library with experience as a Quran Scholar/Researcher. Your task is to answer questions by providing authentic references from the Holy Quran.
 
-IMPORTANT: You must format your response exactly as follows:
+🚨 CRITICAL: You must format your response exactly as follows AND follow the language requirement above:
 
-1. Start with a brief introduction to the topic
-2. Include at least 2-3 relevant Quranic verses in this EXACT format:
-   "Verse text here" [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
+Begin with a brief introduction to the topic in a flowing, narrative style. Keep your introduction concise but complete - avoid using bullet points, numbered lists, or any point-based formatting.
 
-3. After each verse, provide:
-   - First: The authentic tafsir will be automatically fetched and displayed
-   - Second: Your AI-generated explanation and interpretation of the verse
+Include at least 2-3 relevant Quranic verses in this EXACT format:
+"Complete verse text here" [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
 
-4. End with practical guidance or conclusion
+After each verse, provide your AI-generated explanation and interpretation in a natural, flowing paragraph format. Make sure each explanation is complete and properly ends before moving to the next verse. The authentic tafsir will be automatically fetched and displayed.
+
+End with practical guidance or conclusion in a narrative style.
+
+After your main response, provide exactly 5 relevant follow-up questions in the same language as the user's question. Each question must be:
+- Complete and grammatically correct
+- On a separate line
+- Related to the user's original question
+- Specific and thought-provoking
+- Properly formatted without any numbering or bullet points
 
 CRITICAL FORMAT REQUIREMENTS:
 - Use EXACTLY this format for ayah references: [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
 - Replace {Surah No.} and {Ayah No.} with actual numbers
 - Use proper surah names like: Al-Fatiha, Al-Baqarah, Aal-Imran, An-Nisa, Al-Ma'idah, etc.
 - Include the full verse text in quotes before each reference
-- After each verse reference, provide your AI-generated explanation and interpretation
+- After each verse reference, provide your AI-generated explanation and interpretation in paragraph form
 - The authentic tafsir from Islamic scholars will be automatically displayed
+- Write in a natural, flowing narrative style without bullet points or numbered lists
+- Ensure ALL text is complete and properly formatted - no incomplete sentences or fragmented thoughts
 
 CRITICAL AI EXPLANATION REQUIREMENTS:
 - Your AI explanation MUST directly connect the specific ayah to the user's question
@@ -54,23 +309,46 @@ CRITICAL AI EXPLANATION REQUIREMENTS:
 - Provide context and interpretation that makes the connection clear
 - Show the relevance of the verse to the specific question being asked
 - Make sure the explanation bridges the gap between the verse and the user's inquiry
+- Write in flowing paragraphs, not as separate points
+- Ensure each explanation is complete and properly concluded
+
+CRITICAL RESPONSE QUALITY REQUIREMENTS:
+- Provide complete, coherent responses
+- Avoid fragmented or incomplete sentences
+- Ensure all explanations are properly finished
+- Make sure suggested questions are complete and meaningful
+- Do not cut off responses mid-sentence
+- Maintain proper grammar and flow throughout
+- Write in complete, well-formed sentences
+- Avoid any text that appears to be cut off or incomplete
+
+🚨 CRITICAL LANGUAGE CONSISTENCY REQUIREMENTS:
+- The ENTIRE response must be in the SAME LANGUAGE as the user's question
+- This includes: introduction, explanations, conclusions, AND suggested questions
+- Do NOT mix languages - keep everything consistent
+- Only Quranic references and technical formatting should remain in English
+- If you write in English when the user asked in ${detectedLanguage}, your response will be rejected
+- This is a strict requirement with no exceptions${languageInstructions}
 
 Example format:
 "Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
 
-[AI Explanation: This verse directly addresses your question about patience by teaching us that Allah's divine support is guaranteed for those who remain steadfast. When you asked about how to handle difficult situations, this verse provides the answer: maintain patience and trust that Allah will be with you. This is not just about waiting passively, but about actively maintaining faith and trust in Allah's plan while facing your challenges.]
+This verse directly addresses your question about patience by teaching us that Allah's divine support is guaranteed for those who remain steadfast. When you asked about how to handle difficult situations, this verse provides the answer: maintain patience and trust that Allah will be with you. This is not just about waiting passively, but about actively maintaining faith and trust in Allah's plan while facing your challenges.
 
 Question: ${content}`;
   }, []);
 
   const formatResponse = useCallback(async (response: string) => {
-    // First, find all ayah references and prepare them with tafsir data
+    // First, validate that the response is complete and properly formatted
+    const validatedResponse = validateAndCleanResponse(response);
+    
+    // Find all ayah references and prepare them with tafsir data
     const ayahRegex = /"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g;
     const ayahMatches: RegExpExecArray[] = [];
     let match;
     
     // Extract all matches
-    while ((match = ayahRegex.exec(response)) !== null) {
+    while ((match = ayahRegex.exec(validatedResponse)) !== null) {
       ayahMatches.push(match);
     }
     
@@ -285,16 +563,16 @@ Question: ${content}`;
       // Format bullet points
       .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-5 flex items-start p-4 bg-gray-100 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-600  hover: transition-all duration-200"><span class="w-3 h-3 bg-gray-600 dark:bg-gray-400 rounded-full mr-4 mt-3 flex-shrink-0 "></span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed">$1</span></div>')
       
-      // Format specific Islamic terms with enhanced styling
-      .replace(/Allah\s*\(SWT\)/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (SWT)</span>')
-      .replace(/Allah\s*SWT/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-gray-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah SWT</span>')
-      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Prophet Muhammad (PBUH)</span>')
-      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Prophet Muhammad PBUH</span>')
+      // Format specific Islamic terms with minimalistic underlines
+      .replace(/Allah\s*\(SWT\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah (SWT)</span>')
+      .replace(/Allah\s*SWT/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah SWT</span>')
+      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Prophet Muhammad (PBUH)</span>')
+      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Prophet Muhammad PBUH</span>')
       .replace(/\(peace be upon him\)/g, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
-      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Muhammad (PBUH)</span>')
-      .replace(/Muhammad\s*PBUH/g, '<span class="inline-flex items-center px-2 py-1 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium border border-gray-300 dark:border-gray-600">📖 Muhammad PBUH</span>')
-      .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah (Subhanahu wa Ta\'ala)</span>')
-      .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="inline-flex items-center px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-xl text-sm font-bold border-2 border-amber-300 dark:border-amber-500  hover: transition-all duration-300 transform hover:scale-105 animate-pulse">🕌 Allah Subhanahu wa Ta\'ala</span>')
+      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Muhammad (PBUH)</span>')
+      .replace(/Muhammad\s*PBUH/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Muhammad PBUH</span>')
+      .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah (Subhanahu wa Ta\'ala)</span>')
+      .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah Subhanahu wa Ta\'ala</span>')
       
       // Format Explanation headers with distinctive styling
       .replace(/^(Explanation):?\s*$/gmi, 
@@ -316,9 +594,9 @@ Question: ${content}`;
       .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi, 
         '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
       
-      // Format Quranic section headers with enhanced styling
+      // Format Quranic section headers with simple styling
       .replace(/Allah\s*\(SWT\)\s*says\s*in\s*the\s*(Glorious\s*)?Quran:?/gi, 
-        '<div class="my-8 p-6 bg-gray-100 dark:bg-gray-900 rounded-2xl border-l-4 border-gray-800 dark:border-gray-200 "><h3 class="divine-quote-heading text-xl font-bold text-gray-800 dark:text-gray-200 mb-3 font-[var(--font-amiri)] tracking-wide flex items-center">📖 <span class="ml-3">Allah (SWT) says in the Glorious Quran:</span></h3><div class="w-16 h-1 bg-gray-800 dark:text-gray-200 rounded-full"></div></div>')
+        '<div class="my-8 p-4 border-l-4 border-gray-300 dark:border-gray-600 pl-4"><h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Allah (SWT) says in the Glorious Quran:</h3></div>')
       
       // Clean up any remaining formatting markers
       .replace(/###\s*Quran GPT's Answer:?\s*/gi, '')
@@ -355,6 +633,7 @@ Question: ${content}`;
     setError('');
 
     const prompt = getPrompt(trimmedContent);
+    const detectedLanguage = detectLanguage(trimmedContent);
 
     try {
       const response = await generate_response_with_gemini(prompt);
@@ -363,7 +642,7 @@ Question: ${content}`;
       
       setSummary(formattedResponse);
       setDisplayedContent(formattedResponse);
-      setCurrentLanguage('en');
+      setCurrentLanguage(detectedLanguage);
       setShowSummary(true);
     } catch (error) {
       if (error instanceof Error) {
