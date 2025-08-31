@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { preloadAudioMetadata, getCachedAudioMetadata, setCachedAudioMetadata, formatTime } from '../utils/audioUtils';
+import { getAudioUrl } from '../utils/audioUrlHelper';
 
 interface ResponseSectionProps {
   showSummary: boolean;
@@ -145,7 +146,7 @@ export default function ResponseSection({
       const globalAyahNumber = player.getAttribute('data-global-ayah');
       if (!globalAyahNumber) return;
       
-      const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+      const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
       
       // Check cache first
       const cachedDuration = getCachedAudioMetadata(audioUrl);
@@ -446,7 +447,7 @@ export default function ResponseSection({
               // Try to get cached duration for seeking even when not active
               const globalAyahNumber = player.getAttribute('data-global-ayah');
               if (globalAyahNumber) {
-                const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+                const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
                 const cachedDuration = getCachedAudioMetadata(audioUrl);
                 if (cachedDuration && cachedDuration > 0) {
                   const seekTime = (seekPercentage / 100) * cachedDuration;
@@ -520,7 +521,7 @@ export default function ResponseSection({
           // Try to get cached duration for this player
           const globalAyahNumber = player.getAttribute('data-global-ayah');
           if (globalAyahNumber) {
-            const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+            const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
             const cachedDuration = getCachedAudioMetadata(audioUrl);
             if (totalDurationEl) totalDurationEl.textContent = cachedDuration ? formatTime(cachedDuration) : '--:--';
           } else {

@@ -2,16 +2,16 @@
  * Audio URL Helper Utilities
  * 
  * This file provides helper functions to handle audio URLs and avoid CORS issues
- * by using a proxy API route in development mode.
+ * by using a proxy API route in development mode and production mode.
  */
 
 /**
- * Converts a CDN audio URL to a proxy URL in development mode
+ * Converts a CDN audio URL to a proxy URL in both development and production modes
  * @param cdnUrl - The original CDN URL
- * @returns The proxy URL in development, or the original URL in production
+ * @returns The proxy URL for both development and production
  */
 export const getAudioUrl = (cdnUrl: string): string => {
-  if (process.env.NODE_ENV === 'development' && cdnUrl.includes('cdn.islamic.network')) {
+  if (cdnUrl.includes('cdn.islamic.network')) {
     return `/api/audio-proxy?url=${encodeURIComponent(cdnUrl)}`;
   }
   return cdnUrl;
@@ -27,12 +27,12 @@ export const createProxyUrl = (cdnUrl: string): string => {
 };
 
 /**
- * Checks if a URL should use the proxy (development mode + CDN URL)
+ * Checks if a URL should use the proxy (CDN URL)
  * @param url - The URL to check
  * @returns True if the URL should use the proxy
  */
 export const shouldUseProxy = (url: string): boolean => {
-  return process.env.NODE_ENV === 'development' && url.includes('cdn.islamic.network');
+  return url.includes('cdn.islamic.network');
 };
 
 /**

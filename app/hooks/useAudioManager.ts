@@ -55,14 +55,9 @@ export const useAudioManager = () => {
   // Play audio for a specific ayah
   const playAudio = useCallback(async (ayahId: string, audioUrl: string) => {
     try {
-      // Validate URL
-      if (!audioUrl || !audioUrl.startsWith('http')) {
+      // URL validation - ensure it's a valid URL (can be HTTP URL or proxy URL)
+      if (!audioUrl || (!audioUrl.startsWith('http') && !audioUrl.startsWith('/'))) {
         throw new Error(`Invalid audio URL: ${audioUrl}`);
-      }
-      
-      // Production-specific URL validation
-      if (!validateAudioUrlForProduction(audioUrl)) {
-        throw new Error(`Audio URL not compatible with production: ${audioUrl}`);
       }
       
       // If there's already audio playing, stop it first
@@ -117,37 +112,11 @@ export const useAudioManager = () => {
         }));
       });
       
-            // Multiple quality options as fallback - ensure they're valid URLs
-      const audioUrls = [
-        audioUrl, // Original 128kbps
-        audioUrl.replace('/128/', '/64/'), // 64kbps fallback
-        audioUrl.replace('/128/', '/192/') // 192kbps fallback
-      ];
-      
-      // Use only the main CDN URLs (alternative CDNs don't exist)
-      const allAudioUrls = [...audioUrls];
-      
-      // Validate all URLs before using them
-      const validAudioUrls = allAudioUrls.filter(url => {
-        try {
-          const urlObj = new URL(url);
-          return urlObj.protocol === 'https:' && urlObj.hostname === 'cdn.islamic.network';
-        } catch {
-          return false;
-        }
-      });
-      
-      if (validAudioUrls.length === 0) {
-        throw new Error('No valid audio URLs found');
-      }
-      
-      // Convert CDN URLs to proxy URLs in development mode
-      const processedAudioUrls = validAudioUrls.map(url => getAudioUrl(url));
-      
-
+            // Use the audio URL (which is already processed to use the proxy)
+      const processedAudioUrl = audioUrl;
       
       // Set the primary source safely and ensure it's loaded
-      let sourceSet = await setAudioSourceSafely(newAudio, processedAudioUrls[0]);
+      let sourceSet = await setAudioSourceSafely(newAudio, processedAudioUrl);
       if (!sourceSet) {
         console.warn('🎵 useAudioManager: Failed to set audio source, trying alternative method...');
         
@@ -159,7 +128,7 @@ export const useAudioManager = () => {
         alternativeAudio.volume = 1.0;
         
         // Try to set source directly
-        alternativeAudio.src = processedAudioUrls[0];
+        alternativeAudio.src = processedAudioUrl;
         
         // Wait and check if it worked
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -278,36 +247,7 @@ export const useAudioManager = () => {
           if (process.env.NODE_ENV === 'development') {
             console.error('🎵 useAudioManager: Fallback play failed:', fallbackError);
           }
-                // Try different quality sources using validated URLs
-      for (let i = 1; i < processedAudioUrls.length; i++) {
-        try {
-          
-          // Create a fresh audio element for each attempt to avoid corruption
-          const freshAudio = process.env.NODE_ENV === 'production' 
-            ? createProductionAudioElement() 
-            : new Audio();
-          
-          freshAudio.controls = false;
-          freshAudio.volume = 1.0;
-          
-          // Set source safely
-          const fallbackSourceSet = await setAudioSourceSafely(freshAudio, processedAudioUrls[i]);
-          if (!fallbackSourceSet) {
-            throw new Error('Failed to set fallback audio source');
-          }
-          
-          await freshAudio.play();
-          
-          // Update the reference to the working audio element
-          audioRef.current = freshAudio;
-          break;
-        } catch (altError) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error(`🎵 useAudioManager: Alternative source ${i} failed:`, altError);
-          }
-          if (i === processedAudioUrls.length - 1) {
-            
-            // Final recovery attempt - create a completely fresh audio element
+                // Final recovery attempt - create a completely fresh audio element
             try {
               const finalAudio = new Audio();
               finalAudio.crossOrigin = 'anonymous';
@@ -315,8 +255,8 @@ export const useAudioManager = () => {
               finalAudio.controls = false;
               finalAudio.volume = 1.0;
               
-              // Try the original URL one more time
-              const finalSourceSet = await setAudioSourceSafely(finalAudio, processedAudioUrls[0]);
+              // Try the proxy URL one more time
+              const finalSourceSet = await setAudioSourceSafely(finalAudio, processedAudioUrl);
               if (finalSourceSet) {
                 await finalAudio.play();
                 audioRef.current = finalAudio;
@@ -329,12 +269,9 @@ export const useAudioManager = () => {
             // Provide a more helpful error message
             const errorMessage = process.env.NODE_ENV === 'production' 
               ? 'Audio playback failed. This might be due to network issues or browser restrictions. Please try refreshing the page or check your internet connection.'
-              : `Audio playback failed with all sources: ${error?.message || 'Unknown error'}`;
+              : `Audio playback failed: ${error?.message || 'Unknown error'}`;
             
             throw new Error(errorMessage);
-          }
-        }
-      }
         }
       }
 

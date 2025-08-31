@@ -25,6 +25,7 @@ import { useChatManager } from './hooks/useChatManager';
 import { useAIResponse } from './hooks/useAIResponse';
 import { useTranslationManager } from './hooks/useTranslationManager';
 import { initializeAudioForProduction } from './utils/audioUtils';
+import { getAudioUrl } from './utils/audioUrlHelper';
 
 
 // Extend Window interface for tafsir functionality
@@ -507,7 +508,7 @@ export default function Home() {
 
   // Audio management functions
   const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
-    const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+            const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
     console.log('🎵 handleAudioPlay called:', { ayahId, globalAyahNumber, audioUrl });
     
     try {
@@ -617,7 +618,9 @@ export default function Home() {
       
       {/* Audio preloader for production */}
       <AudioErrorBoundary>
-
+        <div style={{ display: 'none' }}>
+          {/* Hidden audio preloader for production */}
+        </div>
       </AudioErrorBoundary>
       
 

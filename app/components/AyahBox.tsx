@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PlayIcon, PauseIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
+import { getAudioUrl } from '../utils/audioUrlHelper';
 
 interface AyahBoxProps {
   surahName: string;
@@ -82,7 +83,7 @@ export default function AyahBox({
   };
 
   const globalAyahNumber = getGlobalAyahNumber(surahNumber, ayahNumber);
-  const audioUrl = `https://cdn.islamic.network/quran/audio/128/${selectedEdition}/${globalAyahNumber}.mp3`;
+          const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/${selectedEdition}/${globalAyahNumber}.mp3`);
   const imageUrl = `https://cdn.islamic.network/quran/images/${surahNumber}_${ayahNumber}.png`;
 
   const handlePlayPause = async () => {
