@@ -96,7 +96,8 @@ export default function AyahBox({
       
       audioRef.current.addEventListener('error', () => {
         setIsLoading(false);
-        // Error loading audio - silent fail for security
+        // Error loading audio - handle gracefully in production
+        console.warn('Audio error in AyahBox, but continuing...');
       });
       
       audioRef.current.addEventListener('canplay', () => {

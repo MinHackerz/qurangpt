@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import MinimalAudioPlayer from './MinimalAudioPlayer';
+import { useAudioManager } from '../hooks/useAudioManager';
+import { getAudioUrl } from '../utils/audioUrlHelper';
 
 interface AyahAudioPlayerProps {
   ayahId: string;
@@ -26,7 +28,21 @@ export default function AyahAudioPlayer({
   isPlaying,
   isActive
 }: AyahAudioPlayerProps) {
-  const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+  const { playAudio } = useAudioManager();
+
+  const handlePlayAudio = async () => {
+    if (!globalAyahNumber) return;
+    
+    try {
+      const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
+      await playAudio(globalAyahNumber.toString(), audioUrl);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+
+  // Get the proxy URL for the audio
+  const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
 
   return (
     <MinimalAudioPlayer

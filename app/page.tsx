@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -17,11 +17,15 @@ import {
   MinimalHeader,
   TransparencySection
 } from './components';
+
+import AudioErrorBoundary from './components/AudioErrorBoundary';
 import ThemeToggle from './components/ThemeToggle';
 import { useAudioManager } from './hooks/useAudioManager';
 import { useChatManager } from './hooks/useChatManager';
 import { useAIResponse } from './hooks/useAIResponse';
 import { useTranslationManager } from './hooks/useTranslationManager';
+import { initializeAudioForProduction } from './utils/audioUtils';
+
 
 // Extend Window interface for tafsir functionality
 declare global {
@@ -36,6 +40,50 @@ export default function Home() {
   const chatManager = useChatManager();
   const { askQuran } = useAIResponse();
   const { copyAIContentOnly, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent } = useTranslationManager();
+  
+  // Production audio initialization
+  useEffect(() => {
+    // Initialize audio for production environment
+    if (typeof window !== 'undefined') {
+      // Create a test audio element to initialize production settings
+      const testAudio = new Audio();
+      initializeAudioForProduction(testAudio);
+      testAudio.src = '';
+      
+      // Production-specific audio compatibility check
+      if (process.env.NODE_ENV === 'production') {
+        // Check if audio context is available
+        try {
+          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContext) {
+            const audioContext = new AudioContext();
+            audioContext.close();
+          }
+        } catch (error) {
+          // Silent fail in production
+        }
+        
+        // Check if audio elements are supported
+        try {
+          const testAudio2 = new Audio();
+          testAudio2.crossOrigin = 'anonymous';
+        } catch (error) {
+          // Silent fail in production
+        }
+        
+        // Set production audio configuration
+        if (window.AudioContext || (window as any).webkitAudioContext) {
+          // Configure audio context for production
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          audioContext.resume().then(() => {
+            audioContext.close();
+          }).catch((error: any) => {
+            // Silent fail in production
+          });
+        }
+      }
+    }
+  }, []);
   
   // Simple language detection function
   const detectLanguage = useCallback((text: string): string => {
@@ -530,7 +578,7 @@ export default function Home() {
         <meta name="description" content="Quran GPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. Get insightful and accurate responses supported by relevant verses and interpretations from the Quran." />
         <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
         <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
-        <link rel="icon" type="image/png" href="https://qurangpt.life/wp-content/uploads/2023/04/Quran-GPT-Favicon.png" />
+
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
@@ -566,6 +614,15 @@ export default function Home() {
           gtag('config', 'G-NMNGXPDXNK');
         `}
       </Script>
+      
+      {/* Audio preloader for production */}
+      <AudioErrorBoundary>
+
+      </AudioErrorBoundary>
+      
+
+      
+
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
 

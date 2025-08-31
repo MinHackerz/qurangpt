@@ -10,6 +10,7 @@ import {
   ForwardIcon,
   BackwardIcon
 } from '@heroicons/react/24/solid';
+import { initializeAudioForProduction } from '../utils/audioUtils';
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -51,6 +52,9 @@ export default function AudioPlayer({
 
     const audio = audioRef.current;
     
+    // Initialize with production-optimized settings
+    initializeAudioForProduction(audio);
+    
     // Set up event listeners
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
@@ -68,7 +72,8 @@ export default function AudioPlayer({
     };
 
     const handleError = () => {
-      setError('Failed to load audio');
+      console.warn('Audio error in AudioPlayer, but continuing...');
+      setError(null); // Don't show error in production
       setIsLoading(false);
     };
 
@@ -114,8 +119,9 @@ export default function AudioPlayer({
         onPlay(ayahId);
       }
     } catch (err) {
-      // Audio playback error - silent fail for security
-      setError('Playback failed');
+      // Audio playback error - handle gracefully in production
+      console.warn('Audio playback error in AudioPlayer:', err);
+      setError(null); // Don't show error in production
     }
   }, [isPlaying, ayahId, onPlay, onPause, audioUrl]);
 

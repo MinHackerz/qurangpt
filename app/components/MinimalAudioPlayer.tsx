@@ -51,8 +51,9 @@ export default function MinimalAudioPlayer({
         setIsLoading(false);
       }
     } catch (err) {
-      // Audio playback error - silent fail for security
-      setError('Playback failed');
+      // Audio playback error - handle gracefully in production
+      console.warn('Audio playback error in MinimalAudioPlayer:', err);
+      setError(null); // Don't show error in production
       setIsLoading(false);
     }
   }, [localIsPlaying, ayahId, globalAyahNumber, onPlay, onPause]);

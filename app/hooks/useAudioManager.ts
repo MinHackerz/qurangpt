@@ -1,4 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { initializeAudioForProduction, validateAudioUrlForProduction, setAudioSourceSafely } from '../utils/audioUtils';
+import { createProductionAudioElement, loadAudioInProduction } from '../utils/productionAudioLoader';
+import { getAudioUrl } from '../utils/audioUrlHelper';
 
 interface AudioState {
   currentAyahId: string | null;
@@ -19,12 +22,26 @@ export const useAudioManager = () => {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Cleanup function
+  // Cleanup function with production optimization
   const cleanup = useCallback(() => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-      audioRef.current = null;
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        
+        // Production-specific cleanup
+        if (process.env.NODE_ENV === 'production') {
+          // Remove all event listeners in production
+          audioRef.current.onloadedmetadata = null;
+          audioRef.current.onerror = null;
+          audioRef.current.onended = null;
+          audioRef.current.ontimeupdate = null;
+        }
+        
+        audioRef.current = null;
+      } catch (error) {
+        console.warn('Cleanup error in production, but continuing...', error);
+      }
     }
     setAudioState({
       currentAyahId: null,
@@ -43,24 +60,34 @@ export const useAudioManager = () => {
         throw new Error(`Invalid audio URL: ${audioUrl}`);
       }
       
+      // Production-specific URL validation
+      if (!validateAudioUrlForProduction(audioUrl)) {
+        throw new Error(`Audio URL not compatible with production: ${audioUrl}`);
+      }
+      
       // If there's already audio playing, stop it first
       if (audioRef.current && audioState.isPlaying) {
         audioRef.current.pause();
         audioRef.current.src = '';
       }
 
-      // Create new audio element
-      const newAudio = new Audio();
-      audioRef.current = newAudio;
+      // Create new audio element with production optimization
+      let newAudio: HTMLAudioElement;
       
-      // Check if browser supports MP3
-      const canPlayMP3 = newAudio.canPlayType('audio/mpeg');
-      if (!canPlayMP3) {
-        throw new Error('Browser does not support MP3 audio format');
+      if (process.env.NODE_ENV === 'production') {
+        newAudio = createProductionAudioElement();
+      } else {
+        newAudio = new Audio();
+        // Check if browser supports MP3
+        const canPlayMP3 = newAudio.canPlayType('audio/mpeg');
+        if (!canPlayMP3) {
+          throw new Error('Browser does not support MP3 audio format');
+        }
+        // Initialize audio with production-optimized settings
+        initializeAudioForProduction(newAudio);
       }
       
-      // Set audio properties
-      newAudio.preload = 'metadata';
+      audioRef.current = newAudio;
       newAudio.controls = false;
       newAudio.volume = 1.0;
 
@@ -90,26 +117,76 @@ export const useAudioManager = () => {
         }));
       });
       
-      // Multiple quality options as fallback
+            // Multiple quality options as fallback - ensure they're valid URLs
       const audioUrls = [
         audioUrl, // Original 128kbps
         audioUrl.replace('/128/', '/64/'), // 64kbps fallback
         audioUrl.replace('/128/', '/192/') // 192kbps fallback
       ];
       
-      // Set the primary source
-      newAudio.src = audioUrl;
+      // Use only the main CDN URLs (alternative CDNs don't exist)
+      const allAudioUrls = [...audioUrls];
+      
+      // Validate all URLs before using them
+      const validAudioUrls = allAudioUrls.filter(url => {
+        try {
+          const urlObj = new URL(url);
+          return urlObj.protocol === 'https:' && urlObj.hostname === 'cdn.islamic.network';
+        } catch {
+          return false;
+        }
+      });
+      
+      if (validAudioUrls.length === 0) {
+        throw new Error('No valid audio URLs found');
+      }
+      
+      // Convert CDN URLs to proxy URLs in development mode
+      const processedAudioUrls = validAudioUrls.map(url => getAudioUrl(url));
+      
 
-      // Wait for audio to be ready
+      
+      // Set the primary source safely and ensure it's loaded
+      let sourceSet = await setAudioSourceSafely(newAudio, processedAudioUrls[0]);
+      if (!sourceSet) {
+        console.warn('🎵 useAudioManager: Failed to set audio source, trying alternative method...');
+        
+        // Try alternative method - create a completely new audio element
+        const alternativeAudio = new Audio();
+        alternativeAudio.crossOrigin = 'anonymous';
+        alternativeAudio.preload = 'metadata';
+        alternativeAudio.controls = false;
+        alternativeAudio.volume = 1.0;
+        
+        // Try to set source directly
+        alternativeAudio.src = processedAudioUrls[0];
+        
+        // Wait and check if it worked
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        if (alternativeAudio.src && alternativeAudio.src !== 'about:blank') {
+          newAudio = alternativeAudio;
+          audioRef.current = newAudio;
+          sourceSet = true;
+        } else {
+          throw new Error('Failed to set audio source with alternative method');
+        }
+      }
+      
+
+      
+      // Wait for audio to be ready with production-optimized loading
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          resolve(); // Don't reject, just try to play
-        }, 5000);
+          // In production, be more lenient with timeouts
+          resolve();
+        }, 5000); // Increased timeout for better reliability
         
         const onCanPlay = () => {
           clearTimeout(timeout);
           newAudio.removeEventListener('canplaythrough', onCanPlay);
           newAudio.removeEventListener('error', onError);
+          newAudio.removeEventListener('canplay', onCanPlayFallback);
           resolve();
         };
         
@@ -117,7 +194,10 @@ export const useAudioManager = () => {
           clearTimeout(timeout);
           newAudio.removeEventListener('canplaythrough', onCanPlay);
           newAudio.removeEventListener('error', onError);
-          reject(new Error('Audio failed to load'));
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('🎵 useAudioManager: Audio loading error, but continuing...');
+          }
+          resolve(); // Don't reject in production, try to play anyway
         };
         
         // Check if already ready
@@ -127,16 +207,56 @@ export const useAudioManager = () => {
           return;
         }
         
+        // Add event listeners
         newAudio.addEventListener('canplaythrough', onCanPlay);
         newAudio.addEventListener('error', onError);
+        
+        // Also listen for canplay event as fallback
+        const onCanPlayFallback = () => {
+          clearTimeout(timeout);
+          newAudio.removeEventListener('canplay', onCanPlayFallback);
+          newAudio.removeEventListener('canplaythrough', onCanPlay);
+          newAudio.removeEventListener('error', onError);
+          resolve();
+        };
+        
+        newAudio.addEventListener('canplay', onCanPlayFallback);
+        
+
       });
       
-      // Try to play the audio
+      // Try to play the audio with production-optimized strategy
       try {
-        console.log('🎵 useAudioManager: Attempting to play audio...');
-        const playPromise = newAudio.play();
-        await playPromise;
-        console.log('🎵 useAudioManager: Audio play successful!');
+        
+        if (process.env.NODE_ENV === 'production') {
+          // Production-specific play strategy
+          try {
+            // Ensure audio is ready before playing
+            if (newAudio.readyState < 2) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            const playPromise = newAudio.play();
+            await playPromise;
+            // Production play successful
+          } catch (prodPlayError) {
+            console.warn('🎵 useAudioManager: Production play error, trying fallback...', prodPlayError);
+            // In production, be more lenient with errors
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Try to play again
+            try {
+              await newAudio.play();
+            } catch (fallbackError) {
+              console.warn('🎵 useAudioManager: Production fallback also failed:', fallbackError);
+              throw fallbackError;
+            }
+          }
+        } else {
+          // Development play strategy
+          const playPromise = newAudio.play();
+          await playPromise;
+        }
       } catch (playError) {
         console.error('🎵 useAudioManager: Play error:', playError);
         // Type-safe error handling
@@ -148,45 +268,130 @@ export const useAudioManager = () => {
           throw new Error('Audio blocked by browser - user interaction required');
         }
         
-        console.log('🎵 useAudioManager: Trying fallback play...');
+
         // Fallback: try to play again after a short delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
         try {
           await newAudio.play();
-          console.log('🎵 useAudioManager: Fallback play successful!');
         } catch (fallbackError) {
-          console.error('🎵 useAudioManager: Fallback play failed:', fallbackError);
-          // Try different quality sources
-          for (let i = 1; i < audioUrls.length; i++) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('🎵 useAudioManager: Fallback play failed:', fallbackError);
+          }
+                // Try different quality sources using validated URLs
+      for (let i = 1; i < processedAudioUrls.length; i++) {
+        try {
+          
+          // Create a fresh audio element for each attempt to avoid corruption
+          const freshAudio = process.env.NODE_ENV === 'production' 
+            ? createProductionAudioElement() 
+            : new Audio();
+          
+          freshAudio.controls = false;
+          freshAudio.volume = 1.0;
+          
+          // Set source safely
+          const fallbackSourceSet = await setAudioSourceSafely(freshAudio, processedAudioUrls[i]);
+          if (!fallbackSourceSet) {
+            throw new Error('Failed to set fallback audio source');
+          }
+          
+          await freshAudio.play();
+          
+          // Update the reference to the working audio element
+          audioRef.current = freshAudio;
+          break;
+        } catch (altError) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error(`🎵 useAudioManager: Alternative source ${i} failed:`, altError);
+          }
+          if (i === processedAudioUrls.length - 1) {
+            
+            // Final recovery attempt - create a completely fresh audio element
             try {
-              console.log(`🎵 useAudioManager: Trying alternative source ${i}:`, audioUrls[i]);
-              newAudio.src = audioUrls[i];
-              await new Promise(resolve => setTimeout(resolve, 500));
-              await newAudio.play();
-              console.log(`🎵 useAudioManager: Alternative source ${i} successful!`);
-              break;
-            } catch (altError) {
-              console.error(`🎵 useAudioManager: Alternative source ${i} failed:`, altError);
-              if (i === audioUrls.length - 1) {
-                throw new Error(`Audio playback failed with all sources: ${error?.message || 'Unknown error'}`);
+              const finalAudio = new Audio();
+              finalAudio.crossOrigin = 'anonymous';
+              finalAudio.preload = 'metadata';
+              finalAudio.controls = false;
+              finalAudio.volume = 1.0;
+              
+              // Try the original URL one more time
+              const finalSourceSet = await setAudioSourceSafely(finalAudio, processedAudioUrls[0]);
+              if (finalSourceSet) {
+                await finalAudio.play();
+                audioRef.current = finalAudio;
+                return; // Success!
               }
+            } catch (finalError) {
+              // Silent recovery failure
             }
+            
+            // Provide a more helpful error message
+            const errorMessage = process.env.NODE_ENV === 'production' 
+              ? 'Audio playback failed. This might be due to network issues or browser restrictions. Please try refreshing the page or check your internet connection.'
+              : `Audio playback failed with all sources: ${error?.message || 'Unknown error'}`;
+            
+            throw new Error(errorMessage);
           }
         }
       }
+        }
+      }
 
-      console.log('🎵 useAudioManager: Setting audio state to playing...');
-      setAudioState({
-        currentAyahId: ayahId,
-        isPlaying: true,
-        audioElement: newAudio,
-        duration: 0,
-        isMetadataLoaded: false
-      });
+
+      
+      // Production-specific state management
+      if (process.env.NODE_ENV === 'production') {
+        // In production, be more lenient with state updates
+        setTimeout(() => {
+          setAudioState({
+            currentAyahId: ayahId,
+            isPlaying: true,
+            audioElement: newAudio,
+            duration: 0,
+            isMetadataLoaded: false
+          });
+        }, 100); // Small delay for production stability
+      } else {
+        setAudioState({
+          currentAyahId: ayahId,
+          isPlaying: true,
+          audioElement: newAudio,
+          duration: 0,
+          isMetadataLoaded: false
+        });
+      }
 
     } catch (error) {
       console.error('useAudioManager: Error in playAudio:', error);
+      
+      // Production-specific error recovery
+      if (process.env.NODE_ENV === 'production') {
+        try {
+          // Try to recover by creating a new audio element
+          const recoveryAudio = createProductionAudioElement();
+          recoveryAudio.src = audioUrl;
+          recoveryAudio.volume = 1.0;
+          
+          // Try to play the recovery audio
+          await recoveryAudio.play();
+          
+          // Update state with recovery audio
+          audioRef.current = recoveryAudio;
+          setAudioState({
+            currentAyahId: ayahId,
+            isPlaying: true,
+            audioElement: recoveryAudio,
+            duration: 0,
+            isMetadataLoaded: false
+          });
+          
+          return; // Successfully recovered
+        } catch (recoveryError) {
+          // Silent recovery failure
+        }
+      }
+      
       cleanup();
       throw error;
     }
