@@ -508,8 +508,10 @@ export default function Home() {
 
   // Audio management functions
   const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
-            const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
+    const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
     console.log('🎵 handleAudioPlay called:', { ayahId, globalAyahNumber, audioUrl });
+    console.log('🎵 handleAudioPlay: audioUrl type:', typeof audioUrl);
+    console.log('🎵 handleAudioPlay: audioUrl starts with /api:', audioUrl.startsWith('/api'));
     
     try {
       console.log('🎵 handleAudioPlay: Calling playAudio...');
