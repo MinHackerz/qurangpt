@@ -460,9 +460,14 @@ export default function Home() {
   // Audio management functions
   const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
     const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+    console.log('🎵 handleAudioPlay called:', { ayahId, globalAyahNumber, audioUrl });
+    
     try {
+      console.log('🎵 handleAudioPlay: Calling playAudio...');
       await playAudio(ayahId, audioUrl);
+      console.log('🎵 handleAudioPlay: playAudio completed successfully');
     } catch (error) {
+      console.error('🎵 handleAudioPlay: Error occurred:', error);
       // Silently handle audio errors
     }
   }, [playAudio]);

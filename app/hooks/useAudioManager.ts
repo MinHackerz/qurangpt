@@ -133,31 +133,41 @@ export const useAudioManager = () => {
       
       // Try to play the audio
       try {
+        console.log('🎵 useAudioManager: Attempting to play audio...');
         const playPromise = newAudio.play();
         await playPromise;
+        console.log('🎵 useAudioManager: Audio play successful!');
       } catch (playError) {
+        console.error('🎵 useAudioManager: Play error:', playError);
         // Type-safe error handling
         const error = playError as any;
         
         // Check if it's a user interaction issue
         if (error?.name === 'NotAllowedError') {
+          console.error('🎵 useAudioManager: User interaction required');
           throw new Error('Audio blocked by browser - user interaction required');
         }
         
+        console.log('🎵 useAudioManager: Trying fallback play...');
         // Fallback: try to play again after a short delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
         try {
           await newAudio.play();
+          console.log('🎵 useAudioManager: Fallback play successful!');
         } catch (fallbackError) {
+          console.error('🎵 useAudioManager: Fallback play failed:', fallbackError);
           // Try different quality sources
           for (let i = 1; i < audioUrls.length; i++) {
             try {
+              console.log(`🎵 useAudioManager: Trying alternative source ${i}:`, audioUrls[i]);
               newAudio.src = audioUrls[i];
               await new Promise(resolve => setTimeout(resolve, 500));
               await newAudio.play();
+              console.log(`🎵 useAudioManager: Alternative source ${i} successful!`);
               break;
             } catch (altError) {
+              console.error(`🎵 useAudioManager: Alternative source ${i} failed:`, altError);
               if (i === audioUrls.length - 1) {
                 throw new Error(`Audio playback failed with all sources: ${error?.message || 'Unknown error'}`);
               }
@@ -166,6 +176,7 @@ export const useAudioManager = () => {
         }
       }
 
+      console.log('🎵 useAudioManager: Setting audio state to playing...');
       setAudioState({
         currentAyahId: ayahId,
         isPlaying: true,

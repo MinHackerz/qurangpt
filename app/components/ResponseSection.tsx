@@ -166,51 +166,6 @@ export default function ResponseSection({
     });
   }, [updateDurationDisplay]);
 
-  // Additional effect specifically for translation changes
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
-
-    // This effect runs specifically when displayedContent changes (translation)
-    const timer = setTimeout(() => {
-      // Force re-initialization of all audio players
-      const audioPlayers = containerRef.current?.querySelectorAll('.enhanced-audio-player');
-      
-      if (!audioPlayers) return;
-      
-      audioPlayers.forEach((player) => {
-        const playBtn = player.querySelector('.play-pause-btn') as HTMLButtonElement;
-        const ayahId = playBtn?.getAttribute('data-ayah-id');
-        const globalAyahNumber = player.getAttribute('data-global-ayah');
-        
-        if (!playBtn || !ayahId || !globalAyahNumber) return;
-        
-        // Create completely new button with fresh event listeners
-        const newPlayBtn = document.createElement('button');
-        newPlayBtn.className = playBtn.className;
-        newPlayBtn.setAttribute('data-ayah-id', ayahId);
-        newPlayBtn.innerHTML = playBtn.innerHTML;
-        
-        // Replace the old button
-        playBtn.parentNode?.replaceChild(newPlayBtn, playBtn);
-        
-        // Add fresh event listener
-        newPlayBtn.addEventListener('click', async () => {
-          try {
-            if (isAudioPlaying(ayahId)) {
-              onAudioPause(ayahId);
-            } else {
-              await onAudioPlay(ayahId, globalAyahNumber);
-            }
-          } catch (error) {
-            // Audio player error after translation - silent fail
-          }
-        });
-      });
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [displayedContent, onAudioPlay, onAudioPause, isAudioPlaying, contentToShow]);
-
   // Create a stable reference to the audio handler functions
   const audioHandlers = useCallback(() => ({
     onAudioPlay,
@@ -222,19 +177,16 @@ export default function ResponseSection({
   const setupElementClickHandler = useCallback((element: HTMLElement, ayahId: string, globalAyahNumber: string) => {
     const handlers = audioHandlers();
     
-    // Remove existing event listeners by cloning the element
-    const newElement = element.cloneNode(true) as HTMLElement;
+    // Check if this element already has our custom handler
+    if (element.hasAttribute('data-audio-handler-set')) {
+      return; // Already set up
+    }
     
-    // Copy all attributes
-    Array.from(element.attributes).forEach(attr => {
-      newElement.setAttribute(attr.name, attr.value);
-    });
+    // Mark this element as having our handler
+    element.setAttribute('data-audio-handler-set', 'true');
     
-    // Replace the old element
-    element.parentNode?.replaceChild(newElement, element);
-    
-    // Add click event listener
-    newElement.addEventListener('click', async (e) => {
+    // Create a unique handler function for this element
+    const clickHandler = async (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
       
@@ -245,45 +197,104 @@ export default function ResponseSection({
           await handlers.onAudioPlay(ayahId, globalAyahNumber);
         }
       } catch (error) {
-        console.error('Audio player error:', error);
+        console.error('❌ Audio player error:', error);
       }
-    });
+    };
+    
+    // Store the handler reference on the element for cleanup
+    (element as any)._audioClickHandler = clickHandler;
+    
+    // Add our click event listener
+    element.addEventListener('click', clickHandler);
   }, [audioHandlers]);
 
-  // Comprehensive audio setup function
-  const setupAudioPlayers = useCallback(() => {
+  // Helper function to cleanup existing audio handlers
+  const cleanupAudioHandlers = useCallback(() => {
     if (!containerRef.current) return;
     
-    // Look for actual audio player elements, not just any element with data-ayah-id
-    // This prevents tafsir buttons and other elements from being treated as audio players
     const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
     
     audioPlayers.forEach((player) => {
-      const ayahId = player.getAttribute('data-ayah-id');
-      const globalAyahNumber = player.getAttribute('data-global-ayah');
-      
-      if (!ayahId || !globalAyahNumber) {
-        return;
-      }
-      
-      // Find actual audio control buttons within this player
-      // Look for specific audio-related button classes and attributes
       const audioButtons = player.querySelectorAll(
         '.play-pause-btn, .play-btn, .audio-btn, .audio-control, [data-audio-control="true"], [role="button"][data-audio-action]'
       );
       
-      if (audioButtons.length === 0) {
-        // If no specific audio buttons found, don't make the entire player clickable
-        // This prevents tafsir buttons from being affected
+      audioButtons.forEach((button) => {
+        const element = button as HTMLElement;
+        
+        // Remove the data attributes
+        element.removeAttribute('data-audio-handler-set');
+        
+        // Remove the stored click handler if it exists
+        if ((element as any)._audioClickHandler) {
+          element.removeEventListener('click', (element as any)._audioClickHandler);
+          delete (element as any)._audioClickHandler;
+        }
+      });
+    });
+  }, []);
+
+  // Comprehensive audio setup function with cleanup
+  const setupAudioPlayers = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    // Prevent multiple simultaneous setups
+    if ((setupAudioPlayers as any)._isRunning) {
+      return;
+    }
+    
+    (setupAudioPlayers as any)._isRunning = true;
+    
+    try {
+      // First, cleanup any existing handlers to prevent duplicates
+      cleanupAudioHandlers();
+      
+      // Look for actual audio player elements, not just any element with data-ayah-id
+      // This prevents tafsir buttons and other elements from being treated as audio players
+      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
+      
+      if (audioPlayers.length === 0) {
         return;
       }
       
-      // Setup click handlers for actual audio buttons only
-      audioButtons.forEach((button) => {
-        setupElementClickHandler(button as HTMLElement, ayahId, globalAyahNumber);
+      audioPlayers.forEach((player, index) => {
+        const ayahId = player.getAttribute('data-ayah-id');
+        const globalAyahNumber = player.getAttribute('data-global-ayah');
+        
+        if (!ayahId || !globalAyahNumber) {
+          return;
+        }
+        
+        // Find actual audio control buttons within this player
+        // Look for specific audio-related button classes and attributes
+        const audioButtons = player.querySelectorAll(
+          '.play-pause-btn, .play-btn, .audio-btn, .audio-control, [data-audio-control="true"], [role="button"][data-audio-action]'
+        );
+        
+        if (audioButtons.length === 0) {
+          // If no specific audio buttons found, don't make the entire player clickable
+          // This prevents tafsir buttons from being affected
+          return;
+        }
+        
+        // Setup click handlers for actual audio buttons only
+        audioButtons.forEach((button, buttonIndex) => {
+          // Clean up any existing handler first
+          const element = button as HTMLElement;
+          if ((element as any)._audioClickHandler) {
+            element.removeEventListener('click', (element as any)._audioClickHandler);
+            delete (element as any)._audioClickHandler;
+            element.removeAttribute('data-audio-handler-set');
+          }
+          
+          setupElementClickHandler(element, ayahId, globalAyahNumber);
+        });
       });
-    });
-  }, [setupElementClickHandler]);
+    } finally {
+      // Always reset the running flag
+      (setupAudioPlayers as any)._isRunning = false;
+    }
+  }, [setupElementClickHandler, cleanupAudioHandlers]);
 
   // Helper function to setup click handler for the entire player
   const setupPlayerClickHandler = useCallback((player: Element, ayahId: string, globalAyahNumber: string) => {
@@ -303,7 +314,7 @@ export default function ResponseSection({
             await handlers.onAudioPlay(ayahId, globalAyahNumber);
           }
         } catch (error) {
-          console.error('Audio player error:', error);
+          // Audio player error - silent fail
         }
       }
     });
@@ -316,30 +327,43 @@ export default function ResponseSection({
     // Preload audio metadata first
     preloadAllAudioMetadata();
 
-    // Setup audio players with multiple attempts to ensure they work
+    // Use a single timer with debouncing to prevent multiple rapid calls
     const setupTimer = setTimeout(() => {
       setupAudioPlayers();
-    }, 100);
-    
-    const backupTimer = setTimeout(() => {
-      setupAudioPlayers();
-    }, 500);
-    
-    const finalTimer = setTimeout(() => {
-      setupAudioPlayers();
-    }, 1000);
+    }, 200); // Single delay instead of multiple attempts
     
     return () => {
       clearTimeout(setupTimer);
-      clearTimeout(backupTimer);
-      clearTimeout(finalTimer);
     };
   }, [contentToShow, setupAudioPlayers, preloadAllAudioMetadata]);
+
+  // Additional effect specifically for translation changes
+  useEffect(() => {
+    if (!contentToShow || !containerRef.current) return;
+
+    // This effect runs specifically when displayedContent changes (translation)
+    const timer = setTimeout(() => {
+      // Force re-initialization of all audio players
+      const audioPlayers = containerRef.current?.querySelectorAll('.enhanced-audio-player');
+      
+      if (!audioPlayers) return;
+      
+      // Instead of adding new handlers, just trigger the main setup function
+      // This ensures we use the same handler management system
+      // Add a small delay to prevent conflicts with the main setup
+      setTimeout(() => setupAudioPlayers(), 100);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [displayedContent, setupAudioPlayers, contentToShow]);
 
   // MutationObserver to detect DOM changes and reinitialize audio
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Debounce the observer to prevent rapid calls
+    let observerTimeout: NodeJS.Timeout;
+    
     const observer = new MutationObserver((mutations) => {
       // Check if any audio players were added or modified
       const hasAudioChanges = mutations.some(mutation => {
@@ -357,10 +381,11 @@ export default function ResponseSection({
       });
 
       if (hasAudioChanges) {
-        // Small delay to ensure DOM is stable
-        setTimeout(() => {
+        // Clear any existing timeout and set a new one
+        clearTimeout(observerTimeout);
+        observerTimeout = setTimeout(() => {
           setupAudioPlayers();
-        }, 100);
+        }, 200); // Increased delay for stability
       }
     });
 
@@ -371,7 +396,10 @@ export default function ResponseSection({
       characterData: false
     });
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(observerTimeout);
+    };
   }, [setupAudioPlayers]);
 
   // Add seek functionality to progress sliders
@@ -394,12 +422,16 @@ export default function ResponseSection({
         progressSliders.forEach((slider) => {
           const inputElement = slider as HTMLInputElement;
           
-          // Remove existing event listeners by cloning
-          const newSlider = inputElement.cloneNode(true) as HTMLInputElement;
-          inputElement.parentNode?.replaceChild(newSlider, inputElement);
+          // Check if this slider already has our custom handler
+          if (inputElement.hasAttribute('data-seek-handler-set')) {
+            return; // Already set up
+          }
+          
+          // Mark this slider as having our handler
+          inputElement.setAttribute('data-seek-handler-set', 'true');
           
           // Add seek functionality
-          newSlider.addEventListener('input', (e) => {
+          inputElement.addEventListener('input', (e) => {
             const target = e.target as HTMLInputElement;
             const seekPercentage = parseFloat(target.value);
             
@@ -654,6 +686,8 @@ export default function ResponseSection({
                 className="text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed text-sm p-4 -m-4"
                 dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
               />
+              
+              
               
               {/* Audio players are now rendered inline with each ayah */}
             </div>
