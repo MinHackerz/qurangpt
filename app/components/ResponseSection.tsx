@@ -1,22 +1,17 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { preloadAudioMetadata, getCachedAudioMetadata, setCachedAudioMetadata, formatTime } from '../utils/audioUtils';
-import { getAudioUrl } from '../utils/audioUrlHelper';
+// Audio player is now integrated into AyahBox component
+
+// Audio player functionality for HTML-rendered ayahs
+
+
 
 interface ResponseSectionProps {
   showSummary: boolean;
   summary: string;
   copied: boolean;
-  onAudioPlay: (ayahId: string, globalAyahNumber: string) => void;
-  onAudioPause: (ayahId: string) => void;
-  onAudioEnd: (ayahId: string) => void;
-  isAudioPlaying: (ayahId: string) => boolean;
-  isAudioActive: (ayahId: string) => boolean;
-  getAudioProgress: () => { currentTime: number; duration: number; progress: number };
-  seekToTime: (timeInSeconds: number) => boolean;
   displayedContent?: string; // Content to display (could be translated)
   onCopyAIContent?: () => void; // New prop for copying AI content
   userQuestion?: string; // New prop for the user's question
@@ -27,13 +22,6 @@ export default function ResponseSection({
   showSummary, 
   summary, 
   copied,
-  onAudioPlay,
-  onAudioPause,
-  onAudioEnd,
-  isAudioPlaying,
-  isAudioActive,
-  getAudioProgress,
-  seekToTime,
   displayedContent,
   onCopyAIContent,
   userQuestion,
@@ -93,6 +81,8 @@ export default function ResponseSection({
   // State for question copy success feedback
   const [showQuestionCopySuccess, setShowQuestionCopySuccess] = useState(false);
 
+  // Audio player is now integrated into AyahBox component
+
   // Function to process content and convert markdown links to HTML links
   const processContentLinks = (content: string): string => {
     if (!content) return '';
@@ -126,421 +116,437 @@ export default function ResponseSection({
   // Use displayedContent if provided, otherwise use summary
   const contentToShow = displayedContent || summary;
 
-  // Function to update duration display
-  const updateDurationDisplay = useCallback((player: Element, duration: number) => {
-    const totalDurationEl = player.querySelector('.total-duration') as HTMLElement;
-    if (totalDurationEl) {
-      totalDurationEl.textContent = formatTime(duration);
-    }
-  }, []);
-
-  // Function to preload audio metadata for all ayah players
-  const preloadAllAudioMetadata = useCallback(async () => {
+  // Audio player functionality for HTML-rendered ayahs
+  useEffect(() => {
     if (!containerRef.current) return;
-    
-    // Look for actual audio player elements, not just any element with data-ayah-id
-    // This prevents tafsir buttons and other elements from being affected
-    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
-    
-    audioPlayers.forEach(async (player) => {
-      const globalAyahNumber = player.getAttribute('data-global-ayah');
-      if (!globalAyahNumber) return;
-      
-      const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
-      
-      // Check cache first
-      const cachedDuration = getCachedAudioMetadata(audioUrl);
-      if (cachedDuration) {
-        updateDurationDisplay(player, cachedDuration);
-        return;
-      }
-      
-      try {
-        const { duration, success } = await preloadAudioMetadata(audioUrl);
-        if (success && duration > 0) {
-          setCachedAudioMetadata(audioUrl, duration);
-          updateDurationDisplay(player, duration);
+
+    // Audio state management
+    const audioStates = new Map<string, {
+      audio: HTMLAudioElement | null;
+      isPlaying: boolean;
+      currentTime: number;
+      duration: number;
+      isLoading: boolean;
+      error: string | null;
+    }>();
+
+    const getAudioKey = (surah: string, ayah: string) => `${surah}-${ayah}`;
+
+    // Format time helper
+    const formatTime = (time: number): string => {
+      if (isNaN(time)) return '0:00';
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Pause all other audio players except the specified one
+    const pauseAllOtherAudio = (currentKey: string) => {
+      audioStates.forEach((state, key) => {
+        if (key !== currentKey && state.audio && state.isPlaying) {
+          state.audio.pause();
+          state.isPlaying = false;
+          // Update UI for the paused audio
+          const [surah, ayah] = key.split('-');
+          updateAudioUI(surah, ayah, state);
         }
-      } catch (error) {
-        // Failed to preload metadata for ayah - silent fail
-      }
-    });
-  }, [updateDurationDisplay]);
+      });
+    };
 
-  // Create a stable reference to the audio handler functions
-  const audioHandlers = useCallback(() => ({
-    onAudioPlay,
-    onAudioPause,
-    isAudioPlaying
-  }), [onAudioPlay, onAudioPause, isAudioPlaying]);
-
-  // Helper function to setup click handler for a specific element
-  const setupElementClickHandler = useCallback((element: HTMLElement, ayahId: string, globalAyahNumber: string) => {
-    const handlers = audioHandlers();
-    
-    // Check if this element already has our custom handler
-    if (element.hasAttribute('data-audio-handler-set')) {
-      return; // Already set up
-    }
-    
-    // Mark this element as having our handler
-    element.setAttribute('data-audio-handler-set', 'true');
-    
-    // Create a unique handler function for this element
-    const clickHandler = async (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
+    // Update UI for a specific audio
+    const updateAudioUI = (surah: string, ayah: string, state: any) => {
+      const playBtn = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"].ayah-audio-play-btn`);
+      const progressBar = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"].ayah-audio-progress`);
+      const currentTimeEl = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"] .ayah-audio-current-time`);
+      const durationEl = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"] .ayah-audio-duration`);
       
-      try {
-        if (handlers.isAudioPlaying(ayahId)) {
-          handlers.onAudioPause(ayahId);
+      // Check if any other audio is currently playing
+      const isOtherAudioPlaying = Array.from(audioStates.values()).some(otherState => 
+        otherState.isPlaying && otherState !== state
+      );
+
+      if (playBtn) {
+        const svg = playBtn.querySelector('svg');
+        if (svg) {
+          if (state.isLoading) {
+            svg.innerHTML = '<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="25.133" stroke-dashoffset="25.133"><animate attributeName="stroke-dasharray" dur="1.5s" values="0 25.133;12.566 12.566;0 25.133" repeatCount="indefinite"/></circle>';
+          } else if (state.error) {
+            svg.innerHTML = '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor" opacity="0.5"/>';
+          } else if (state.isPlaying) {
+            svg.innerHTML = '<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />';
+          } else {
+            svg.innerHTML = '<path d="M8 5v14l11-7z" />';
+          }
+        }
+        
+        // Update button title and disabled state
+        if (state.error) {
+          (playBtn as HTMLButtonElement).title = state.error;
+          (playBtn as HTMLButtonElement).disabled = true;
+        } else if (isOtherAudioPlaying && !state.isPlaying) {
+          (playBtn as HTMLButtonElement).title = 'Another audio is playing. Pause it first.';
+          (playBtn as HTMLButtonElement).disabled = true;
+          (playBtn as HTMLButtonElement).style.opacity = '0.5';
         } else {
-          await handlers.onAudioPlay(ayahId, globalAyahNumber);
+          (playBtn as HTMLButtonElement).title = state.isPlaying ? 'Pause audio' : 'Play audio recitation';
+          (playBtn as HTMLButtonElement).disabled = false;
+          (playBtn as HTMLButtonElement).style.opacity = '1';
         }
-      } catch (error) {
-        console.error('❌ Audio player error:', error);
+      }
+
+      if (progressBar) {
+        const progressBarElement = progressBar as HTMLInputElement;
+        
+        // Set max value to duration if available, otherwise keep it at 0
+        if (state.duration > 0) {
+          progressBarElement.max = state.duration.toString();
+          progressBarElement.value = state.currentTime.toString();
+        } else {
+          progressBarElement.max = "0";
+          progressBarElement.value = "0";
+        }
+        
+        // Update progress bar background color dynamically
+        const progressPercent = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
+        
+        if (progressBarElement) {
+          // Check if dark mode is active
+          const isDarkMode = document.documentElement.classList.contains('dark');
+          const trackColor = isDarkMode ? '#374151' : '#e5e7eb';
+          
+          progressBarElement.style.background = `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progressPercent}%, ${trackColor} ${progressPercent}%, ${trackColor} 100%)`;
+          
+          // Disable progress bar if another audio is playing
+          if (isOtherAudioPlaying && !state.isPlaying) {
+            progressBarElement.disabled = true;
+            progressBarElement.style.opacity = '0.5';
+          } else {
+            progressBarElement.disabled = false;
+            progressBarElement.style.opacity = '1';
+          }
+        }
+      }
+
+      if (currentTimeEl) {
+        if (state.isPlaying || state.currentTime > 0) {
+          currentTimeEl.textContent = formatTime(state.currentTime);
+        } else {
+          currentTimeEl.textContent = '';
+        }
+      }
+
+      if (durationEl) {
+        if (state.duration > 0) {
+          durationEl.textContent = formatTime(state.duration);
+          console.log(`Duration updated for ${surah}:${ayah} - ${formatTime(state.duration)}`);
+        } else {
+          durationEl.textContent = '';
+        }
       }
     };
-    
-    // Store the handler reference on the element for cleanup
-    (element as any)._audioClickHandler = clickHandler;
-    
-    // Add our click event listener
-    element.addEventListener('click', clickHandler);
-  }, [audioHandlers]);
 
-  // Helper function to cleanup existing audio handlers
-  const cleanupAudioHandlers = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
-    
-    audioPlayers.forEach((player) => {
-      const audioButtons = player.querySelectorAll(
-        '.play-pause-btn, .play-btn, .audio-btn, .audio-control, [data-audio-control="true"], [role="button"][data-audio-action]'
-      );
-      
-      audioButtons.forEach((button) => {
-        const element = button as HTMLElement;
-        
-        // Remove the data attributes
-        element.removeAttribute('data-audio-handler-set');
-        
-        // Remove the stored click handler if it exists
-        if ((element as any)._audioClickHandler) {
-          element.removeEventListener('click', (element as any)._audioClickHandler);
-          delete (element as any)._audioClickHandler;
-        }
-      });
-    });
-  }, []);
+    // Load audio for a specific ayah using our API
+    const loadAudio = async (surah: string, ayah: string) => {
+      const key = getAudioKey(surah, ayah);
+      const state = audioStates.get(key) || {
+        audio: null,
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        isLoading: false,
+        error: null
+      };
 
-  // Comprehensive audio setup function with cleanup
-  const setupAudioPlayers = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    // Prevent multiple simultaneous setups
-    if ((setupAudioPlayers as any)._isRunning) {
-      return;
-    }
-    
-    (setupAudioPlayers as any)._isRunning = true;
-    
-    try {
-      // First, cleanup any existing handlers to prevent duplicates
-      cleanupAudioHandlers();
+      if (state.audio) return state;
+
+      // Validate surah and ayah numbers before making API call
+      const surahNum = parseInt(surah);
+      const ayahNum = parseInt(ayah);
       
-      // Look for actual audio player elements, not just any element with data-ayah-id
-      // This prevents tafsir buttons and other elements from being treated as audio players
-      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
-      
-      if (audioPlayers.length === 0) {
-        return;
+      if (isNaN(surahNum) || isNaN(ayahNum) || surahNum < 1 || surahNum > 114 || ayahNum < 1) {
+        state.error = 'Invalid surah or ayah number.';
+        state.isLoading = false;
+        updateAudioUI(surah, ayah, state);
+        audioStates.set(key, state);
+        return state;
       }
-      
-      audioPlayers.forEach((player, index) => {
-        const ayahId = player.getAttribute('data-ayah-id');
-        const globalAyahNumber = player.getAttribute('data-global-ayah');
+
+      state.isLoading = true;
+      updateAudioUI(surah, ayah, state);
+
+      try {
+        console.log(`Fetching audio for surah ${surah}, ayah ${ayah}`);
         
-        if (!ayahId || !globalAyahNumber) {
-          return;
-        }
+        // Call our API endpoint
+        const response = await fetch(`/api/audio?surah=${surah}&ayah=${ayah}`);
         
-        // Find actual audio control buttons within this player
-        // Look for specific audio-related button classes and attributes
-        const audioButtons = player.querySelectorAll(
-          '.play-pause-btn, .play-btn, .audio-btn, .audio-control, [data-audio-control="true"], [role="button"][data-audio-action]'
-        );
-        
-        if (audioButtons.length === 0) {
-          // If no specific audio buttons found, don't make the entire player clickable
-          // This prevents tafsir buttons from being affected
-          return;
-        }
-        
-        // Setup click handlers for actual audio buttons only
-        audioButtons.forEach((button, buttonIndex) => {
-          // Clean up any existing handler first
-          const element = button as HTMLElement;
-          if ((element as any)._audioClickHandler) {
-            element.removeEventListener('click', (element as any)._audioClickHandler);
-            delete (element as any)._audioClickHandler;
-            element.removeAttribute('data-audio-handler-set');
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.success && data.audioUrl) {
+            console.log(`Audio URL received: ${data.audioUrl}`);
+            
+            const audio = new Audio(data.audioUrl);
+            
+            // Preload the audio to get metadata
+            audio.preload = 'metadata';
+            
+            // Try to load the audio immediately to get duration
+            audio.load();
+            
+            // Set a timeout to try to get duration if metadata doesn't load quickly
+            const durationTimeout = setTimeout(async () => {
+              if (state.duration === 0 && audio.duration > 0 && !isNaN(audio.duration)) {
+                state.duration = audio.duration;
+                console.log(`Duration loaded via timeout - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
+                updateAudioUI(surah, ayah, state);
+              } else if (state.duration === 0) {
+                // Try to trigger metadata loading by attempting to play briefly
+                try {
+                  const currentTime = audio.currentTime;
+                  await audio.play();
+                  audio.pause();
+                  audio.currentTime = currentTime;
+                  
+                  if (audio.duration > 0 && !isNaN(audio.duration)) {
+                    state.duration = audio.duration;
+                    console.log(`Duration loaded via play attempt - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
+                    updateAudioUI(surah, ayah, state);
+                  }
+                } catch (error) {
+                  console.log('Could not trigger duration loading via play attempt:', error);
+                }
+              }
+            }, 1500); // Try after 1.5 seconds
+            
+            audio.addEventListener('loadedmetadata', () => {
+              if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+                clearTimeout(durationTimeout);
+                state.duration = audio.duration;
+                console.log(`Audio metadata loaded - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
+                updateAudioUI(surah, ayah, state);
+              }
+            });
+            
+            audio.addEventListener('canplaythrough', () => {
+              // Ensure duration is set even if loadedmetadata didn't fire
+              if (state.duration === 0 && audio.duration > 0 && !isNaN(audio.duration)) {
+                clearTimeout(durationTimeout);
+                state.duration = audio.duration;
+                console.log(`Audio can play through - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
+                updateAudioUI(surah, ayah, state);
+              }
+            });
+            
+            audio.addEventListener('durationchange', () => {
+              if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+                clearTimeout(durationTimeout);
+                state.duration = audio.duration;
+                console.log(`Audio duration changed - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
+                updateAudioUI(surah, ayah, state);
+              }
+            });
+
+            audio.addEventListener('timeupdate', () => {
+              state.currentTime = audio.currentTime;
+              updateAudioUI(surah, ayah, state);
+            });
+
+            audio.addEventListener('ended', () => {
+              state.isPlaying = false;
+              state.currentTime = 0;
+              updateAudioUI(surah, ayah, state);
+            });
+
+            audio.addEventListener('error', (e) => {
+              console.error('Audio playback error:', e);
+              state.error = 'Audio not available at the moment.';
+              state.isLoading = false;
+              updateAudioUI(surah, ayah, state);
+            });
+
+            state.audio = audio;
+            state.isLoading = false;
+            updateAudioUI(surah, ayah, state);
+          } else {
+            console.error('API returned error:', data.error);
+            state.error = data.error || 'Audio not available at the moment.';
+            state.isLoading = false;
+            updateAudioUI(surah, ayah, state);
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('API request failed:', response.status, errorData);
+          
+          // Provide more specific error messages based on status code
+          let errorMessage = 'Audio not available at the moment.';
+          if (response.status === 404) {
+            errorMessage = 'Audio not found for this ayah.';
+          } else if (response.status === 400) {
+            errorMessage = 'Invalid surah or ayah number.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Audio service temporarily unavailable.';
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
           }
           
-          setupElementClickHandler(element, ayahId, globalAyahNumber);
-        });
-      });
-    } finally {
-      // Always reset the running flag
-      (setupAudioPlayers as any)._isRunning = false;
-    }
-  }, [setupElementClickHandler, cleanupAudioHandlers]);
+          state.error = errorMessage;
+          state.isLoading = false;
+          updateAudioUI(surah, ayah, state);
+        }
+      } catch (error) {
+        console.error('Audio loading error:', error);
+        
+        // Provide more specific error messages based on error type
+        let errorMessage = 'Audio not available at the moment.';
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection.';
+        } else if (error instanceof Error) {
+          errorMessage = `Audio loading failed: ${error.message}`;
+        }
+        
+        state.error = errorMessage;
+        state.isLoading = false;
+        updateAudioUI(surah, ayah, state);
+      }
 
-  // Helper function to setup click handler for the entire player
-  const setupPlayerClickHandler = useCallback((player: Element, ayahId: string, globalAyahNumber: string) => {
-    const handlers = audioHandlers();
-    
-    // Add click handler to the parent player element for better accessibility
-    player.addEventListener('click', async (e) => {
-      // Only handle if the click wasn't on a button or input element
-      if (!(e.target as Element).closest('button, [role="button"], input, textarea, select')) {
+      audioStates.set(key, state);
+      return state;
+    };
+
+    // Handle play/pause
+    const handlePlayPause = async (surah: string, ayah: string) => {
+      const key = getAudioKey(surah, ayah);
+      let state = audioStates.get(key);
+
+      if (!state) {
+        state = await loadAudio(surah, ayah);
+      }
+
+      // If there's an error, try to reload the audio
+      if (state.error) {
+        console.log('Retrying audio load due to previous error');
+        state = await loadAudio(surah, ayah);
+      }
+
+      if (!state.audio || state.error) {
+        console.log('Cannot play audio:', state.error);
+        return;
+      }
+
+      if (state.isPlaying) {
+        state.audio.pause();
+        state.isPlaying = false;
+      } else {
+        // Pause all other audio players before starting this one
+        pauseAllOtherAudio(key);
+        
+        try {
+          await state.audio.play();
+          state.isPlaying = true;
+        } catch (error) {
+          console.error('Audio playback failed:', error);
+          state.error = 'Audio playback failed.';
+          state.isPlaying = false;
+        }
+      }
+
+      updateAudioUI(surah, ayah, state);
+    };
+
+    // Handle progress change
+    const handleProgressChange = (surah: string, ayah: string, newTime: number) => {
+      const key = getAudioKey(surah, ayah);
+      const state = audioStates.get(key);
+      
+      if (state && state.audio) {
+        state.audio.currentTime = newTime;
+        state.currentTime = newTime;
+        updateAudioUI(surah, ayah, state);
+      }
+    };
+
+    // Event handlers
+    const handleClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest('.ayah-audio-play-btn') as HTMLButtonElement;
+      
+      if (button) {
         e.preventDefault();
         e.stopPropagation();
         
-        try {
-          if (handlers.isAudioPlaying(ayahId)) {
-            handlers.onAudioPause(ayahId);
-          } else {
-            await handlers.onAudioPlay(ayahId, globalAyahNumber);
-          }
-        } catch (error) {
-          // Audio player error - silent fail
+        const surah = button.getAttribute('data-surah');
+        const ayah = button.getAttribute('data-ayah');
+        
+        if (surah && ayah) {
+          console.log('Play button clicked for surah:', surah, 'ayah:', ayah);
+          handlePlayPause(surah, ayah);
         }
       }
-    });
-  }, [audioHandlers]);
-
-  // Use the comprehensive setup function
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
-
-    // Preload audio metadata first
-    preloadAllAudioMetadata();
-
-    // Use a single timer with debouncing to prevent multiple rapid calls
-    const setupTimer = setTimeout(() => {
-      setupAudioPlayers();
-    }, 200); // Single delay instead of multiple attempts
-    
-    return () => {
-      clearTimeout(setupTimer);
     };
-  }, [contentToShow, setupAudioPlayers, preloadAllAudioMetadata]);
 
-  // Additional effect specifically for translation changes
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
-
-    // This effect runs specifically when displayedContent changes (translation)
-    const timer = setTimeout(() => {
-      // Force re-initialization of all audio players
-      const audioPlayers = containerRef.current?.querySelectorAll('.enhanced-audio-player');
+    const handleInput = (e: Event) => {
+      const target = e.target as HTMLInputElement;
       
-      if (!audioPlayers) return;
-      
-      // Instead of adding new handlers, just trigger the main setup function
-      // This ensures we use the same handler management system
-      // Add a small delay to prevent conflicts with the main setup
-      setTimeout(() => setupAudioPlayers(), 100);
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [displayedContent, setupAudioPlayers, contentToShow]);
-
-  // MutationObserver to detect DOM changes and reinitialize audio
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    // Debounce the observer to prevent rapid calls
-    let observerTimeout: NodeJS.Timeout;
-    
-    const observer = new MutationObserver((mutations) => {
-      // Check if any audio players were added or modified
-      const hasAudioChanges = mutations.some(mutation => {
-        if (mutation.type === 'childList') {
-          return Array.from(mutation.addedNodes).some(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as Element;
-              return element.querySelector('.enhanced-audio-player') || 
-                     element.classList.contains('enhanced-audio-player');
-            }
-            return false;
-          });
+      if (target.classList.contains('ayah-audio-progress')) {
+        const surah = target.getAttribute('data-surah');
+        const ayah = target.getAttribute('data-ayah');
+        
+        if (surah && ayah) {
+          handleProgressChange(surah, ayah, parseFloat(target.value));
         }
-        return false;
-      });
-
-      if (hasAudioChanges) {
-        // Clear any existing timeout and set a new one
-        clearTimeout(observerTimeout);
-        observerTimeout = setTimeout(() => {
-          setupAudioPlayers();
-        }, 200); // Increased delay for stability
       }
-    });
+    };
 
-    observer.observe(containerRef.current, {
-      childList: true,
-      subtree: true,
-      attributes: false,
-      characterData: false
-    });
+    const setupAudioPlayers = () => {
+      const playButtons = containerRef.current?.querySelectorAll('.ayah-audio-play-btn');
+      const progressBars = containerRef.current?.querySelectorAll('.ayah-audio-progress');
+      
+      console.log('Found play buttons:', playButtons?.length);
+      console.log('Found progress bars:', progressBars?.length);
+      
+      if (!playButtons || !progressBars || playButtons.length === 0) return;
 
+      // Add event listeners to the container
+      if (containerRef.current) {
+        containerRef.current.addEventListener('click', handleClick);
+        containerRef.current.addEventListener('input', handleInput);
+      }
+    };
+
+    // Setup audio players after a short delay to ensure DOM is ready
+    console.log('Setting up audio players for content:', contentToShow?.substring(0, 100));
+    const timer = setTimeout(setupAudioPlayers, 100);
+    
     return () => {
-      observer.disconnect();
-      clearTimeout(observerTimeout);
+      clearTimeout(timer);
+      // Clean up event listeners
+      if (containerRef.current) {
+        containerRef.current.removeEventListener('click', handleClick);
+        containerRef.current.removeEventListener('input', handleInput);
+      }
     };
-  }, [setupAudioPlayers]);
+  }, [contentToShow]);
 
-  // Add seek functionality to progress sliders
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
 
-    const setupSeekFunctionality = () => {
-      if (!containerRef.current) return;
-      
-      // Look for progress sliders in actual audio players only
-      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
-      
-      audioPlayers.forEach((player) => {
-        const ayahId = player.getAttribute('data-ayah-id');
-        if (!ayahId) return;
-        
-        // Find progress sliders within this audio player
-        const progressSliders = player.querySelectorAll('input[type="range"], .progress-slider, [data-seek]');
-        
-        progressSliders.forEach((slider) => {
-          const inputElement = slider as HTMLInputElement;
-          
-          // Check if this slider already has our custom handler
-          if (inputElement.hasAttribute('data-seek-handler-set')) {
-            return; // Already set up
-          }
-          
-          // Mark this slider as having our handler
-          inputElement.setAttribute('data-seek-handler-set', 'true');
-          
-          // Add seek functionality
-          inputElement.addEventListener('input', (e) => {
-            const target = e.target as HTMLInputElement;
-            const seekPercentage = parseFloat(target.value);
-            
-            // Only allow seeking if this ayah is currently active
-            if (isAudioActive(ayahId)) {
-              const { duration } = getAudioProgress();
-              if (duration > 0) {
-                const seekTime = (seekPercentage / 100) * duration;
-                seekToTime(seekTime);
-              }
-            } else {
-              // Try to get cached duration for seeking even when not active
-              const globalAyahNumber = player.getAttribute('data-global-ayah');
-              if (globalAyahNumber) {
-                const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
-                const cachedDuration = getCachedAudioMetadata(audioUrl);
-                if (cachedDuration && cachedDuration > 0) {
-                  const seekTime = (seekPercentage / 100) * cachedDuration;
-                  seekToTime(seekTime);
-                }
-              }
-            }
-          });
-        });
-      });
-    };
 
-    // Setup seek functionality with a delay
-    const timer = setTimeout(setupSeekFunctionality, 200);
-    
-    return () => clearTimeout(timer);
-  }, [contentToShow, isAudioActive, getAudioProgress, seekToTime]);
 
-  // Update progress bars in real-time
-  useEffect(() => {
-    if (!contentToShow || !containerRef.current) return;
 
-    const updateProgressBars = () => {
-      if (!containerRef.current) return;
-      
-      // Look for actual audio player elements, not just any element with data-ayah-id
-      // This prevents tafsir buttons and other elements from being affected
-      const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
-      
-      audioPlayers.forEach((player) => {
-        const ayahId = player.getAttribute('data-ayah-id');
-        if (!ayahId) return;
-        
-        const isCurrentlyPlaying = isAudioPlaying(ayahId);
-        const isCurrentlyActive = isAudioActive(ayahId);
-        
-        // Get progress elements - look for various progress bar implementations
-        const progressFill = player.querySelector('.progress-fill, .progress-bar-fill, [data-progress]') as HTMLElement;
-        const currentTimeEl = player.querySelector('.current-time, .time-current') as HTMLElement;
-        const totalDurationEl = player.querySelector('.total-duration, .time-total, .duration') as HTMLElement;
-        const timeDisplayEl = player.querySelector('.time-display, .time') as HTMLElement;
-        const progressSlider = player.querySelector('.progress-slider, input[type="range"]') as HTMLInputElement;
-        
-        // Only proceed if we have at least some progress elements
-        if (!progressFill && !currentTimeEl && !totalDurationEl && !timeDisplayEl && !progressSlider) return;
-        
-        if (isCurrentlyActive) {
-          // Get audio progress from the audio manager
-          const { currentTime, duration, progress } = getAudioProgress();
-          
-          // Update progress bar with null check
-          if (progressFill && progressFill.style) {
-            progressFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
-          }
-          
-          // Update time displays with null checks
-          if (currentTimeEl) currentTimeEl.textContent = formatTime(currentTime);
-          if (totalDurationEl) totalDurationEl.textContent = duration > 0 ? formatTime(duration) : '--:--';
-          if (timeDisplayEl) timeDisplayEl.textContent = formatTime(currentTime);
-          
-          // Update slider value with null check
-          if (progressSlider) progressSlider.value = progress.toString();
-          
-        } else {
-          // Reset progress for inactive players but keep duration if available
-          if (progressFill && progressFill.style) {
-            progressFill.style.width = '0%';
-          }
-          if (currentTimeEl) currentTimeEl.textContent = '0:00';
-          
-          // Try to get cached duration for this player
-          const globalAyahNumber = player.getAttribute('data-global-ayah');
-          if (globalAyahNumber) {
-            const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
-            const cachedDuration = getCachedAudioMetadata(audioUrl);
-            if (totalDurationEl) totalDurationEl.textContent = cachedDuration ? formatTime(cachedDuration) : '--:--';
-          } else {
-            if (totalDurationEl) totalDurationEl.textContent = '--:--';
-          }
-          
-          if (timeDisplayEl) timeDisplayEl.textContent = '--:--';
-          if (progressSlider) progressSlider.value = '0';
-        }
-      });
-    };
 
-    // Update progress immediately and then every 100ms while playing
-    updateProgressBars();
-    
-    const interval = setInterval(updateProgressBars, 100);
-    
-    return () => clearInterval(interval);
-  }, [contentToShow, isAudioPlaying, isAudioActive, getAudioProgress]);
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
 
   return (
     <AnimatePresence>
@@ -668,6 +674,8 @@ export default function ResponseSection({
                         </p>
                       ) : (
                         <textarea
+                          id="edit-question-textarea"
+                          name="edit-question"
                           value={editedQuestion}
                           onChange={(e) => setEditedQuestion(e.target.value)}
                           className="w-full p-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 focus:border-gray-400 dark:focus:border-gray-500 resize-none"
@@ -681,6 +689,8 @@ export default function ResponseSection({
                 </div>
               )}
               
+              {/* Audio player is now integrated into each AyahBox component */}
+
               <div 
                 ref={containerRef}
                 className="text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed text-sm p-4 -m-4"
@@ -689,7 +699,7 @@ export default function ResponseSection({
               
               
               
-              {/* Audio players are now rendered inline with each ayah */}
+
             </div>
 
             {/* Bottom Copy Button - Bottom Right Corner of Response */}
@@ -747,3 +757,8 @@ export default function ResponseSection({
     </AnimatePresence>
   );
 }
+
+
+
+
+
