@@ -55,6 +55,9 @@ export default function ChatSection({
   // Track if we're using cached translation to prevent progress animation
   const [isUsingCachedTranslation, setIsUsingCachedTranslation] = useState(false);
   
+  // State for language reminder animation
+  const [showLanguageReminder, setShowLanguageReminder] = useState(false);
+  
   // Popular languages to show first (same as LanguageTabs)
   const POPULAR_LANGUAGES = [
     'en', 'ar', 'ur', 'hi', 'bn', 'id', 'ms', 'tr', 'fa', 'es', 'fr', 'de', 'ru', 'zh'
@@ -102,6 +105,16 @@ export default function ChatSection({
       return () => clearTimeout(timer);
     }
   }, [isUsingCachedTranslation]);
+  
+  // Show language reminder when user starts typing
+  useEffect(() => {
+    if (content.trim().length > 0 && content.trim().length <= 20) {
+      setShowLanguageReminder(true);
+      // Don't auto-hide - let it persist until user sends message
+    } else if (content.trim().length === 0) {
+      setShowLanguageReminder(false);
+    }
+  }, [content]);
   
   // Get language order (same as LanguageTabs)
   const getLanguageOrder = () => {
@@ -441,6 +454,8 @@ export default function ChatSection({
               />
             )}
             
+
+            
             {/* Action buttons container */}
             <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
               {/* Send Button - Minimalistic Professional Design */}
@@ -450,7 +465,10 @@ export default function ChatSection({
                   y: -1
                 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={askQuran}
+                onClick={() => {
+                  setShowLanguageReminder(false);
+                  askQuran();
+                }}
                 disabled={isProcessing || !content.trim()}
                 className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
                   content.trim() && !isProcessing
@@ -539,6 +557,110 @@ export default function ChatSection({
           <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-t from-white dark:from-gray-900 to-transparent pointer-events-none z-20"></div>
         </div>
       </div>
+
+      {/* Language Reminder - Below Input Field */}
+      <AnimatePresence>
+        {showLanguageReminder && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -5, scale: 0.98 }}
+            transition={{ 
+              duration: 0.5, 
+              ease: [0.25, 0.46, 0.45, 0.94],
+              delay: 0.2
+            }}
+            className="mt-3 flex justify-center pointer-events-none"
+          >
+            <div className="relative">
+              {/* Main reminder card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-4 py-2.5 shadow-lg shadow-gray-900/5 dark:shadow-gray-900/20"
+              >
+                <div className="flex items-center space-x-3">
+                  {/* Globe icon with subtle animation */}
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="flex-shrink-0 w-5 h-5 text-emerald-500 dark:text-emerald-400"
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                    </svg>
+                  </motion.div>
+                  
+                  {/* Reminder text */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Type in your
+                    </span>
+                    <motion.span
+                      animate={{ 
+                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                      }}
+                      transition={{ 
+                        duration: 3, 
+                        repeat: Infinity, 
+                        ease: "linear" 
+                      }}
+                      className="text-sm font-semibold bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 bg-[length:200%_100%] bg-clip-text text-transparent"
+                    >
+                      native language
+                    </motion.span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      - we support all languages! ✨
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Subtle pulsing border */}
+                <motion.div
+                  animate={{ 
+                    opacity: [0.3, 0.7, 0.3],
+                    scale: [1, 1.02, 1]
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                  className="absolute inset-0 rounded-xl border border-emerald-300/30 dark:border-emerald-600/30 pointer-events-none"
+                />
+              </motion.div>
+              
+              {/* Floating particles effect */}
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(3)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ 
+                      opacity: [0, 1, 0],
+                      scale: [0, 1, 0],
+                      y: [0, -20, -40],
+                      x: [0, Math.random() * 20 - 10, Math.random() * 40 - 20]
+                    }}
+                    transition={{ 
+                      duration: 2,
+                      delay: i * 0.3,
+                      repeat: Infinity,
+                      repeatDelay: 1
+                    }}
+                    className="absolute w-1 h-1 bg-emerald-400/60 dark:bg-emerald-500/60 rounded-full"
+                    style={{
+                      left: '50%',
+                      top: '50%'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
 
       

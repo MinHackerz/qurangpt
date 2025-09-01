@@ -241,7 +241,7 @@ export async function GET(request: NextRequest) {
     );
     
     if (!prayerResponse.ok) {
-      console.error('Prayer API failed:', prayerResponse.statusText);
+      // Prayer API failed
       throw new Error(`Prayer API failed: ${prayerResponse.status}`);
     }
     

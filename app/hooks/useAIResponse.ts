@@ -481,39 +481,83 @@ Question: ${content}`;
                 <!-- Audio Player and Tafsir Buttons -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <!-- Audio Player -->
-                  <div class="enhanced-audio-player" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}">
-                    <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between ">
-                      <div class="flex items-center space-x-3">
-                        <button class="play-pause-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 hover:bg-gray-700 dark:hover:bg-gray-300 active:scale-95 transition-all duration-200" data-ayah-id="${ayahId}">
-                          <svg class="play-icon w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                          <svg class="pause-icon w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                          </svg>
-                        </button>
-                        <div class="flex-1">
-                          <div class="status-text text-sm font-medium text-gray-800 dark:text-gray-200">Play recitation</div>
-                          <div class="text-xs text-gray-500 dark:text-gray-400">Alafasy</div>
+                  <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between shadow-sm">
+                    <!-- Surah and Ayah Info Header -->
+                    <div class="mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <div class="w-6 h-6 bg-gray-800 dark:bg-gray-200 rounded-full flex items-center justify-center shadow-sm">
+                            <svg class="w-3 h-3 text-white dark:text-gray-800" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">${surahName}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">Ayah ${ayahNumber}</div>
+                          </div>
                         </div>
                         <div class="text-right">
-                          <div class="time-display text-sm font-mono text-gray-600 dark:text-gray-400">--:--</div>
-                          <div class="status-indicator w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full hidden animate-pulse mt-1 ml-auto"></div>
+                          <div class="text-xs text-gray-600 dark:text-gray-400 font-medium">Surah ${finalSurahNumber}</div>
                         </div>
                       </div>
-                      
-                      <!-- Progress Bar -->
-                      <div class="mt-3">
-                        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          <span class="current-time">0:00</span>
-                          <span class="total-duration">--:--</span>
-                        </div>
-                        <div class="relative">
-                          <div class="progress-bg w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                            <div class="progress-fill h-full bg-gray-800 dark:bg-gray-200 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
-                          </div>
-                          <input type="range" class="progress-slider absolute inset-0 w-full h-1.5 opacity-0 cursor-pointer" min="0" max="100" value="0" data-ayah-id="${ayahId}">
-                        </div>
+                    </div>
+                    
+                    <!-- Audio Controls -->
+                    <div class="flex items-center space-x-3">
+                      <button class="ayah-audio-play-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 hover:bg-gray-700 dark:hover:bg-gray-300 text-white dark:text-gray-800 shadow-md hover:shadow-lg active:scale-95 transition-all duration-200" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}">
+                        <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </button>
+                      <div class="flex-1">
+                        <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Play recitation</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Alafasy</div>
+                      </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mt-3">
+                      <div class="relative">
+                        <style>
+                          .ayah-audio-progress::-webkit-slider-thumb {
+                            appearance: none;
+                            width: 16px;
+                            height: 16px;
+                            border-radius: 50%;
+                            background: #9ca3af;
+                            cursor: pointer;
+                            border: none;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                          }
+                          .ayah-audio-progress::-webkit-slider-thumb:hover {
+                            background: #6b7280;
+                          }
+                          .dark .ayah-audio-progress::-webkit-slider-thumb {
+                            background: #6b7280;
+                          }
+                          .dark .ayah-audio-progress::-webkit-slider-thumb:hover {
+                            background: #9ca3af;
+                          }
+                          .ayah-audio-progress::-moz-range-thumb {
+                            width: 16px;
+                            height: 16px;
+                            border-radius: 50%;
+                            background: #9ca3af;
+                            cursor: pointer;
+                            border: none;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                          }
+                          .ayah-audio-progress::-moz-range-thumb:hover {
+                            background: #6b7280;
+                          }
+                          .dark .ayah-audio-progress::-moz-range-thumb {
+                            background: #6b7280;
+                          }
+                          .dark .ayah-audio-progress::-moz-range-thumb:hover {
+                            background: #9ca3af;
+                          }
+                        </style>
+                        <input type="range" class="ayah-audio-progress w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full cursor-pointer" min="0" max="0" value="0" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}">
                       </div>
                     </div>
                   </div>
@@ -613,8 +657,7 @@ Question: ${content}`;
     setShowSummary: (show: boolean) => void,
     setError: (error: string) => void,
     setDisplayedContent: (content: string) => void,
-    setCurrentLanguage: (lang: string) => void,
-    stopAudio: () => void
+    setCurrentLanguage: (lang: string) => void
   ) => {
     const trimmedContent = content.trim();
     
@@ -623,8 +666,7 @@ Question: ${content}`;
       return;
     }
 
-    // Clean up any existing audio before starting new question
-    stopAudio();
+    // Audio cleanup is now handled in ResponseSection component
 
     // Activate chat mode
     setIsProcessing(true);

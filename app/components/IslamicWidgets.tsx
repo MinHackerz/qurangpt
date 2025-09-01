@@ -67,7 +67,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('API Error:', response.status, errorText);
+          // API Error
           throw new Error(`API Error: ${response.status}`);
         }
         
@@ -129,7 +129,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           }
         });
         
-        // Only show error for debugging, but still show widgets
+        // Show error but still display widgets
         // Using fallback Islamic data due to error - silent fail for security
       } finally {
         setLoading(false);

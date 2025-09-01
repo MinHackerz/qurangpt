@@ -92,7 +92,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
         setCache(validCache);
       }
     } catch (err) {
-      console.warn('Failed to load translation cache from localStorage:', err);
+      // Failed to load translation cache from localStorage
     }
   }, [cacheTimeout]);
 
@@ -102,7 +102,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
       try {
         localStorage.setItem('quran-gpt-translation-cache', JSON.stringify(cache));
       } catch (err) {
-        console.warn('Failed to save translation cache to localStorage:', err);
+        // Failed to save translation cache to localStorage
       }
     }, 1000); // Debounce by 1 second
     
@@ -383,7 +383,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
       }
       return await response.json();
     } catch (err) {
-      console.error('Error fetching supported languages:', err);
+      // Error fetching supported languages
       throw err;
     }
   }, []);
@@ -394,7 +394,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
     try {
       localStorage.removeItem('quran-gpt-translation-cache');
     } catch (err) {
-      console.warn('Failed to clear translation cache from localStorage:', err);
+      // Failed to clear translation cache from localStorage
     }
   }, []);
 

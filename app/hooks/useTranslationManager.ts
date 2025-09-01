@@ -40,10 +40,10 @@ export const useTranslationManager = () => {
       walkTextNodes(tempDiv);
       
       const result = aiContent.join('\n\n');
-      console.log('Extracted AI content:', { length: result.length, preview: result.substring(0, 100) });
+      // AI content extracted successfully
       return result;
     } catch (error) {
-      console.error('Error extracting AI content:', error);
+      // Error extracting AI content
       // Fallback: simple text extraction without DOM manipulation
       return formattedResponse.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
     }
@@ -92,10 +92,10 @@ export const useTranslationManager = () => {
       replaceAIText(tempDiv);
       
       const result = tempDiv.innerHTML;
-      console.log('Merged content:', { originalLength: originalFormattedResponse.length, mergedLength: result.length });
+      // Content merged successfully
       return result;
     } catch (error) {
-      console.error('Error merging translated content:', error);
+      // Error merging translated content
       // Fallback: return the translated content directly if merging fails
       return translatedAIContent;
     }
@@ -126,7 +126,7 @@ export const useTranslationManager = () => {
       const result = await response.json();
       return result.translatedText;
     } catch (error) {
-      console.error('Translation API error:', error);
+      // Translation API error
       throw error;
     }
   }, []);
@@ -156,14 +156,14 @@ export const useTranslationManager = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy AI content:', error);
+      // Failed to copy AI content
       // Fallback to copying summary
       try {
         await navigator.clipboard.writeText(summary);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (fallbackError) {
-        console.error('Failed to copy summary as fallback:', fallbackError);
+        // Failed to copy summary as fallback
       }
     }
   }, [extractAIContentForTranslation]);

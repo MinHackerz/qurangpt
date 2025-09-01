@@ -15,7 +15,7 @@ export const fetchTafsir = async (surahNumber: number, ayahNumber: number): Prom
     
     if (!response.ok) {
       if (response.status === 404) {
-        console.warn(`Tafsir not found for Surah ${surahNumber}, Ayah ${ayahNumber}`);
+        // Tafsir not found
         return null;
       }
       throw new Error(`Failed to fetch tafsir: ${response.status}`);
@@ -24,7 +24,7 @@ export const fetchTafsir = async (surahNumber: number, ayahNumber: number): Prom
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching tafsir:', error);
+    // Error fetching tafsir
     return null;
   }
 };

@@ -48,39 +48,59 @@ export async function GET(request: NextRequest) {
     }
     globalAyahNumber += ayahNum;
 
-    // Fetch audio URL from AlQuran Cloud API using the correct endpoint format
-    const audioUrl = `https://api.alquran.cloud/v1/ayah/${globalAyahNumber}/ar.alafasy`;
+    // Try multiple reciters as fallbacks
+    const reciters = [
+      'ar.alafasy',
+      'ar.abdulbasitmurattal', 
+      'ar.abdurrahmaansudais',
+      'ar.abdulsamad'
+    ];
     
-    const response = await fetch(audioUrl, {
-      headers: {
-        'User-Agent': 'QuranGPT/1.0',
-      },
-    });
+    let audioData = null;
+    let usedReciter = '';
+    
+    for (const reciter of reciters) {
+      try {
+        const audioUrl = `https://api.alquran.cloud/v1/ayah/${globalAyahNumber}/${reciter}`;
+        
+        const response = await fetch(audioUrl, {
+          headers: {
+            'User-Agent': 'QuranGPT/1.0',
+          },
+        });
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch audio from AlQuran Cloud API' },
-        { status: response.status }
-      );
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.data && data.data.audio) {
+            audioData = data.data;
+            usedReciter = reciter;
+            // Audio found successfully
+            break;
+          }
+        }
+      } catch (error) {
+        // Failed to fetch audio with this reciter, try next one
+        continue;
+      }
     }
 
-    const data = await response.json();
-
-    if (!data.data || !data.data.audio) {
+    if (!audioData) {
       return NextResponse.json(
-        { error: 'Audio not available for this ayah' },
+        { error: 'Audio not available for this ayah from any reciter' },
         { status: 404 }
       );
     }
 
-    // Return the audio URL
+    // Return the audio URL with fallback options
     return NextResponse.json({
       success: true,
-      audioUrl: data.data.audio,
+      audioUrl: audioData.audio,
+      audioSecondary: audioData.audioSecondary || [],
       surah: surahNum,
       ayah: ayahNum,
       globalAyah: globalAyahNumber,
-      reciter: 'Alafasy'
+      reciter: usedReciter
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -90,7 +110,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Audio API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -15,17 +15,14 @@ import {
   IslamicWidgets,
   SuggestedQuestions,
   MinimalHeader,
-  TransparencySection
+  TransparencySection,
+  ThemeToggle
 } from './components';
 
-import AudioErrorBoundary from './components/AudioErrorBoundary';
-import ThemeToggle from './components/ThemeToggle';
-import { useAudioManager } from './hooks/useAudioManager';
+
 import { useChatManager } from './hooks/useChatManager';
 import { useAIResponse } from './hooks/useAIResponse';
 import { useTranslationManager } from './hooks/useTranslationManager';
-import { initializeAudioForProduction } from './utils/audioUtils';
-import { getAudioUrl } from './utils/audioUrlHelper';
 
 
 // Extend Window interface for tafsir functionality
@@ -42,49 +39,7 @@ export default function Home() {
   const { askQuran } = useAIResponse();
   const { copyAIContentOnly, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent } = useTranslationManager();
   
-  // Production audio initialization
-  useEffect(() => {
-    // Initialize audio for production environment
-    if (typeof window !== 'undefined') {
-      // Create a test audio element to initialize production settings
-      const testAudio = new Audio();
-      initializeAudioForProduction(testAudio);
-      testAudio.src = '';
-      
-      // Production-specific audio compatibility check
-      if (process.env.NODE_ENV === 'production') {
-        // Check if audio context is available
-        try {
-          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContext) {
-            const audioContext = new AudioContext();
-            audioContext.close();
-          }
-        } catch (error) {
-          // Silent fail in production
-        }
-        
-        // Check if audio elements are supported
-        try {
-          const testAudio2 = new Audio();
-          testAudio2.crossOrigin = 'anonymous';
-        } catch (error) {
-          // Silent fail in production
-        }
-        
-        // Set production audio configuration
-        if (window.AudioContext || (window as any).webkitAudioContext) {
-          // Configure audio context for production
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          audioContext.resume().then(() => {
-            audioContext.close();
-          }).catch((error: any) => {
-            // Silent fail in production
-          });
-        }
-      }
-    }
-  }, []);
+  // Audio functionality is now handled directly in ResponseSection component
   
   // Simple language detection function
   const detectLanguage = useCallback((text: string): string => {
@@ -126,30 +81,21 @@ export default function Home() {
   // Store the original AI-generated questions for translation
   const [originalAIQuestions, setOriginalAIQuestions] = useState<string[]>([]);
   
+  // Text size toggle state
+  const [isTextLarge, setIsTextLarge] = useState(false);
+  
 
   
   // Audio management
-  const {
-    currentAyahId,
-    isPlaying,
-    playAudio,
-    pauseAudio,
-    resumeAudio,
-    stopAudio,
-    isAyahPlaying,
-    isAyahActive,
-    getAudioProgress,
-    seekToTime,
-    cleanup: cleanupAudio
-  } = useAudioManager();
+  // Audio functionality is now handled directly in ResponseSection component
 
   // Handle asking Quran with the new hook
   const handleAskQuran = useCallback(async () => {
-    console.log('handleAskQuran called with content:', chatManager.content);
+    // Handle ask Quran request
     
     // Validate content before proceeding
     if (!chatManager.content || chatManager.content.trim().length === 0) {
-      console.error('handleAskQuran: Content is empty or undefined');
+      // Content is empty
       chatManager.setError('Question content is missing. Please try again.');
       return;
     }
@@ -163,7 +109,7 @@ export default function Home() {
         chatManager.setError,
         chatManager.setDisplayedContent,
         chatManager.setCurrentLanguage,
-        stopAudio
+        // Audio is now handled in ResponseSection
       );
       
       // Cache the original output for future restoration
@@ -178,16 +124,16 @@ export default function Home() {
       }
       
       chatManager.setIsChatActive(true);
-      console.log('Question processed successfully');
+      // Question processed successfully
     } catch (error) {
-      console.error('Error in handleAskQuran:', error);
+      // Error in handleAskQuran
       chatManager.setError('Failed to process question. Please try again.');
     }
-  }, [askQuran, chatManager, stopAudio]);
+  }, [askQuran, chatManager]);
 
   // Handle suggested question clicks
   const handleSuggestedQuestionClick = useCallback((question: string) => {
-    console.log('Suggested question clicked:', question);
+    // Suggested question clicked
     
     // IMMEDIATELY update the input field content so user can see their question
     chatManager.setContent(question);
@@ -202,16 +148,15 @@ export default function Home() {
     chatManager.setIsTranslating(false);
     chatManager.setTranslationProgress(0);
     
-    // Clean up audio state
-    stopAudio();
+    // Audio is now handled in ResponseSection component
     
     // Set content and immediately process - use a more direct approach
     // Instead of relying on state updates, pass the question directly
     const processQuestionDirectly = async (questionText: string) => {
-      console.log('Processing suggested question directly:', questionText);
+      // Processing suggested question directly
       
       if (!questionText || questionText.trim().length === 0) {
-        console.error('Question text is empty');
+        // Question text is empty
         chatManager.setError('Invalid question. Please try again.');
         return;
       }
@@ -226,30 +171,30 @@ export default function Home() {
           chatManager.setError,
           chatManager.setDisplayedContent,
           chatManager.setCurrentLanguage,
-          stopAudio
+          // Audio is now handled in ResponseSection
         );
         chatManager.setIsChatActive(true);
         // Content state is already updated above, no need to update again
-        console.log('Question processed successfully');
+        // Question processed successfully
       } catch (error) {
-        console.error('Error processing suggested question:', error);
+        // Error processing suggested question
         chatManager.setError('Failed to process question. Please try again.');
       }
     };
     
     // Process the question immediately without waiting for state updates
     processQuestionDirectly(question);
-  }, [chatManager, stopAudio, askQuran]);
+  }, [chatManager, askQuran]);
   
   // Handle when new AI questions are generated
   const handleQuestionsGenerated = useCallback((questions: string[]) => {
-    console.log('handleQuestionsGenerated called with questions:', questions);
+    // Handle questions generated
     setOriginalAIQuestions(questions);
     
     // Also store in chatManager for immediate access
     if (questions && questions.length > 0) {
       chatManager.setTranslatedQuestions(questions);
-      console.log('Questions stored in chatManager:', questions.length);
+      // Questions stored in chatManager
     }
   }, [chatManager]);
 
@@ -261,6 +206,11 @@ export default function Home() {
       chatManager.setCopied
     );
   }, [copyAIContentOnly, chatManager.displayedContent, chatManager.summary, chatManager.setCopied]);
+
+  // Handle text size toggle
+  const handleTextSizeToggle = useCallback(() => {
+    setIsTextLarge(!isTextLarge);
+  }, [isTextLarge]);
 
   // Handle translation changes
   const handleTranslationChange = useCallback(async (translatedText: string, language: string) => {
@@ -358,16 +308,12 @@ export default function Home() {
           }
           
           if (questionsToTranslate.length > 0) {
-            console.log(`Translating ${questionsToTranslate.length} questions to English`);
+            // Translating questions to English
             const questionsToTranslateText = questionsToTranslate.join('\n\n');
             const translatedQuestionsText = await translateAIContent(questionsToTranslateText, 'en', detectedSourceLang);
             const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
             
-            console.log('Questions translation result (to English):', {
-              original: questionsToTranslate.length,
-              translated: translatedQuestionsArray.length,
-              sample: translatedQuestionsArray[0]
-            });
+            // Questions translation completed
             
             chatManager.setTranslatedQuestions(translatedQuestionsArray);
           } else {
@@ -375,7 +321,7 @@ export default function Home() {
             chatManager.setTranslatedQuestions(undefined);
           }
         } catch (error) {
-          console.error('Failed to translate suggested questions to English:', error);
+          // Failed to translate suggested questions to English
           // Keep original questions if translation fails
           chatManager.setTranslatedQuestions(undefined);
         }
@@ -389,7 +335,7 @@ export default function Home() {
         clearInterval(progressInterval);
         return;
       } catch (error) {
-        console.error('Translation to English error:', error);
+        // Translation to English error
         // Fallback to original content on error
         chatManager.setDisplayedContent(chatManager.summary);
         chatManager.setCurrentLanguage('en');
@@ -411,12 +357,7 @@ export default function Home() {
       const contentToExtract = chatManager.displayedContent || chatManager.summary;
       const aiContentToTranslate = extractAIContentForTranslation(contentToExtract);
       
-      console.log('Translation Debug:', {
-        targetLanguage: language,
-        contentToExtract: contentToExtract.substring(0, 100) + '...',
-        aiContentToTranslate: aiContentToTranslate.substring(0, 100) + '...',
-        hasContent: !!aiContentToTranslate.trim()
-      });
+      // Translation processing
       
       if (!aiContentToTranslate.trim()) {
         // No AI content to translate, show original
@@ -437,20 +378,12 @@ export default function Home() {
       // Update progress to show translation is complete
       chatManager.setTranslationProgress(80);
       
-      console.log('Translation Result:', {
-        originalLength: aiContentToTranslate.length,
-        translatedLength: translation.length,
-        translation: translation.substring(0, 100) + '...'
-      });
+      // Translation result
       
             // Merge translated AI content with preserved API components
       const mergedContent = mergeTranslatedContent(contentToExtract, translation);
       
-      console.log('Merged Content:', {
-        originalLength: contentToExtract.length,
-        mergedLength: mergedContent.length,
-        merged: mergedContent.substring(0, 100) + '...'
-      });
+      // Merged content
       
       chatManager.setDisplayedContent(mergedContent);
       chatManager.setCurrentLanguage(language);
@@ -469,16 +402,12 @@ export default function Home() {
         }
         
         if (questionsToTranslate.length > 0) {
-          console.log(`Translating ${questionsToTranslate.length} questions to ${language}`);
+          // Translating questions to target language
           const questionsToTranslateText = questionsToTranslate.join('\n\n');
           const translatedQuestionsText = await translateAIContent(questionsToTranslateText, language, 'en');
           const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
           
-          console.log('Questions translation result:', {
-            original: questionsToTranslate.length,
-            translated: translatedQuestionsArray.length,
-            sample: translatedQuestionsArray[0]
-          });
+          // Questions translation result
           
           chatManager.setTranslatedQuestions(translatedQuestionsArray);
         } else {
@@ -486,7 +415,7 @@ export default function Home() {
           chatManager.setTranslatedQuestions(undefined);
         }
       } catch (error) {
-        console.error('Failed to translate suggested questions:', error);
+        // Failed to translate suggested questions
         // Keep original questions if translation fails
         chatManager.setTranslatedQuestions(undefined);
       }
@@ -497,7 +426,7 @@ export default function Home() {
         chatManager.setTranslationProgress(0);
       }, 800);
     } catch (error) {
-      console.error('Translation error:', error);
+      // Translation error
       // Fallback to original content on error
       chatManager.setDisplayedContent(chatManager.summary);
       // Language will be set by askQuran based on detected language
@@ -506,30 +435,7 @@ export default function Home() {
     }
   }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, originalLanguageCache, detectLanguage, originalAIQuestions]);
 
-  // Audio management functions
-  const handleAudioPlay = useCallback(async (ayahId: string, globalAyahNumber: string) => {
-    const audioUrl = getAudioUrl(`https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`);
-    console.log('🎵 handleAudioPlay called:', { ayahId, globalAyahNumber, audioUrl });
-    console.log('🎵 handleAudioPlay: audioUrl type:', typeof audioUrl);
-    console.log('🎵 handleAudioPlay: audioUrl starts with /api:', audioUrl.startsWith('/api'));
-    
-    try {
-      console.log('🎵 handleAudioPlay: Calling playAudio...');
-      await playAudio(ayahId, audioUrl);
-      console.log('🎵 handleAudioPlay: playAudio completed successfully');
-    } catch (error) {
-      console.error('🎵 handleAudioPlay: Error occurred:', error);
-      // Silently handle audio errors
-    }
-  }, [playAudio]);
-
-  const handleAudioPause = useCallback(() => {
-    pauseAudio();
-  }, [pauseAudio]);
-
-  const handleAudioEnd = useCallback(() => {
-    // Audio ended naturally, no action needed
-  }, []);
+  // Audio management functions are now handled directly in ResponseSection component
 
   // Helper function to format time
   const formatTime = useCallback((seconds: number) => {
@@ -618,12 +524,7 @@ export default function Home() {
         `}
       </Script>
       
-      {/* Audio preloader for production */}
-      <AudioErrorBoundary>
-        <div style={{ display: 'none' }}>
-          {/* Hidden audio preloader for production */}
-        </div>
-      </AudioErrorBoundary>
+      {/* Audio functionality is now handled directly in ResponseSection component */}
       
 
       
@@ -631,16 +532,22 @@ export default function Home() {
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
 
-        
-        {/* Theme Toggle Button - Hidden when chat is active */}
+        {/* Theme Toggle Button - Only visible when not in chat mode */}
         {!chatManager.isChatActive && (
-          <div className="fixed top-6 right-6 z-50">
+          <div className="fixed top-0 right-0 z-50 p-4">
             <ThemeToggle />
           </div>
         )}
         
         {/* Minimal Header - Only visible when chat is active */}
-        <MinimalHeader isVisible={chatManager.isChatActive} />
+        <MinimalHeader 
+          isVisible={chatManager.isChatActive}
+          onCopyAIContent={handleCopyAIContent}
+          copied={chatManager.copied}
+          userQuestion={chatManager.content}
+          isTextLarge={isTextLarge}
+          onTextSizeToggle={handleTextSizeToggle}
+        />
 
         {/* Hero Section - Hidden when chat is active */}
         {!chatManager.isChatActive && (
@@ -674,7 +581,7 @@ export default function Home() {
                       chatManager.setError,
                       chatManager.setDisplayedContent,
                       chatManager.setCurrentLanguage,
-                      stopAudio
+                      // Audio is now handled in ResponseSection
                     );
                   }, 100);
                 }} 
@@ -741,17 +648,11 @@ export default function Home() {
               showSummary={chatManager.showSummary}
               summary={chatManager.summary}
               copied={chatManager.copied}
-              onAudioPlay={handleAudioPlay}
-              onAudioPause={handleAudioPause}
-              onAudioEnd={handleAudioEnd}
-              isAudioPlaying={isAyahPlaying}
-              isAudioActive={isAyahActive}
-              getAudioProgress={getAudioProgress}
-              seekToTime={seekToTime}
               displayedContent={chatManager.displayedContent}
               onCopyAIContent={handleCopyAIContent}
               userQuestion={chatManager.content}
               onQuestionEdit={handleSuggestedQuestionClick}
+              isTextLarge={isTextLarge}
             />
 
             {/* Suggested Questions - Below Response */}

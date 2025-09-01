@@ -16,6 +16,7 @@ interface ResponseSectionProps {
   onCopyAIContent?: () => void; // New prop for copying AI content
   userQuestion?: string; // New prop for the user's question
   onQuestionEdit?: (newQuestion: string) => void; // New prop for editing the user's question
+  isTextLarge?: boolean; // Text size state from parent
 }
 
 export default function ResponseSection({ 
@@ -25,7 +26,8 @@ export default function ResponseSection({
   displayedContent,
   onCopyAIContent,
   userQuestion,
-  onQuestionEdit
+  onQuestionEdit,
+  isTextLarge
 }: ResponseSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
@@ -116,55 +118,42 @@ export default function ResponseSection({
   // Use displayedContent if provided, otherwise use summary
   const contentToShow = displayedContent || summary;
 
-  // Audio player functionality for HTML-rendered ayahs
+  // Redesigned Audio Player System
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !contentToShow) return;
 
-    // Audio state management
-    const audioStates = new Map<string, {
+    // Audio state type definition
+    interface AudioState {
       audio: HTMLAudioElement | null;
       isPlaying: boolean;
       currentTime: number;
       duration: number;
       isLoading: boolean;
       error: string | null;
-    }>();
+      retryCount: number;
+    }
 
-    const getAudioKey = (surah: string, ayah: string) => `${surah}-${ayah}`;
+    const audioStates = new Map<string, AudioState>();
+    let currentPlayingKey: string | null = null;
+    const getAudioKey = (surah: string, ayah: string): string => `${surah}-${ayah}`;
 
-    // Format time helper
-    const formatTime = (time: number): string => {
-      if (isNaN(time)) return '0:00';
-      const minutes = Math.floor(time / 60);
-      const seconds = Math.floor(time % 60);
-      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    // Pause all other audio players except the specified one
-    const pauseAllOtherAudio = (currentKey: string) => {
+    const pauseAllOthers = (currentKey: string): void => {
+      currentPlayingKey = currentKey;
       audioStates.forEach((state, key) => {
         if (key !== currentKey && state.audio && state.isPlaying) {
           state.audio.pause();
           state.isPlaying = false;
-          // Update UI for the paused audio
-          const [surah, ayah] = key.split('-');
-          updateAudioUI(surah, ayah, state);
+          updateUI(key, state);
         }
       });
     };
 
-    // Update UI for a specific audio
-    const updateAudioUI = (surah: string, ayah: string, state: any) => {
+    const updateUI = (key: string, state: AudioState): void => {
+      const [surah, ayah] = key.split('-');
       const playBtn = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"].ayah-audio-play-btn`);
       const progressBar = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"].ayah-audio-progress`);
-      const currentTimeEl = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"] .ayah-audio-current-time`);
-      const durationEl = containerRef.current?.querySelector(`[data-surah="${surah}"][data-ayah="${ayah}"] .ayah-audio-duration`);
-      
-      // Check if any other audio is currently playing
-      const isOtherAudioPlaying = Array.from(audioStates.values()).some(otherState => 
-        otherState.isPlaying && otherState !== state
-      );
 
+      // Update play button
       if (playBtn) {
         const svg = playBtn.querySelector('svg');
         if (svg) {
@@ -178,244 +167,159 @@ export default function ResponseSection({
             svg.innerHTML = '<path d="M8 5v14l11-7z" />';
           }
         }
-        
-        // Update button title and disabled state
+
+        // Update button state
+        const button = playBtn as HTMLButtonElement;
         if (state.error) {
-          (playBtn as HTMLButtonElement).title = state.error;
-          (playBtn as HTMLButtonElement).disabled = true;
-        } else if (isOtherAudioPlaying && !state.isPlaying) {
-          (playBtn as HTMLButtonElement).title = 'Another audio is playing. Pause it first.';
-          (playBtn as HTMLButtonElement).disabled = true;
-          (playBtn as HTMLButtonElement).style.opacity = '0.5';
+          button.title = state.error;
+          button.disabled = true;
+          button.style.opacity = '0.5';
+        } else if (currentPlayingKey && currentPlayingKey !== key && !state.isPlaying) {
+          button.title = 'Another audio is playing. Pause it first.';
+          button.disabled = true;
+          button.style.opacity = '0.5';
         } else {
-          (playBtn as HTMLButtonElement).title = state.isPlaying ? 'Pause audio' : 'Play audio recitation';
-          (playBtn as HTMLButtonElement).disabled = false;
-          (playBtn as HTMLButtonElement).style.opacity = '1';
+          button.title = state.isPlaying ? 'Pause audio' : 'Play audio recitation';
+          button.disabled = false;
+          button.style.opacity = '1';
         }
       }
 
+      // Update progress bar
       if (progressBar) {
-        const progressBarElement = progressBar as HTMLInputElement;
-        
-        // Set max value to duration if available, otherwise keep it at 0
+        const progressElement = progressBar as HTMLInputElement;
         if (state.duration > 0) {
-          progressBarElement.max = state.duration.toString();
-          progressBarElement.value = state.currentTime.toString();
-        } else {
-          progressBarElement.max = "0";
-          progressBarElement.value = "0";
-        }
-        
-        // Update progress bar background color dynamically
-        const progressPercent = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
-        
-        if (progressBarElement) {
-          // Check if dark mode is active
+          progressElement.max = state.duration.toString();
+          progressElement.value = state.currentTime.toString();
+          
+          // Update progress bar styling
+          const progressPercent = (state.currentTime / state.duration) * 100;
           const isDarkMode = document.documentElement.classList.contains('dark');
           const trackColor = isDarkMode ? '#374151' : '#e5e7eb';
-          
-          progressBarElement.style.background = `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progressPercent}%, ${trackColor} ${progressPercent}%, ${trackColor} 100%)`;
-          
-          // Disable progress bar if another audio is playing
-          if (isOtherAudioPlaying && !state.isPlaying) {
-            progressBarElement.disabled = true;
-            progressBarElement.style.opacity = '0.5';
-          } else {
-            progressBarElement.disabled = false;
-            progressBarElement.style.opacity = '1';
-          }
+          progressElement.style.background = `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progressPercent}%, ${trackColor} ${progressPercent}%, ${trackColor} 100%)`;
+        } else {
+          progressElement.max = "0";
+          progressElement.value = "0";
+          progressElement.style.background = '';
+        }
+
+        // Enable/disable progress bar
+        if (currentPlayingKey && currentPlayingKey !== key && !state.isPlaying) {
+          progressElement.disabled = true;
+          progressElement.style.opacity = '0.5';
+        } else {
+          progressElement.disabled = false;
+          progressElement.style.opacity = '1';
         }
       }
 
-      if (currentTimeEl) {
-        if (state.isPlaying || state.currentTime > 0) {
-          currentTimeEl.textContent = formatTime(state.currentTime);
-        } else {
-          currentTimeEl.textContent = '';
-        }
-      }
 
-      if (durationEl) {
-        if (state.duration > 0) {
-          durationEl.textContent = formatTime(state.duration);
-          console.log(`Duration updated for ${surah}:${ayah} - ${formatTime(state.duration)}`);
-        } else {
-          durationEl.textContent = '';
-        }
-      }
     };
 
-    // Load audio for a specific ayah using our API
-    const loadAudio = async (surah: string, ayah: string) => {
+    const loadAudio = async (surah: string, ayah: string): Promise<AudioState> => {
       const key = getAudioKey(surah, ayah);
-      const state = audioStates.get(key) || {
-        audio: null,
-        isPlaying: false,
-        currentTime: 0,
-        duration: 0,
-        isLoading: false,
-        error: null
-      };
+      let state = audioStates.get(key);
 
-      if (state.audio) return state;
+      if (!state) {
+        state = {
+          audio: null,
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
+          isLoading: false,
+          error: null,
+          retryCount: 0
+        };
+        audioStates.set(key, state);
+      }
 
-      // Validate surah and ayah numbers before making API call
+      if (state.audio && !state.error) return state;
+
+      // Validate inputs
       const surahNum = parseInt(surah);
       const ayahNum = parseInt(ayah);
       
       if (isNaN(surahNum) || isNaN(ayahNum) || surahNum < 1 || surahNum > 114 || ayahNum < 1) {
         state.error = 'Invalid surah or ayah number.';
         state.isLoading = false;
-        updateAudioUI(surah, ayah, state);
-        audioStates.set(key, state);
+        updateUI(key, state);
         return state;
       }
 
       state.isLoading = true;
-      updateAudioUI(surah, ayah, state);
+      state.error = null;
+      updateUI(key, state);
 
       try {
-        console.log(`Fetching audio for surah ${surah}, ayah ${ayah}`);
-        
-        // Call our API endpoint
         const response = await fetch(`/api/audio?surah=${surah}&ayah=${ayah}`);
         
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.success && data.audioUrl) {
-            console.log(`Audio URL received: ${data.audioUrl}`);
-            
-            const audio = new Audio(data.audioUrl);
-            
-            // Preload the audio to get metadata
-            audio.preload = 'metadata';
-            
-            // Try to load the audio immediately to get duration
-            audio.load();
-            
-            // Set a timeout to try to get duration if metadata doesn't load quickly
-            const durationTimeout = setTimeout(async () => {
-              if (state.duration === 0 && audio.duration > 0 && !isNaN(audio.duration)) {
-                state.duration = audio.duration;
-                console.log(`Duration loaded via timeout - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
-                updateAudioUI(surah, ayah, state);
-              } else if (state.duration === 0) {
-                // Try to trigger metadata loading by attempting to play briefly
-                try {
-                  const currentTime = audio.currentTime;
-                  await audio.play();
-                  audio.pause();
-                  audio.currentTime = currentTime;
-                  
-                  if (audio.duration > 0 && !isNaN(audio.duration)) {
-                    state.duration = audio.duration;
-                    console.log(`Duration loaded via play attempt - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
-                    updateAudioUI(surah, ayah, state);
-                  }
-                } catch (error) {
-                  console.log('Could not trigger duration loading via play attempt:', error);
-                }
-              }
-            }, 1500); // Try after 1.5 seconds
-            
-            audio.addEventListener('loadedmetadata', () => {
-              if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
-                clearTimeout(durationTimeout);
-                state.duration = audio.duration;
-                console.log(`Audio metadata loaded - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
-                updateAudioUI(surah, ayah, state);
-              }
-            });
-            
-            audio.addEventListener('canplaythrough', () => {
-              // Ensure duration is set even if loadedmetadata didn't fire
-              if (state.duration === 0 && audio.duration > 0 && !isNaN(audio.duration)) {
-                clearTimeout(durationTimeout);
-                state.duration = audio.duration;
-                console.log(`Audio can play through - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
-                updateAudioUI(surah, ayah, state);
-              }
-            });
-            
-            audio.addEventListener('durationchange', () => {
-              if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
-                clearTimeout(durationTimeout);
-                state.duration = audio.duration;
-                console.log(`Audio duration changed - Duration: ${audio.duration} seconds (${formatTime(audio.duration)})`);
-                updateAudioUI(surah, ayah, state);
-              }
-            });
-
-            audio.addEventListener('timeupdate', () => {
-              state.currentTime = audio.currentTime;
-              updateAudioUI(surah, ayah, state);
-            });
-
-            audio.addEventListener('ended', () => {
-              state.isPlaying = false;
-              state.currentTime = 0;
-              updateAudioUI(surah, ayah, state);
-            });
-
-            audio.addEventListener('error', (e) => {
-              console.error('Audio playback error:', e);
-              state.error = 'Audio not available at the moment.';
-              state.isLoading = false;
-              updateAudioUI(surah, ayah, state);
-            });
-
-            state.audio = audio;
-            state.isLoading = false;
-            updateAudioUI(surah, ayah, state);
-          } else {
-            console.error('API returned error:', data.error);
-            state.error = data.error || 'Audio not available at the moment.';
-            state.isLoading = false;
-            updateAudioUI(surah, ayah, state);
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('API request failed:', response.status, errorData);
-          
-          // Provide more specific error messages based on status code
-          let errorMessage = 'Audio not available at the moment.';
-          if (response.status === 404) {
-            errorMessage = 'Audio not found for this ayah.';
-          } else if (response.status === 400) {
-            errorMessage = 'Invalid surah or ayah number.';
-          } else if (response.status >= 500) {
-            errorMessage = 'Audio service temporarily unavailable.';
-          } else if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-          
-          state.error = errorMessage;
-          state.isLoading = false;
-          updateAudioUI(surah, ayah, state);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-      } catch (error) {
-        console.error('Audio loading error:', error);
+
+        const data = await response.json();
         
-        // Provide more specific error messages based on error type
-        let errorMessage = 'Audio not available at the moment.';
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          errorMessage = 'Network error. Please check your connection.';
-        } else if (error instanceof Error) {
-          errorMessage = `Audio loading failed: ${error.message}`;
+        if (!data.success || !data.audioUrl) {
+          throw new Error(data.error || 'No audio URL received');
         }
+
+        // Create audio element
+        const audio = new Audio();
         
-        state.error = errorMessage;
+        // Set up basic event listeners
+        audio.addEventListener('loadedmetadata', () => {
+          const currentState = audioStates.get(key);
+          if (currentState && audio.duration) {
+            currentState.duration = audio.duration;
+            updateUI(key, currentState);
+          }
+        });
+
+        audio.addEventListener('timeupdate', () => {
+          const currentState = audioStates.get(key);
+          if (currentState) {
+            currentState.currentTime = audio.currentTime;
+            updateUI(key, currentState);
+          }
+        });
+
+        audio.addEventListener('ended', () => {
+          const currentState = audioStates.get(key);
+          if (currentState) {
+            currentState.isPlaying = false;
+            currentState.currentTime = 0;
+            currentPlayingKey = null;
+            updateUI(key, currentState);
+          }
+        });
+
+        audio.addEventListener('error', () => {
+          const currentState = audioStates.get(key);
+          if (currentState) {
+            currentState.error = 'Audio failed to load';
+            currentState.isLoading = false;
+            updateUI(key, currentState);
+          }
+        });
+
+        // Set source
+        audio.src = data.audioUrl;
+        
+        // Store the audio element
+        state.audio = audio;
         state.isLoading = false;
-        updateAudioUI(surah, ayah, state);
+        updateUI(key, state);
+
+      } catch (error) {
+        state.error = error instanceof Error ? error.message : 'Failed to load audio';
+        state.isLoading = false;
+        updateUI(key, state);
       }
 
-      audioStates.set(key, state);
       return state;
     };
 
-    // Handle play/pause
-    const handlePlayPause = async (surah: string, ayah: string) => {
+    const playPause = async (surah: string, ayah: string): Promise<void> => {
       const key = getAudioKey(surah, ayah);
       let state = audioStates.get(key);
 
@@ -423,51 +327,42 @@ export default function ResponseSection({
         state = await loadAudio(surah, ayah);
       }
 
-      // If there's an error, try to reload the audio
-      if (state.error) {
-        console.log('Retrying audio load due to previous error');
-        state = await loadAudio(surah, ayah);
-      }
-
       if (!state.audio || state.error) {
-        console.log('Cannot play audio:', state.error);
         return;
       }
 
       if (state.isPlaying) {
         state.audio.pause();
         state.isPlaying = false;
+        currentPlayingKey = null;
       } else {
-        // Pause all other audio players before starting this one
-        pauseAllOtherAudio(key);
+        // Pause all other audio
+        pauseAllOthers(key);
         
         try {
           await state.audio.play();
           state.isPlaying = true;
         } catch (error) {
-          console.error('Audio playback failed:', error);
-          state.error = 'Audio playback failed.';
+          state.error = 'Playback failed. Please try again.';
           state.isPlaying = false;
         }
       }
 
-      updateAudioUI(surah, ayah, state);
+      updateUI(key, state);
     };
 
-    // Handle progress change
-    const handleProgressChange = (surah: string, ayah: string, newTime: number) => {
+    const seek = (surah: string, ayah: string, time: number): void => {
       const key = getAudioKey(surah, ayah);
       const state = audioStates.get(key);
       
-      if (state && state.audio) {
-        state.audio.currentTime = newTime;
-        state.currentTime = newTime;
-        updateAudioUI(surah, ayah, state);
+      if (state && state.audio && state.duration > 0) {
+        state.audio.currentTime = Math.max(0, Math.min(time, state.duration));
+        state.currentTime = state.audio.currentTime;
+        updateUI(key, state);
       }
     };
 
-    // Event handlers
-    const handleClick = (e: Event) => {
+    const handleClick = (e: Event): void => {
       const target = e.target as HTMLElement;
       const button = target.closest('.ayah-audio-play-btn') as HTMLButtonElement;
       
@@ -479,13 +374,12 @@ export default function ResponseSection({
         const ayah = button.getAttribute('data-ayah');
         
         if (surah && ayah) {
-          console.log('Play button clicked for surah:', surah, 'ayah:', ayah);
-          handlePlayPause(surah, ayah);
+          playPause(surah, ayah);
         }
       }
     };
 
-    const handleInput = (e: Event) => {
+    const handleSeek = (e: Event): void => {
       const target = e.target as HTMLInputElement;
       
       if (target.classList.contains('ayah-audio-progress')) {
@@ -493,7 +387,8 @@ export default function ResponseSection({
         const ayah = target.getAttribute('data-ayah');
         
         if (surah && ayah) {
-          handleProgressChange(surah, ayah, parseFloat(target.value));
+          const time = parseFloat(target.value);
+          seek(surah, ayah, time);
         }
       }
     };
@@ -502,29 +397,31 @@ export default function ResponseSection({
       const playButtons = containerRef.current?.querySelectorAll('.ayah-audio-play-btn');
       const progressBars = containerRef.current?.querySelectorAll('.ayah-audio-progress');
       
-      console.log('Found play buttons:', playButtons?.length);
-      console.log('Found progress bars:', progressBars?.length);
-      
-      if (!playButtons || !progressBars || playButtons.length === 0) return;
-
-      // Add event listeners to the container
       if (containerRef.current) {
         containerRef.current.addEventListener('click', handleClick);
-        containerRef.current.addEventListener('input', handleInput);
+        containerRef.current.addEventListener('input', handleSeek);
       }
     };
 
-    // Setup audio players after a short delay to ensure DOM is ready
-    console.log('Setting up audio players for content:', contentToShow?.substring(0, 100));
     const timer = setTimeout(setupAudioPlayers, 100);
+    
+    // Capture the ref value to avoid stale closure issues
+    const currentContainer = containerRef.current;
     
     return () => {
       clearTimeout(timer);
-      // Clean up event listeners
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('click', handleClick);
-        containerRef.current.removeEventListener('input', handleInput);
+      if (currentContainer) {
+        currentContainer.removeEventListener('click', handleClick);
+        currentContainer.removeEventListener('input', handleSeek);
       }
+      
+      audioStates.forEach((state) => {
+        if (state.audio) {
+          state.audio.pause();
+          state.audio.src = '';
+        }
+      });
+      audioStates.clear();
     };
   }, [contentToShow]);
 
@@ -693,7 +590,9 @@ export default function ResponseSection({
 
               <div 
                 ref={containerRef}
-                className="text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed text-sm p-4 -m-4"
+                className={`text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed p-4 -m-4 transition-all duration-200 ${
+                  isTextLarge ? 'text-base' : 'text-sm'
+                }`}
                 dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
               />
               
@@ -702,55 +601,7 @@ export default function ResponseSection({
 
             </div>
 
-            {/* Bottom Copy Button - Bottom Right Corner of Response */}
-            {onCopyAIContent && userQuestion && (
-              <div className="absolute -bottom-2 right-4 z-20">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onCopyAIContent}
-                  className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm ${
-                    showCopySuccess 
-                      ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' 
-                      : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-                  }`}
-                  title="Copy AI response content"
-                >
-                  <AnimatePresence mode="wait">
-                    {showCopySuccess ? (
-                      <motion.svg
-                        key="tick"
-                        initial={{ scale: 0, rotate: -90 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0, rotate: 90 }}
-                        transition={{ duration: 0.2 }}
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </motion.svg>
-                    ) : (
-                      <motion.svg
-                        key="copy"
-                        initial={{ scale: 0, rotate: 90 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0, rotate: -90 }}
-                        transition={{ duration: 0.2 }}
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                      </motion.svg>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-              </div>
-            )}
+
           </div>
         </motion.div>
       )}

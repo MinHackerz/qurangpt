@@ -232,17 +232,7 @@ const validateLanguageCode = (lang: string): string => {
   return supportedLanguages.includes(lang) ? lang : 'en';
 };
 
-// Test function for language detection debugging
-const testLanguageDetection = (text: string) => {
-  console.log('=== Language Detection Test ===');
-  console.log('Text:', text);
-  console.log('Length:', text.length);
-  console.log('Contains Bengali:', /[\u0980-\u09FF]/.test(text));
-  console.log('Contains Arabic:', /[\u0600-\u06FF]/.test(text));
-  console.log('Contains Devanagari:', /[\u0900-\u097F]/.test(text));
-  console.log('Detected language:', detectLanguage(text));
-  console.log('==============================');
-};
+
 
 interface SuggestedQuestionsProps {
   userQuestion: string;
@@ -282,26 +272,14 @@ export default function SuggestedQuestions({
     // Detect language from user question
     const detectedLanguage = detectLanguage(question);
     
-    // Debug logging
-    console.log('SuggestedQuestions: User question:', question);
-    console.log('SuggestedQuestions: Detected language:', detectedLanguage);
-    console.log('SuggestedQuestions: Question length:', question.length);
-    
-    // Test language detection for debugging
-    testLanguageDetection(question);
-    
     // Validate and sanitize the detected language
     const safeLanguage = validateLanguageCode(detectedLanguage);
-    
-    console.log('SuggestedQuestions: Using safe language:', safeLanguage);
 
     // Check cache first
     const cacheKey = `${question.toLowerCase().trim()}_${safeLanguage}`;
     const cachedQuestions = questionCache.get(cacheKey);
     
     if (cachedQuestions && cachedQuestions.length > 0) {
-      // Using cached questions
-      console.log('SuggestedQuestions: Using cached questions');
       setAiGeneratedQuestions(cachedQuestions);
       return;
     }
@@ -310,9 +288,6 @@ export default function SuggestedQuestions({
     setGenerationError('');
 
     try {
-      // Generating AI suggested questions
-      console.log('SuggestedQuestions: Generating questions for language:', detectedLanguage);
-      
       const response = await fetch('/api/suggested-questions', {
         method: 'POST',
         headers: {
@@ -330,12 +305,7 @@ export default function SuggestedQuestions({
 
       const data: AIQuestionResponse = await response.json();
       
-      // Debug the response
-      console.log('SuggestedQuestions: API response:', data);
-      
       if (data.success && data.questions && data.questions.length > 0) {
-        // AI generated questions successfully
-        console.log('SuggestedQuestions: Successfully generated questions:', data.questions);
         
         // Check if any questions contain unexpected language/translation messages
         const unexpectedMessages = [
@@ -370,7 +340,6 @@ export default function SuggestedQuestions({
         );
         
         if (hasUnexpectedMessage) {
-          console.warn('SuggestedQuestions: Found unexpected language/translation messages in questions, filtering out');
           const filteredQuestions = data.questions.filter(q => 
             !unexpectedMessages.some(msg => q.toLowerCase().includes(msg.toLowerCase()))
           );
@@ -383,36 +352,21 @@ export default function SuggestedQuestions({
             throw new Error(`All generated questions contained unexpected content for language: ${safeLanguage}`);
           }
         } else {
-          console.log('SuggestedQuestions: Setting AI generated questions in state:', data.questions);
           setAiGeneratedQuestions(data.questions);
           setQuestionCache(prev => new Map(prev).set(cacheKey, data.questions));
           onQuestionsGenerated?.(data.questions);
-          
-          // Force a re-render by updating state
-          setTimeout(() => {
-            console.log('SuggestedQuestions: State update timeout - current aiGeneratedQuestions:', aiGeneratedQuestions);
-          }, 100);
         }
       } else {
         throw new Error(data.error || 'Failed to generate questions');
       }
     } catch (error) {
-      // Error generating AI suggested questions - try fallback to English
-      console.error('SuggestedQuestions: Error generating questions:', error);
-      
-      // If the error is related to language detection or translation issues, try fallback strategies
       if (error instanceof Error && (
         error.message.includes('translation') || 
         error.message.includes('unexpected content') ||
         error.message.includes('language') ||
-        // Check for any language-related error messages
         /(Bengali|Arabic|Urdu|Hindi|Persian|Turkish|Indonesian|Malay|Chinese|Japanese|Korean|Russian|Spanish|French|German|Portuguese|Italian|Dutch|Swedish|Danish|Norwegian|Finnish|Polish|Czech|Slovak|Hungarian|Romanian|Bulgarian|Croatian|Serbian|Bosnian|Slovenian|Macedonian|Albanian|Greek|Georgian|Armenian|Hebrew|Yiddish|Kurdish|Pashto|Sindhi|Uyghur|Mongolian|Thai|Vietnamese|Khmer|Lao|Myanmar|Tamil|Telugu|Malayalam|Kannada|Gujarati|Punjabi|Odia|Assamese|Marathi|Nepali|Sinhala|Swahili|Hausa|Yoruba|Igbo|Amharic|Somali|Afrikaans|Zulu|Xhosa|Sotho|Tswana|Swati|Venda|Tsonga|Ndebele|Kinyarwanda|Kirundi|Luganda|Akan|Twi|Fulah|Wolof|Bambara|Dyula|Ewe|Ga|Tigrinya|Oromo|Quechua|Guarani|Nahuatl|Aymara|Maori|Samoan|Tongan|Fijian|Hawaiian|Esperanto|Latin|Javanese|Sundanese|Cebuano|Filipino|Hmong|Corsican|Frisian|Haitian|Luxembourgish|Malagasy|Chichewa|Shona|Belarusian|Ukrainian|Catalan|Galician|Basque|Icelandic|Maltese|Irish|Welsh|Latvian|Lithuanian|Estonian)/i.test(error.message)
       )) {
-        console.log(`SuggestedQuestions: Trying fallback strategies for language: ${safeLanguage}`);
-        
-        // Strategy 1: Try with simplified prompt in same language
         try {
-          console.log('SuggestedQuestions: Strategy 1 - Simplified prompt in same language');
           const fallbackResponse = await fetch('/api/suggested-questions', {
             method: 'POST',
             headers: {
@@ -427,7 +381,6 @@ export default function SuggestedQuestions({
           if (fallbackResponse.ok) {
             const fallbackData: AIQuestionResponse = await fallbackResponse.json();
             if (fallbackData.success && fallbackData.questions && fallbackData.questions.length > 0) {
-              console.log('SuggestedQuestions: Strategy 1 successful');
               setAiGeneratedQuestions(fallbackData.questions);
               setQuestionCache(prev => new Map(prev).set(`${question.toLowerCase().trim()}_${safeLanguage}`, fallbackData.questions));
               onQuestionsGenerated?.(fallbackData.questions);
@@ -435,22 +388,19 @@ export default function SuggestedQuestions({
             }
           }
         } catch (fallbackError) {
-          console.error('SuggestedQuestions: Strategy 1 failed:', fallbackError);
+          // Fallback failed
         }
         
-        // If all strategies fail, show error but don't fallback to English
-        console.error('SuggestedQuestions: All language strategies failed, keeping original language');
         setAiGeneratedQuestions([]);
         setGenerationError('Failed to generate questions in the requested language');
       }
       
       setGenerationError(error instanceof Error ? error.message : 'Failed to generate questions');
-      // Fallback to empty array
       setAiGeneratedQuestions([]);
     } finally {
       setIsGeneratingQuestions(false);
     }
-  }, [questionCache, onQuestionsGenerated, aiGeneratedQuestions]);
+  }, [questionCache, onQuestionsGenerated]);
 
   // Generate questions when user question changes
   useEffect(() => {
@@ -459,46 +409,22 @@ export default function SuggestedQuestions({
     }
   }, [isVisible, userQuestion, generateAISuggestedQuestions]);
 
-  // Debug effect to monitor state changes
-  useEffect(() => {
-    console.log('SuggestedQuestions: aiGeneratedQuestions state changed:', aiGeneratedQuestions);
-  }, [aiGeneratedQuestions]);
 
-  // Debug effect to monitor translatedQuestions changes
-  useEffect(() => {
-    console.log('SuggestedQuestions: translatedQuestions state changed:', translatedQuestions);
-  }, [translatedQuestions]);
 
   // Determine which questions to show based on current language and available translations
   const relevantQuestions = (() => {
-    console.log('SuggestedQuestions Debug:', {
-      currentLanguage,
-      hasTranslatedQuestions: translatedQuestions && translatedQuestions.length > 0,
-      translatedQuestionsCount: translatedQuestions?.length || 0,
-      hasAIGeneratedQuestions: aiGeneratedQuestions && aiGeneratedQuestions.length > 0,
-      aiGeneratedQuestionsCount: aiGeneratedQuestions?.length || 0,
-      userQuestion
-    });
-
-    // If we have translated questions and current language is not English, show translated questions
     if (currentLanguage !== 'en' && translatedQuestions && translatedQuestions.length > 0) {
-      console.log('Showing translated questions for non-English language');
       return translatedQuestions;
     }
     
-    // If current language is English and we have translated questions, show them (they should be in English)
     if (currentLanguage === 'en' && translatedQuestions && translatedQuestions.length > 0) {
-      console.log('Showing translated questions for English language');
       return translatedQuestions;
     }
     
-    // Fallback to AI-generated questions (in original language)
     if (aiGeneratedQuestions && aiGeneratedQuestions.length > 0) {
-      console.log('Showing AI-generated questions as fallback');
       return aiGeneratedQuestions;
     }
     
-    console.log('No questions available');
     return [];
   })();
   

@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     
     if (!result.success || unexpectedContent.some(term => firstResponseText.toLowerCase().includes(term))) {
       
-      console.log(`SuggestedQuestions API: First attempt failed or returned unexpected content for language: ${language}, trying with fallback prompt`);
+      // First attempt failed, trying with fallback prompt
       
       const fallbackPrompt = `Generate 5 follow-up questions about Islam or the Quran based on this question: "${userQuestion}". 
       Generate questions in ${language} language. 
@@ -76,9 +76,7 @@ export async function POST(request: Request) {
 
     const generatedText = result.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Debug logging
-    console.log('SuggestedQuestions API: Generated text:', generatedText);
-    console.log('SuggestedQuestions API: Language requested:', language);
+    // Generated text and language info
     
     if (!generatedText.trim()) {
       return NextResponse.json(
@@ -90,8 +88,7 @@ export async function POST(request: Request) {
     // Parse the generated text to extract questions
     const questions = parseGeneratedQuestions(generatedText);
     
-    // Debug logging
-    console.log('SuggestedQuestions API: Parsed questions:', questions);
+    // Parsed questions
     
     if (questions.length === 0) {
       // Check if the generated text contains unexpected content for any language
@@ -124,7 +121,7 @@ export async function POST(request: Request) {
       );
       
       if (hasUnexpectedContent) {
-        console.warn(`SuggestedQuestions API: Gemini returned language/translation-related content for language: ${language}`);
+        // Gemini returned language/translation-related content
         return NextResponse.json(
           { success: false, error: `AI returned unexpected content for ${language}. Please try again.` },
           { status: 500 }
@@ -231,7 +228,7 @@ function parseGeneratedQuestions(text: string): string[] {
     return fallbackQuestions;
     
   } catch (error) {
-    console.error('Error parsing generated questions:', error);
+    // Error parsing generated questions
     return [];
   }
 }

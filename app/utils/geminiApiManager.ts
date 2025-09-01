@@ -90,7 +90,7 @@ export class GeminiApiManager {
 
   private markKeyAsFailed(keyIndex: number, reason: string) {
     this.failedKeys.add(keyIndex);
-    console.warn(`API key ${keyIndex + 1} marked as failed: ${reason}`);
+    // API key marked as failed
   }
 
   async generateContent(prompt: string, model: string = 'gemini-2.0-flash'): Promise<ApiKeyResult> {

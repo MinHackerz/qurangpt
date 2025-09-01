@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { useAudioManager } from './useAudioManager';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
 
 export interface ChatState {
@@ -33,7 +32,7 @@ export const useChatManager = () => {
     translatedQuestions: undefined,
   });
 
-  const { stopAudio } = useAudioManager();
+  // Audio functionality is now handled directly in ResponseSection component
 
   const updateState = useCallback((updates: Partial<ChatState>) => {
     setState(prev => ({ ...prev, ...updates }));
@@ -63,8 +62,8 @@ export const useChatManager = () => {
       translatedQuestions: undefined,
     });
     
-    stopAudio();
-  }, [updateState, stopAudio]);
+    // Audio is now managed directly in ResponseSection component
+  }, [updateState]);
 
   const setContent = useCallback((content: string) => {
     updateState({ content });
