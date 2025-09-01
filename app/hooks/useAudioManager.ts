@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { initializeAudioForProduction, validateAudioUrlForProduction, setAudioSourceSafely } from '../utils/audioUtils';
-import { createProductionAudioElement, loadAudioInProduction } from '../utils/productionAudioLoader';
+import { initializeAudioForProduction, validateAudioUrlForProduction, setAudioSourceSafely, resumeAudioContext, registerUserGestureHandler } from '../utils/audioUtils';
+import { createProductionAudioElement, loadAudioInProduction, createProductionAudioElementWithGesture } from '../utils/productionAudioLoader';
 import { getAudioUrl } from '../utils/audioUrlHelper';
 
 interface AudioState {
@@ -66,11 +66,12 @@ export const useAudioManager = () => {
         audioRef.current.src = '';
       }
 
-      // Create new audio element with production optimization
+      // Create new audio element with production optimization and user gesture handling
       let newAudio: HTMLAudioElement;
       
       if (process.env.NODE_ENV === 'production') {
-        newAudio = createProductionAudioElement();
+        // Use the enhanced production audio element creation with gesture handling
+        newAudio = await createProductionAudioElementWithGesture();
       } else {
         newAudio = new Audio();
         // Check if browser supports MP3
@@ -112,7 +113,7 @@ export const useAudioManager = () => {
         }));
       });
       
-            // Use the audio URL (which is already processed to use the proxy)
+      // Use the audio URL (which is already processed to use the proxy)
       const processedAudioUrl = audioUrl;
       
       // Set the primary source safely and ensure it's loaded
@@ -141,8 +142,6 @@ export const useAudioManager = () => {
           throw new Error('Failed to set audio source with alternative method');
         }
       }
-      
-
       
       // Wait for audio to be ready with production-optimized loading
       await new Promise<void>((resolve, reject) => {
@@ -190,16 +189,16 @@ export const useAudioManager = () => {
         };
         
         newAudio.addEventListener('canplay', onCanPlayFallback);
-        
-
       });
       
-      // Try to play the audio with production-optimized strategy
+      // Try to play the audio with production-optimized strategy and user gesture handling
       try {
-        
         if (process.env.NODE_ENV === 'production') {
-          // Production-specific play strategy
+          // Production-specific play strategy with user gesture handling
           try {
+            // Ensure AudioContext is resumed before playing
+            await resumeAudioContext();
+            
             // Ensure audio is ready before playing
             if (newAudio.readyState < 2) {
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -237,7 +236,6 @@ export const useAudioManager = () => {
           throw new Error('Audio blocked by browser - user interaction required');
         }
         
-
         // Fallback: try to play again after a short delay
         await new Promise(resolve => setTimeout(resolve, 500));
         
@@ -247,36 +245,34 @@ export const useAudioManager = () => {
           if (process.env.NODE_ENV === 'development') {
             console.error('🎵 useAudioManager: Fallback play failed:', fallbackError);
           }
-                // Final recovery attempt - create a completely fresh audio element
-            try {
-              const finalAudio = new Audio();
-              finalAudio.crossOrigin = 'anonymous';
-              finalAudio.preload = 'metadata';
-              finalAudio.controls = false;
-              finalAudio.volume = 1.0;
-              
-              // Try the proxy URL one more time
-              const finalSourceSet = await setAudioSourceSafely(finalAudio, processedAudioUrl);
-              if (finalSourceSet) {
-                await finalAudio.play();
-                audioRef.current = finalAudio;
-                return; // Success!
-              }
-            } catch (finalError) {
-              // Silent recovery failure
+          // Final recovery attempt - create a completely fresh audio element
+          try {
+            const finalAudio = new Audio();
+            finalAudio.crossOrigin = 'anonymous';
+            finalAudio.preload = 'metadata';
+            finalAudio.controls = false;
+            finalAudio.volume = 1.0;
+            
+            // Try the proxy URL one more time
+            const finalSourceSet = await setAudioSourceSafely(finalAudio, processedAudioUrl);
+            if (finalSourceSet) {
+              await finalAudio.play();
+              audioRef.current = finalAudio;
+              return; // Success!
             }
-            
-            // Provide a more helpful error message
-            const errorMessage = process.env.NODE_ENV === 'production' 
-              ? 'Audio playback failed. This might be due to network issues or browser restrictions. Please try refreshing the page or check your internet connection.'
-              : `Audio playback failed: ${error?.message || 'Unknown error'}`;
-            
-            throw new Error(errorMessage);
+          } catch (finalError) {
+            // Silent recovery failure
+          }
+          
+          // Provide a more helpful error message
+          const errorMessage = process.env.NODE_ENV === 'production' 
+            ? 'Audio playback failed. This might be due to network issues or browser restrictions. Please try refreshing the page or check your internet connection.'
+            : `Audio playback failed: ${error?.message || 'Unknown error'}`;
+          
+          throw new Error(errorMessage);
         }
       }
 
-
-      
       // Production-specific state management
       if (process.env.NODE_ENV === 'production') {
         // In production, be more lenient with state updates
@@ -305,8 +301,8 @@ export const useAudioManager = () => {
       // Production-specific error recovery
       if (process.env.NODE_ENV === 'production') {
         try {
-          // Try to recover by creating a new audio element
-          const recoveryAudio = createProductionAudioElement();
+          // Try to recover by creating a new audio element with gesture handling
+          const recoveryAudio = await createProductionAudioElementWithGesture();
           recoveryAudio.src = audioUrl;
           recoveryAudio.volume = 1.0;
           

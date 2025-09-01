@@ -542,63 +542,6 @@ export default function ResponseSection({
     return () => clearInterval(interval);
   }, [contentToShow, isAudioPlaying, isAudioActive, getAudioProgress]);
 
-  // Debug function to inspect DOM structure
-  const debugDOMStructure = useCallback(() => {
-    if (!containerRef.current) {
-      console.log('🎵 ResponseSection: containerRef.current is null');
-      return;
-    }
-    
-    console.log('🎵 ResponseSection: Container element:', containerRef.current);
-    console.log('🎵 ResponseSection: Container HTML:', containerRef.current.innerHTML.substring(0, 500) + '...');
-    
-    // Look for audio players
-    const audioPlayers = containerRef.current.querySelectorAll('.enhanced-audio-player, [data-audio-player="true"], .audio-player');
-    console.log('🎵 ResponseSection: Found audio players:', audioPlayers.length);
-    
-    audioPlayers.forEach((player, index) => {
-      console.log(`🎵 ResponseSection: Player ${index}:`, player);
-      console.log(`🎵 ResponseSection: Player ${index} classes:`, player.className);
-      console.log(`🎵 ResponseSection: Player ${index} data attributes:`, {
-        ayahId: player.getAttribute('data-ayah-id'),
-        globalAyah: player.getAttribute('data-global-ayah')
-      });
-      
-      // Look for buttons within this player
-      const buttons = player.querySelectorAll('button, [role="button"]');
-      console.log(`🎵 ResponseSection: Player ${index} buttons:`, buttons.length);
-      
-      buttons.forEach((button, buttonIndex) => {
-        console.log(`🎵 ResponseSection: Button ${buttonIndex}:`, button);
-        console.log(`🎵 ResponseSection: Button ${buttonIndex} classes:`, button.className);
-      });
-    });
-    
-    // Also look for any elements with data-ayah-id
-    const allAyahElements = containerRef.current.querySelectorAll('[data-ayah-id]');
-    console.log('🎵 ResponseSection: All elements with data-ayah-id:', allAyahElements.length);
-    
-    allAyahElements.forEach((element, index) => {
-      console.log(`🎵 ResponseSection: Element ${index} with data-ayah-id:`, element);
-      console.log(`🎵 ResponseSection: Element ${index} classes:`, element.className);
-    });
-  }, []);
-
-  // Expose debug function on window
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).debugAudioDOM = debugDOMStructure;
-      console.log('🎵 ResponseSection: Debug function available at window.debugAudioDOM');
-    }
-    
-    return () => {
-      if (typeof window !== 'undefined') {
-        delete (window as any).debugAudioDOM;
-      }
-    };
-  }, [debugDOMStructure]);
-
-
   return (
     <AnimatePresence>
       {showSummary && (
@@ -751,27 +694,7 @@ export default function ResponseSection({
 
             {/* Bottom Copy Button - Bottom Right Corner of Response */}
             {onCopyAIContent && userQuestion && (
-              <div className="absolute -bottom-2 right-4 z-20 flex gap-2">
-                {/* Debug Audio Setup Button - Only in development */}
-                {process.env.NODE_ENV === 'development' && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      console.log('🎵 ResponseSection: Debug button clicked');
-                      setupAudioPlayers();
-                      // debugDOMStructure(); // This function is not defined in the original file
-                    }}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg border bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-800/50 transition-all duration-200"
-                    title="Debug audio setup"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </motion.button>
-                )}
-                
+              <div className="absolute -bottom-2 right-4 z-20">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}

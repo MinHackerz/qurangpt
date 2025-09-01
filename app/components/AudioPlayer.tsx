@@ -10,7 +10,7 @@ import {
   ForwardIcon,
   BackwardIcon
 } from '@heroicons/react/24/solid';
-import { initializeAudioForProduction } from '../utils/audioUtils';
+import { initializeAudioForProduction, resumeAudioContext } from '../utils/audioUtils';
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -110,6 +110,9 @@ export default function AudioPlayer({
         audioRef.current.pause();
         onPause(ayahId);
       } else {
+        // Ensure AudioContext is resumed before playing
+        await resumeAudioContext();
+        
         // Set the audio source if not already set
         if (audioRef.current.src !== audioUrl) {
           audioRef.current.src = audioUrl;

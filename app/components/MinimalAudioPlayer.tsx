@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PlayIcon, PauseIcon } from '@heroicons/react/24/solid';
+import { resumeAudioContext } from '../utils/audioUtils';
 
 interface MinimalAudioPlayerProps {
   audioUrl: string;
@@ -44,6 +45,9 @@ export default function MinimalAudioPlayer({
       } else {
         setIsLoading(true);
         setError(null);
+        
+        // Ensure AudioContext is resumed before playing
+        await resumeAudioContext();
         
         // Call the onPlay callback with both ayahId and globalAyahNumber
         await onPlay(ayahId, globalAyahNumber);

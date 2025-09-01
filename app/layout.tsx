@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Scheherazade_New, Amiri, Noto_Naskh_Arabic, Cairo } from 'next/font/google';
 import { ThemeProvider } from './contexts/ThemeContext';
+import AudioContextInitializer from './components/AudioContextInitializer';
 
 const inter = Inter({ subsets: ['latin'] });
 const scheherazade = Scheherazade_New({ 
@@ -52,6 +53,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} ${scheherazade.variable} ${amiri.variable} ${notoNaskh.variable} ${cairo.variable}`}>
         <ThemeProvider>
+          <AudioContextInitializer />
           {children}
         </ThemeProvider>
       </body>

@@ -1,30 +1,9 @@
 // Production-specific audio loading utilities
+import { createSafeAudioElement, resumeAudioContext, registerUserGestureHandler } from '../utils/audioUtils';
 
 export const createProductionAudioElement = (): HTMLAudioElement => {
-  const audio = new Audio();
-  
-  // Set production-optimized properties
-  audio.crossOrigin = 'anonymous';
-  audio.preload = 'metadata';
-  
-  // Add production-specific event listeners (silent)
-  audio.addEventListener('error', () => {
-    // Silent error handling for production
-  });
-  
-  audio.addEventListener('loadstart', () => {
-    // Silent load start handling
-  });
-  
-  audio.addEventListener('canplay', () => {
-    // Silent can play handling
-  });
-  
-  audio.addEventListener('canplaythrough', () => {
-    // Silent can play through handling
-  });
-  
-  return audio;
+  // Use the safe audio creation function
+  return createSafeAudioElement();
 };
 
 export const loadAudioInProduction = async (url: string): Promise<HTMLAudioElement> => {
@@ -67,17 +46,29 @@ export const preloadAudioForProduction = (urls: string[]): void => {
     return; // Only preload in production
   }
   
-  urls.forEach((url, index) => {
-    if (url && url.startsWith('http')) {
-      setTimeout(() => {
-        const audio = createProductionAudioElement();
-        audio.src = url;
-        
-        // Cleanup after preloading
+  // Register preloading as a user gesture handler to prevent AudioContext warnings
+  const preloadHandler = () => {
+    urls.forEach((url, index) => {
+      if (url && url.startsWith('http')) {
         setTimeout(() => {
-          audio.src = '';
-        }, 5000);
-      }, index * 100); // Stagger preloading
-    }
-  });
+          const audio = createProductionAudioElement();
+          audio.src = url;
+          
+          // Cleanup after preloading
+          setTimeout(() => {
+            audio.src = '';
+          }, 5000);
+        }, index * 100); // Stagger preloading
+      }
+    });
+  };
+  
+  registerUserGestureHandler(preloadHandler);
+};
+
+// Enhanced production audio element creation with user gesture handling
+export const createProductionAudioElementWithGesture = async (): Promise<HTMLAudioElement> => {
+  // Ensure AudioContext is resumed before creating audio
+  await resumeAudioContext();
+  return createProductionAudioElement();
 };

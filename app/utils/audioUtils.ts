@@ -39,6 +39,174 @@ export const preloadAudioMetadata = (audioUrl: string): Promise<{ duration: numb
   });
 };
 
+// Advanced AudioContext management to prevent autoplay warnings
+let audioContext: AudioContext | null = null;
+let audioContextResumed = false;
+let userGestureHandlers: Array<() => void> = [];
+
+// Initialize AudioContext only after user gesture
+export const initializeAudioContext = (): AudioContext | null => {
+  if (typeof window === 'undefined' || typeof AudioContext === 'undefined') {
+    return null;
+  }
+  
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    } catch (error) {
+      console.warn('AudioContext creation failed:', error);
+      return null;
+    }
+  }
+  
+  return audioContext;
+};
+
+// Resume AudioContext after user gesture
+export const resumeAudioContext = async (): Promise<boolean> => {
+  if (!audioContext) {
+    audioContext = initializeAudioContext();
+  }
+  
+  if (!audioContext) {
+    return false;
+  }
+  
+  try {
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+      audioContextResumed = true;
+      
+      // Execute all pending user gesture handlers
+      userGestureHandlers.forEach(handler => {
+        try {
+          handler();
+        } catch (error) {
+          console.warn('User gesture handler error:', error);
+        }
+      });
+      userGestureHandlers = [];
+      
+      return true;
+    }
+    return audioContext.state === 'running';
+  } catch (error) {
+    console.warn('Failed to resume AudioContext:', error);
+    return false;
+  }
+};
+
+// Register a handler to be executed after user gesture
+export const registerUserGestureHandler = (handler: () => void): void => {
+  if (audioContextResumed) {
+    // Execute immediately if already resumed
+    handler();
+  } else {
+    // Queue for later execution
+    userGestureHandlers.push(handler);
+  }
+};
+
+// Check if AudioContext is ready
+export const isAudioContextReady = (): boolean => {
+  return audioContext !== null && audioContext.state === 'running';
+};
+
+// Safe audio creation that respects user gesture requirements
+export const createSafeAudioElement = (): HTMLAudioElement => {
+  const audio = new Audio();
+  
+  // Set production-optimized properties
+  audio.crossOrigin = 'anonymous';
+  audio.preload = 'metadata';
+  
+  // Add production-specific error handling (silent)
+  audio.addEventListener('error', () => {
+    // Silent error handling for production
+  });
+  
+  // Add production-specific load handling
+  audio.addEventListener('loadstart', () => {
+    // Silent load handling for production
+  });
+  
+  audio.addEventListener('canplay', () => {
+    // Silent canplay handling for production
+  });
+  
+  // Add production-specific CORS handling
+  if (process.env.NODE_ENV === 'production') {
+    audio.addEventListener('loadstart', () => {
+      // Silent CORS handling for production
+    });
+  }
+  
+  return audio;
+};
+
+// Batch AudioContext operations to prevent multiple warnings
+let audioContextOperationQueue: Array<() => Promise<void>> = [];
+let isProcessingQueue = false;
+
+export const queueAudioContextOperation = async (operation: () => Promise<void>): Promise<void> => {
+  audioContextOperationQueue.push(operation);
+  
+  if (!isProcessingQueue) {
+    isProcessingQueue = true;
+    
+    try {
+      while (audioContextOperationQueue.length > 0) {
+        const op = audioContextOperationQueue.shift();
+        if (op) {
+          await op();
+        }
+      }
+    } finally {
+      isProcessingQueue = false;
+    }
+  }
+};
+
+// Enhanced resume function with better error handling
+export const resumeAudioContextEnhanced = async (): Promise<boolean> => {
+  return new Promise(async (resolve) => {
+    await queueAudioContextOperation(async () => {
+      if (!audioContext) {
+        audioContext = initializeAudioContext();
+      }
+      
+      if (!audioContext) {
+        resolve(false);
+        return;
+      }
+      
+      try {
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          audioContextResumed = true;
+          
+          // Execute all pending user gesture handlers
+          userGestureHandlers.forEach(handler => {
+            try {
+              handler();
+            } catch (error) {
+              console.warn('User gesture handler error:', error);
+            }
+          });
+          userGestureHandlers = [];
+          
+          resolve(true);
+          return;
+        }
+        resolve(audioContext.state === 'running');
+      } catch (error) {
+        console.warn('Failed to resume AudioContext:', error);
+        resolve(false);
+      }
+    });
+  });
+};
+
 // Format time helper function
 export const formatTime = (seconds: number): string => {
   if (!seconds || isNaN(seconds) || seconds === 0) return '--:--';
@@ -79,30 +247,7 @@ export const validateAudioUrlForProduction = (url: string): boolean => {
   }
 };
 
-// Test if audio URL is actually accessible
-export const testAudioUrlAccessibility = async (url: string): Promise<boolean> => {
-  try {
-    // In development, test the proxy URL instead
-    if (process.env.NODE_ENV === 'development' && url.includes('cdn.islamic.network')) {
-      const proxyUrl = `/api/audio-proxy?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl, { 
-        method: 'HEAD',
-        mode: 'cors' // Use CORS mode for proxy
-      });
-      return response.ok;
-    }
-    
-    // In production, test the direct CDN URL
-    const response = await fetch(url, { 
-      method: 'HEAD',
-      mode: 'no-cors' // This will work for CORS issues
-    });
-    return true; // If we get here, the URL is accessible
-  } catch (error) {
-    console.warn(`Audio URL accessibility test failed for ${url}:`, error);
-    return false;
-  }
-};
+
 
 // Safely set audio source with validation
 export const setAudioSourceSafely = (audioElement: HTMLAudioElement, url: string): Promise<boolean> => {
