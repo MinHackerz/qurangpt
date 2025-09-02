@@ -36,7 +36,6 @@ declare global {
 export default function Home() {
   // Use custom hooks for better organization
   const chatManager = useChatManager();
-  const { askQuran } = useAIResponse();
   const { copyAIContentOnly, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent } = useTranslationManager();
   
   // Audio functionality is now handled directly in ResponseSection component
@@ -83,6 +82,9 @@ export default function Home() {
   
   // Text size toggle state
   const [isTextLarge, setIsTextLarge] = useState(false);
+  
+  // AI Response hook with text size state
+  const { askQuran } = useAIResponse(isTextLarge);
   
 
   
@@ -210,6 +212,77 @@ export default function Home() {
   // Handle text size toggle
   const handleTextSizeToggle = useCallback(() => {
     setIsTextLarge(!isTextLarge);
+  }, [isTextLarge]);
+
+  // Update existing tafsir content when text size changes
+  useEffect(() => {
+    const updateExistingTafsirTextSize = () => {
+      // Update tafsir content headers
+      const tafsirHeaders = document.querySelectorAll('.tafsir-content h5');
+      tafsirHeaders.forEach(header => {
+        header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        header.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+      });
+
+      // Update tafsir author names
+      const tafsirAuthors = document.querySelectorAll('.tafsir-content h5 span');
+      tafsirAuthors.forEach(author => {
+        author.className = author.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        author.classList.add(isTextLarge ? 'text-sm' : 'text-xs');
+        author.classList.add('md:text-base', 'md:text-sm');
+      });
+
+      // Update tafsir content text
+      const tafsirContentDivs = document.querySelectorAll('.tafsir-content .text-gray-700');
+      tafsirContentDivs.forEach(contentDiv => {
+        contentDiv.className = contentDiv.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        contentDiv.classList.add(isTextLarge ? 'text-sm' : 'text-xs');
+        contentDiv.classList.add('md:text-base', 'md:text-sm');
+      });
+
+      // Update AI Explanation sections
+      const aiExplanationHeaders = document.querySelectorAll('.ai-explanation-section h4');
+      aiExplanationHeaders.forEach(header => {
+        header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        header.classList.add(isTextLarge ? 'text-xl' : 'text-lg');
+      });
+
+      const aiExplanationContent = document.querySelectorAll('.ai-explanation-section .text-gray-700');
+      aiExplanationContent.forEach(content => {
+        content.className = content.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        content.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+      });
+
+      // Update Authentic Tafsir sections
+      const authenticTafsirHeaders = document.querySelectorAll('.authentic-tafsir-section h4');
+      authenticTafsirHeaders.forEach(header => {
+        header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        header.classList.add(isTextLarge ? 'text-xl' : 'text-lg');
+      });
+
+      const authenticTafsirContent = document.querySelectorAll('.authentic-tafsir-section .text-gray-700');
+      authenticTafsirContent.forEach(content => {
+        content.className = content.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        content.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+      });
+
+      // Update main Tafsir section headers
+      const mainTafsirHeaders = document.querySelectorAll('.tafsir-section h3');
+      mainTafsirHeaders.forEach(header => {
+        header.className = header.className.replace(/text-(xs|sm|base|lg|xl|2xl|3xl)/g, '');
+        header.classList.add(isTextLarge ? 'text-2xl' : 'text-xl');
+        header.classList.add('md:text-3xl', 'md:text-2xl');
+      });
+
+      const mainTafsirDescriptions = document.querySelectorAll('.tafsir-section p');
+      mainTafsirDescriptions.forEach(desc => {
+        desc.className = desc.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
+        desc.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+      });
+    };
+
+    // Run the update function
+    updateExistingTafsirTextSize();
   }, [isTextLarge]);
 
   // Handle translation changes
@@ -591,103 +664,28 @@ export default function Home() {
             {/* Generation Animation - Shows between QuickQuestions and ChatSection on homepage */}
             {chatManager.isProcessing && !chatManager.isChatActive && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="max-w-4xl mx-auto px-4 sm:px-0 mb-8"
+                className="flex items-center justify-center space-x-2 w-full mb-8"
               >
-                <div className="w-full">
-                  <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4">
-                    <div className="flex items-center justify-center space-x-4">
-                      {/* Minimalist pulse ring */}
-                      <motion.div
-                        className="relative w-6 h-6 flex items-center justify-center"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      >
-                        <motion.div
-                          className="absolute inset-0 border border-gray-300 dark:border-gray-600 rounded-full"
-                          animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.3, 0.6, 0.3]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        />
-                        <motion.div
-                          className="w-1.5 h-1.5 bg-gray-500 dark:bg-gray-400 rounded-full"
-                          animate={{
-                            scale: [1, 1.3, 1],
-                            opacity: [0.6, 1, 0.6]
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        />
-                      </motion.div>
-                      
-                      {/* Elegant text with subtle animation */}
-                      <motion.span
-                        className="text-sm text-gray-700 dark:text-gray-300 font-medium tracking-wide"
-                        animate={{
-                          opacity: [0.8, 1, 0.8]
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      >
-                        Generating response
-                      </motion.span>
-                      
-                      {/* Minimalist progress wave */}
-                      <motion.div
-                        className="flex items-center space-x-0.5"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        {[...Array(4)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            className="w-0.5 bg-gray-400 dark:bg-gray-500 rounded-full"
-                            animate={{
-                              height: ['4px', '12px', '4px'],
-                              opacity: [0.4, 0.8, 0.4]
-                            }}
-                            transition={{
-                              duration: 1.2,
-                              repeat: Infinity,
-                              delay: i * 0.15,
-                              ease: "easeInOut"
-                            }}
-                          />
-                        ))}
-                      </motion.div>
-                      
-                      {/* Subtle breathing dot */}
-                      <motion.div
-                        className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full"
-                        animate={{
-                          scale: [1, 1.5, 1],
-                          opacity: [0.5, 1, 0.5]
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                {[...Array(12)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
+                    animate={{
+                      height: ['20px', '60px', '20px'],
+                      opacity: [0.4, 0.8, 0.4]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                      ease: "easeInOut"
+                    }}
+                  />
+                ))}
               </motion.div>
             )}
 
@@ -746,102 +744,29 @@ export default function Home() {
             {/* Generation Animation - Shows as overlay in chat mode */}
             {chatManager.isProcessing && chatManager.isChatActive && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 className="fixed top-0 left-0 right-0 h-screen flex items-center justify-center z-50"
               >
-                <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
-                  <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4">
-                    <div className="flex items-center justify-center space-x-4">
-                      {/* Minimalist pulse ring */}
-                      <motion.div
-                        className="relative w-6 h-6 flex items-center justify-center"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      >
-                        <motion.div
-                          className="absolute inset-0 border border-gray-300 dark:border-gray-600 rounded-full"
-                          animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.3, 0.6, 0.3]
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        />
-                        <motion.div
-                          className="w-1.5 h-1.5 bg-gray-500 dark:bg-gray-400 rounded-full"
-                          animate={{
-                            scale: [1, 1.3, 1],
-                            opacity: [0.6, 1, 0.6]
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                        />
-                      </motion.div>
-                      
-                      {/* Elegant text with subtle animation */}
-                      <motion.span
-                        className="text-sm text-gray-700 dark:text-gray-300 font-medium tracking-wide"
-                        animate={{
-                          opacity: [0.8, 1, 0.8]
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      >
-                        Generating response
-                      </motion.span>
-                      
-                      {/* Minimalist progress wave */}
-                      <motion.div
-                        className="flex items-center space-x-0.5"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        {[...Array(4)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            className="w-0.5 bg-gray-400 dark:bg-gray-500 rounded-full"
-                            animate={{
-                              height: ['4px', '12px', '4px'],
-                              opacity: [0.4, 0.8, 0.4]
-                            }}
-                            transition={{
-                              duration: 1.2,
-                              repeat: Infinity,
-                              delay: i * 0.15,
-                              ease: "easeInOut"
-                            }}
-                          />
-                        ))}
-                      </motion.div>
-                      
-                      {/* Subtle breathing dot */}
-                      <motion.div
-                        className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full"
-                        animate={{
-                          scale: [1, 1.5, 1],
-                          opacity: [0.5, 1, 0.5]
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    </div>
-                  </div>
+                <div className="flex items-center justify-center space-x-2 w-full">
+                  {[...Array(12)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
+                      animate={{
+                        height: ['20px', '60px', '20px'],
+                        opacity: [0.4, 0.8, 0.4]
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        delay: i * 0.1,
+                        ease: "easeInOut"
+                      }}
+                    />
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -883,143 +808,7 @@ export default function Home() {
         {!chatManager.isChatActive && <Footer />}
       </div>
 
-      {/* Enhanced Tafsir Toggle Script with Event Delegation */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            // Set up event delegation for tafsir buttons
-            function setupTafsirEventDelegation() {
-              // Remove any existing listeners first
-              if (window.tafsirClickHandler) {
-                document.body.removeEventListener('click', window.tafsirClickHandler);
-              }
-              
-              // Create the click handler
-              window.tafsirClickHandler = function(event) {
-                const target = event.target;
-                
-                // Check if clicked element or its parent is a tafsir button
-                const tafsirBtn = target.closest('.tafsir-toggle-btn, .tafsir-close-btn');
-                
-                if (tafsirBtn) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  
-                  const tafsirId = tafsirBtn.getAttribute('data-tafsir-id');
-                  
-                  if (tafsirId) {
-                    if (window.toggleTafsir) {
-                      window.toggleTafsir(tafsirId);
-                    } else {
-                      // toggleTafsir function not found - silent fail for security
-                    }
-                  } else {
-                    // No tafsir ID found on button - silent fail for security
-                  }
-                }
-              };
-              
-              // Add event listener to document body
-              document.body.addEventListener('click', window.tafsirClickHandler);
-            }
-            
-            // Set up immediately or when DOM is ready
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', setupTafsirEventDelegation);
-            } else {
-              setupTafsirEventDelegation();
-            }
-            
-            // Also set up when content is dynamically added
-            const observer = new MutationObserver((mutations) => {
-              mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                  // Check if new tafsir content was added
-                  mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                      const tafsirButtons = node.querySelectorAll && node.querySelectorAll('.tafsir-toggle-btn');
-                      if (tafsirButtons && tafsirButtons.length > 0) {
-                        setupTafsirEventDelegation();
-                      }
-                    }
-                  });
-                }
-              });
-            });
-            
-            observer.observe(document.body, { childList: true, subtree: true });
-            
-            // Keep the toggle function but make it more robust
-            window.toggleTafsir = function(tafsirId) {
-              try {
-                const content = document.getElementById(tafsirId);
-                
-                if (!content) {
-                  // Try again after a short delay in case DOM is still loading
-                  setTimeout(() => {
-                    const retryContent = document.getElementById(tafsirId);
-                    if (retryContent) {
-                      window.toggleTafsir(tafsirId);
-                    }
-                  }, 100);
-                  return;
-                }
-                
-                // Close other open tafsirs in the same ayah
-                try {
-                  const ayahContainer = content.closest('.stylish-ayah-reference');
-                  
-                  if (ayahContainer) {
-                    const otherTafsirs = ayahContainer.querySelectorAll('.tafsir-content:not(#' + tafsirId + ')');
-                    
-                    if (otherTafsirs && otherTafsirs.length > 0) {
-                      otherTafsirs.forEach((other) => {
-                        if (other && other.style) {
-                          other.style.display = 'none';
-                        }
-                      });
-                    }
-                  }
-                } catch (closeError) {
-                  // Error closing other tafsirs - silent fail for security
-                }
-                
-                // Toggle current tafsir
-                if (content) {
-                  const isHidden = content.style.display === 'none';
-                  
-                  if (isHidden) {
-                    // Show tafsir content
-                    content.style.display = 'block';
-                    
-                    // Add a subtle animation
-                    content.style.opacity = '0';
-                    content.style.transform = 'translateY(-10px)';
-                    setTimeout(() => {
-                      content.style.transition = 'all 0.3s ease-out';
-                      content.style.opacity = '1';
-                      content.style.transform = 'translateY(0)';
-                    }, 10);
-                    
-                    // Smooth scroll to make sure content is visible
-                    setTimeout(() => {
-                      if (content && typeof content.scrollIntoView === 'function') {
-                        content.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                      }
-                    }, 100);
-                  } else {
-                    // Hide tafsir content
-                    content.style.display = 'none';
-                  }
-                }
-                
-              } catch (error) {
-                // Error in toggleTafsir - silent fail for security
-              }
-            };
-          `
-        }}
-      />
+      {/* Tafsir functionality is now handled in ResponseSection component */}
     </>
   );
 }

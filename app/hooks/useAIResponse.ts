@@ -1,8 +1,26 @@
 import { useCallback } from 'react';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
 
-// Comprehensive language detection function supporting 130+ languages
+// Improved language detection function with English-first approach
 const detectLanguage = (text: string): string => {
+  // If text is very short, default to English
+  if (text.length < 10) {
+    return 'en';
+  }
+
+  // Check if text is predominantly English (common words, punctuation, etc.)
+  const englishPattern = /^[a-zA-Z\s\.,!?'"()-]+$/;
+  if (englishPattern.test(text)) {
+    return 'en';
+  }
+
+  // Check if text contains mostly English words with some special characters
+  const englishWords = text.toLowerCase().match(/[a-z]+/g) || [];
+  const totalWords = text.split(/\s+/).filter(word => word.length > 0).length;
+  if (totalWords > 0 && englishWords.length / totalWords > 0.7) {
+    return 'en';
+  }
+
   // Unicode script-based detection for non-Latin scripts
   const scriptPatterns = {
     // Arabic and related scripts
@@ -67,12 +85,9 @@ const detectLanguage = (text: string): string => {
     am: /[\u1200-\u137F]/,
     ti: /[\u1200-\u137F]/,
     om: /[\u1200-\u137F]/,
-    
-    // Remove duplicates - these are already covered above
-    // ar-eg, ar-sa, ckb, zh-cn, zh-tw are variants of existing languages
   };
 
-  // Check for script-based detection first
+  // Check for script-based detection
   for (const [lang, pattern] of Object.entries(scriptPatterns)) {
     if (pattern.test(text)) {
       return lang;
@@ -84,6 +99,17 @@ const detectLanguage = (text: string): string => {
   const words = textLower.split(/\s+/).filter(word => word.length > 2);
   
   if (words.length > 0) {
+    // First check for common English words to avoid false positives
+    const englishCommonWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'among', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'what', 'when', 'where', 'why', 'how', 'who', 'which', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'now', 'here', 'there', 'then', 'also', 'back', 'even', 'still', 'well', 'way', 'good', 'new', 'first', 'last', 'long', 'great', 'little', 'own', 'other', 'old', 'right', 'big', 'high', 'different', 'small', 'large', 'next', 'early', 'young', 'important', 'few', 'public', 'bad', 'same', 'able'];
+    
+    const englishMatches = words.filter(word => englishCommonWords.includes(word)).length;
+    const englishScore = englishMatches / Math.min(words.length, 20);
+    
+    // If English score is high enough, return English
+    if (englishScore > 0.3) {
+      return 'en';
+    }
+
     const languageIndicators = {
       // Romance languages
       es: ['que', 'con', 'una', 'por', 'para', 'como', 'más', 'pero', 'sus', 'les', 'del', 'las', 'los', 'este', 'esta', 'son', 'están', 'tienen', 'hacer', 'decir'],
@@ -199,7 +225,7 @@ const detectLanguage = (text: string): string => {
       }
     }
 
-    if (maxScore > 0.1) {
+    if (maxScore > 0.4) {
       return detectedLang;
     }
   }
@@ -237,7 +263,7 @@ const validateAndCleanResponse = (response: string): string => {
   return cleanedResponse;
 };
 
-export const useAIResponse = () => {
+export const useAIResponse = (isTextLarge: boolean = false) => {
   const generate_response_with_gemini = useCallback(async (prompt: string): Promise<string> => {
     try {
       const response = await fetch('/api/gemini', {
@@ -405,14 +431,14 @@ Question: ${content}`;
               
             tafsirContentHTML += `
               <div id="${tafsirId}" class="tafsir-content w-full mt-4" style="display: none;">
-                <div class="bg-gray-50 dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-700  overflow-hidden">
+                <div class="bg-transparent rounded-xl border border-gray-200 dark:border-gray-700  overflow-hidden">
                   <div class="bg-gray-100 dark:bg-gray-900 px-3 md:px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
-                      <h5 class="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                      <h5 class="${isTextLarge ? 'text-base' : 'text-sm'} font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                         <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        <span class="text-xs md:text-sm">${tafsir.author}</span>
+                        <span class="${isTextLarge ? 'text-sm md:text-base' : 'text-xs md:text-sm'}">${tafsir.author}</span>
                       </h5>
                       <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,7 +448,7 @@ Question: ${content}`;
                     </div>
                   </div>
                   <div class="p-3 md:p-4">
-                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed text-xs md:text-sm space-y-2 md:space-y-3">
+                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed ${isTextLarge ? 'text-sm md:text-base' : 'text-xs md:text-sm'} space-y-2 md:space-y-3">
                       ${formattedContent}
                     </div>
                   </div>
@@ -483,7 +509,7 @@ Question: ${content}`;
                   <!-- Audio Player -->
                   <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between shadow-sm">
                     <!-- Surah and Ayah Info Header -->
-                    <div class="mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                    <div class="bg-gray-100 dark:bg-gray-900 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 px-3 py-2 -mx-3 -mt-3 rounded-t-xl">
                       <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                           <div class="w-6 h-6 bg-gray-800 dark:bg-gray-200 rounded-full flex items-center justify-center shadow-sm">
@@ -504,7 +530,7 @@ Question: ${content}`;
                     
                     <!-- Audio Controls -->
                     <div class="flex items-center space-x-3">
-                      <button class="ayah-audio-play-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 hover:bg-gray-700 dark:hover:bg-gray-300 text-white dark:text-gray-800 shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}" type="button">
+                      <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}" type="button">
                         <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
@@ -515,49 +541,73 @@ Question: ${content}`;
                       </div>
                     </div>
                     
-                    <!-- Progress Bar -->
+                    <!-- Full-Width Audio Waveform Progress Bar -->
                     <div class="mt-3">
-                      <div class="relative">
-                        <style>
-                          .ayah-audio-progress::-webkit-slider-thumb {
-                            appearance: none;
-                            width: 16px;
-                            height: 16px;
-                            border-radius: 50%;
-                            background: #9ca3af;
-                            cursor: pointer;
-                            border: none;
-                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                          }
-                          .ayah-audio-progress::-webkit-slider-thumb:hover {
-                            background: #6b7280;
-                          }
-                          .dark .ayah-audio-progress::-webkit-slider-thumb {
-                            background: #6b7280;
-                          }
-                          .dark .ayah-audio-progress::-webkit-slider-thumb:hover {
-                            background: #9ca3af;
-                          }
-                          .ayah-audio-progress::-moz-range-thumb {
-                            width: 16px;
-                            height: 16px;
-                            border-radius: 50%;
-                            background: #9ca3af;
-                            cursor: pointer;
-                            border: none;
-                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                          }
-                          .ayah-audio-progress::-moz-range-thumb:hover {
-                            background: #6b7280;
-                          }
-                          .dark .ayah-audio-progress::-moz-range-thumb {
-                            background: #6b7280;
-                          }
-                          .dark .ayah-audio-progress::-moz-range-thumb:hover {
-                            background: #9ca3af;
-                          }
-                        </style>
-                        <input type="range" class="ayah-audio-progress w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full cursor-pointer" min="0" max="0" value="0" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}">
+                      <style>
+                        @keyframes waveProgress {
+                          0%, 100% { opacity: 0.8; transform: scaleY(1); }
+                          50% { opacity: 1; transform: scaleY(1.1); }
+                        }
+                        @keyframes waveGlow {
+                          0%, 100% { box-shadow: 0 0 4px rgba(107, 114, 128, 0.3); }
+                          50% { box-shadow: 0 0 8px rgba(107, 114, 128, 0.5); }
+                        }
+                        .dark @keyframes waveGlow {
+                          0%, 100% { box-shadow: 0 0 4px rgba(209, 213, 219, 0.3); }
+                          50% { box-shadow: 0 0 8px rgba(209, 213, 219, 0.5); }
+                        }
+                      </style>
+                      <div class="relative w-full h-8 flex items-end justify-between space-x-0.5 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}">
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="0"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="1"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="2"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="3"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="4"></div>
+                        <div class="wave-bar flex-1 h-5 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="5"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="6"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="7"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="8"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="9"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="10"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="11"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="12"></div>
+                        <div class="wave-bar flex-1 h-5 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="13"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="14"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="15"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="16"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="17"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="18"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="19"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="20"></div>
+                        <div class="wave-bar flex-1 h-5 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="21"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="22"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="23"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="24"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="25"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="26"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="27"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="28"></div>
+                        <div class="wave-bar flex-1 h-5 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="29"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="30"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="31"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="32"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="33"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="34"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="35"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="36"></div>
+                        <div class="wave-bar flex-1 h-5 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="37"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="38"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="39"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="40"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="41"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="42"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="43"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="44"></div>
+                        <div class="wave-bar flex-1 h-5 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="45"></div>
+                        <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="46"></div>
+                        <div class="wave-bar flex-1 h-4 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="47"></div>
+                        <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="48"></div>
+                        <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="49"></div>
                       </div>
                     </div>
                   </div>
@@ -570,6 +620,16 @@ Question: ${content}`;
                 
                 <!-- Tafsir Content (Full Width Below) -->
                 ${tafsirContentHTML}
+                
+                <!-- Source Button - Bottom Right Corner -->
+                <div class="absolute bottom-3 right-3">
+                  <a href="https://alquran.cloud/ayah?reference=${finalSurahNumber}:${ayahNumber}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-md border border-gray-200 dark:border-gray-600 transition-all duration-200 text-xs font-medium">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                    Source
+                  </a>
+                </div>
               </div>
             </div>
           </div>`
@@ -624,15 +684,15 @@ Question: ${content}`;
       
       // Format Tafsir/Tafseer headers with simple styling (matching AI Explanation design)
       .replace(/^(Tafs[ie]r):?\s*$/gmi, 
-        '<div class="tafsir-section mt-12 mb-8"><h3 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] tracking-wide border-b border-gray-300 dark:border-gray-600 pb-2">Tafsir</h3><p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Detailed scholarly interpretation</p></div>')
+        `<div class="tafsir-section mt-12 mb-8"><h3 class="${isTextLarge ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-bold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] tracking-wide border-b border-gray-300 dark:border-gray-600 pb-2">Tafsir</h3><p class="${isTextLarge ? 'text-base' : 'text-sm'} text-gray-600 dark:text-gray-400 mt-1">Detailed scholarly interpretation</p></div>`)
       
       // Format AI Explanation sections with simple styling
       .replace(/\[AI Explanation:\s*([\s\S]*?)\]/gi, 
-        '<div class="ai-explanation-section mt-2 mb-4"><h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed text-base">$1</div></div>')
+        `<div class="ai-explanation-section mt-2 mb-4"><h4 class="${isTextLarge ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${isTextLarge ? 'text-base' : 'text-sm'}">$1</div></div>`)
       
       // Format Authentic Tafsir sections with simple styling
       .replace(/\[Authentic Tafsir:\s*([\s\S]*?)\]/g, 
-        '<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed text-base">$1</div></div>')
+        `<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="${isTextLarge ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${isTextLarge ? 'text-base' : 'text-sm'}">$1</div></div>`)
       
       // Format other common section headers with enhanced styling
       .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi, 
@@ -648,7 +708,7 @@ Question: ${content}`;
       .replace(/\n{3,}/g, '\n\n'); // Limit consecutive line breaks
     
     return processedText;
-  }, []);
+  }, [isTextLarge]);
 
   const askQuran = useCallback(async (
     content: string,

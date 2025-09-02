@@ -549,6 +549,43 @@ body {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 }
 
+/* Audio progress bar with dynamic colors */
+.wave-bar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  background-color: #e5e7eb; /* Default light grey */
+}
+
+.dark .wave-bar {
+  background-color: #374151; /* Default dark grey for dark mode */
+}
+
+/* Dynamic color progress bars - uses CSS custom properties */
+.wave-bar.progress-active {
+  background-color: var(--progress-color, #3b82f6) !important;
+  box-shadow: 0 0 12px rgba(var(--progress-color-rgb, 59, 130, 246), 0.6) !important;
+  animation: waveProgress 1.5s ease-in-out infinite !important;
+}
+
+/* Current bar with partial progress and dynamic color */
+.wave-bar.progress-current {
+  background-color: rgba(var(--progress-color-rgb, 59, 130, 246), var(--progress-opacity, 0.7)) !important;
+  box-shadow: 0 0 8px rgba(var(--progress-color-rgb, 59, 130, 246), calc(var(--progress-opacity, 0.7) * 0.6)) !important;
+  transition: all 0.1s ease-out !important;
+}
+
+/* Wave progress animation */
+@keyframes waveProgress {
+  0%, 100% { 
+    opacity: 0.8; 
+    transform: scaleY(1); 
+  }
+  50% { 
+    opacity: 1; 
+    transform: scaleY(1.1); 
+  }
+}
+
 .dark .shadow-2xl {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
@@ -996,4 +1033,86 @@ body {
   
   .ayah-audio-play-btn:not(:disabled):active {
     transform: scale(0.95) !important;
+  }
+
+  /* Audio button state classes for proper dark mode support */
+  .ayah-audio-play-btn.play-state {
+    @apply bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800;
+  }
+  
+  .ayah-audio-play-btn.pause-state {
+    @apply bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-800;
+  }
+  
+  .ayah-audio-play-btn.loading-state {
+    @apply bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-800 opacity-70;
+  }
+  
+  .ayah-audio-play-btn.error-state {
+    @apply bg-gray-500 dark:bg-gray-500 text-white dark:text-gray-800 opacity-70;
+  }
+
+  /* Tafsir button fixes for production - ensure consistent clickability */
+  .tafsir-toggle-btn,
+  .tafsir-close-btn {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    position: relative !important;
+    z-index: 10 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 2rem !important;
+    min-width: 2rem !important;
+  }
+  
+  .tafsir-toggle-btn:disabled,
+  .tafsir-close-btn:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+  }
+  
+  .tafsir-toggle-btn:not(:disabled):hover,
+  .tafsir-close-btn:not(:disabled):hover {
+    cursor: pointer !important;
+    transform: scale(1.05) !important;
+  }
+  
+  .tafsir-toggle-btn:not(:disabled):active,
+  .tafsir-close-btn:not(:disabled):active {
+    transform: scale(0.95) !important;
+  }
+
+  /* Ensure tafsir button content is also clickable */
+  .tafsir-toggle-btn *,
+  .tafsir-close-btn * {
+    pointer-events: none !important;
+  }
+
+  /* Force tafsir buttons to be above any overlapping elements */
+  .stylish-ayah-reference .tafsir-toggle-btn,
+  .stylish-ayah-reference .tafsir-close-btn {
+    z-index: 20 !important;
+    position: relative !important;
+  }
+
+  /* Ensure tafsir buttons are not blocked by any pseudo-elements */
+  .stylish-ayah-reference::before,
+  .stylish-ayah-reference::after {
+    pointer-events: none !important;
+  }
+
+  /* Force all tafsir-related elements to be clickable */
+  [class*="tafsir"] {
+    pointer-events: auto !important;
+  }
+
+  /* Override any conflicting styles that might disable pointer events */
+  .tafsir-toggle-btn[style*="pointer-events: none"],
+  .tafsir-close-btn[style*="pointer-events: none"] {
+    pointer-events: auto !important;
   }

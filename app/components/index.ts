@@ -11,3 +11,4 @@ export { default as ThemeToggle } from './ThemeToggle';
 export { default as SuggestedQuestions } from './SuggestedQuestions';
 export { default as MinimalHeader } from './MinimalHeader';
 export { default as TransparencySection } from './TransparencySection';
+export { QuestionDisplay } from './QuestionDisplay';

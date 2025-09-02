@@ -500,16 +500,65 @@ export default function SuggestedQuestions({
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer group"
-                  onClick={() => onQuestionClick(question)}
+                  className="px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer group select-none"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Add visual feedback
+                    const target = e.currentTarget as HTMLElement;
+                    target.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                      target.style.transform = '';
+                    }, 100);
+                    
+                    // Execute the click handler
+                    onQuestionClick(question);
+                  }}
+                  onMouseDown={(e) => {
+                    // Don't prevent default to ensure click events work properly
+                    e.stopPropagation();
+                  }}
+                  onTouchStart={(e) => {
+                    // Ensure touch events work properly
+                    e.stopPropagation();
+                  }}
+                  style={{ 
+                    pointerEvents: 'auto',
+                    touchAction: 'manipulation'
+                  }}
                 >
                   <div className="flex items-start justify-between space-x-3">
-                    <p className={`flex-1 text-gray-700 dark:text-gray-300 leading-relaxed group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200 pr-2 break-words ${
-                      isTextLarge ? 'text-base' : 'text-sm'
-                    }`}>
+                    <p 
+                      className={`flex-1 text-gray-700 dark:text-gray-300 leading-relaxed group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200 pr-2 break-words cursor-pointer ${
+                        isTextLarge ? 'text-base' : 'text-sm'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onQuestionClick(question);
+                      }}
+                    >
                       {question}
                     </p>
-                    <button className="flex-shrink-0 w-6 h-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full flex items-center justify-center transition-all duration-200 group-hover:scale-110 mt-0.5">
+                    <button 
+                      className="flex-shrink-0 w-6 h-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full flex items-center justify-center transition-all duration-200 group-hover:scale-110 mt-0.5"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Add visual feedback
+                        const target = e.currentTarget as HTMLElement;
+                        target.style.transform = 'scale(0.9)';
+                        setTimeout(() => {
+                          target.style.transform = '';
+                        }, 100);
+                        
+                        // Execute the click handler
+                        onQuestionClick(question);
+                      }}
+                      style={{ pointerEvents: 'auto' }}
+                    >
                       <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>

@@ -578,7 +578,7 @@ export default function ChatSection({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-4 py-2.5 shadow-lg shadow-gray-900/5 dark:shadow-gray-900/20"
+                className="bg-transparent border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-4 py-2.5"
               >
                 <div className="flex items-center space-x-3">
                   {/* Globe icon with subtle animation */}
@@ -594,24 +594,11 @@ export default function ChatSection({
                   
                   {/* Reminder text */}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Type in your
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Type in your native language
                     </span>
-                    <motion.span
-                      animate={{ 
-                        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                      }}
-                      transition={{ 
-                        duration: 3, 
-                        repeat: Infinity, 
-                        ease: "linear" 
-                      }}
-                      className="text-sm font-semibold bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 bg-[length:200%_100%] bg-clip-text text-transparent"
-                    >
-                      native language
-                    </motion.span>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      - we support all languages! ✨
+                    <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                      • Multilingual support
                     </span>
                   </div>
                 </div>
