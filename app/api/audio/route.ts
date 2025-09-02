@@ -66,7 +66,11 @@ export async function GET(request: NextRequest) {
         const response = await fetch(audioUrl, {
           headers: {
             'User-Agent': 'QuranGPT/1.0',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
           },
+          // Add timeout for production reliability
+          signal: AbortSignal.timeout(8000), // 8 second timeout
         });
 
         if (response.ok) {

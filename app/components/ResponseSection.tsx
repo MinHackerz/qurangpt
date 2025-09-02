@@ -137,6 +137,30 @@ export default function ResponseSection({
     let currentPlayingKey: string | null = null;
     const getAudioKey = (surah: string, ayah: string): string => `${surah}-${ayah}`;
 
+    const handleClick = (e: Event): void => {
+      try {
+        const target = e.target as HTMLElement;
+        const button = target.closest('.ayah-audio-play-btn') as HTMLButtonElement;
+        
+        if (button) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const surah = button.getAttribute('data-surah');
+          const ayah = button.getAttribute('data-ayah');
+          
+          if (surah && ayah) {
+            console.log(`Audio button clicked: Surah ${surah}, Ayah ${ayah}`);
+            playPause(surah, ayah);
+          } else {
+            console.warn('Audio button missing data attributes:', { surah, ayah });
+          }
+        }
+      } catch (error) {
+        console.error('Error in audio click handler:', error);
+      }
+    };
+
     const pauseAllOthers = (currentKey: string): void => {
       currentPlayingKey = currentKey;
       audioStates.forEach((state, key) => {
@@ -251,7 +275,16 @@ export default function ResponseSection({
       updateUI(key, state);
 
       try {
-        const response = await fetch(`/api/audio?surah=${surah}&ayah=${ayah}`);
+        console.log(`Loading audio for Surah ${surah}, Ayah ${ayah}`);
+        
+        const response = await fetch(`/api/audio?surah=${surah}&ayah=${ayah}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          // Add timeout for production reliability
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -262,6 +295,8 @@ export default function ResponseSection({
         if (!data.success || !data.audioUrl) {
           throw new Error(data.error || 'No audio URL received');
         }
+
+        console.log(`Audio URL received: ${data.audioUrl}`);
 
         // Create audio element
         const audio = new Audio();
@@ -362,23 +397,6 @@ export default function ResponseSection({
       }
     };
 
-    const handleClick = (e: Event): void => {
-      const target = e.target as HTMLElement;
-      const button = target.closest('.ayah-audio-play-btn') as HTMLButtonElement;
-      
-      if (button) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const surah = button.getAttribute('data-surah');
-        const ayah = button.getAttribute('data-ayah');
-        
-        if (surah && ayah) {
-          playPause(surah, ayah);
-        }
-      }
-    };
-
     const handleSeek = (e: Event): void => {
       const target = e.target as HTMLInputElement;
       
@@ -393,23 +411,63 @@ export default function ResponseSection({
       }
     };
 
-    const setupAudioPlayers = () => {
-      const playButtons = containerRef.current?.querySelectorAll('.ayah-audio-play-btn');
-      const progressBars = containerRef.current?.querySelectorAll('.ayah-audio-progress');
+    // Additional setup when content changes - ensures buttons are clickable
+    const setupAudioPlayersOnContentChange = () => {
+      if (!containerRef.current) return;
       
-      if (containerRef.current) {
-        containerRef.current.addEventListener('click', handleClick);
-        containerRef.current.addEventListener('input', handleSeek);
+      const playButtons = containerRef.current.querySelectorAll('.ayah-audio-play-btn');
+      if (playButtons.length > 0) {
+        console.log(`Found ${playButtons.length} audio buttons, ensuring clickability`);
+        
+        // Remove and re-add listeners to ensure they work
+        containerRef.current.removeEventListener('click', handleClick);
+        containerRef.current.addEventListener('click', handleClick, { passive: false });
       }
     };
 
-    const timer = setTimeout(setupAudioPlayers, 100);
+    const setupAudioPlayers = () => {
+      if (!containerRef.current) {
+        // Retry if container is not ready
+        setTimeout(setupAudioPlayers, 50);
+        return;
+      }
+
+      const playButtons = containerRef.current?.querySelectorAll('.ayah-audio-play-btn');
+      const progressBars = containerRef.current?.querySelectorAll('.ayah-audio-progress');
+      
+      // Remove existing listeners to prevent duplicates
+      containerRef.current.removeEventListener('click', handleClick);
+      containerRef.current.removeEventListener('input', handleSeek);
+      
+      // Add event listeners with proper error handling
+      try {
+        containerRef.current.addEventListener('click', handleClick, { passive: false });
+        containerRef.current.addEventListener('input', handleSeek, { passive: false });
+        
+        // Debug log for production troubleshooting
+        console.log(`Audio players setup: ${playButtons?.length || 0} buttons, ${progressBars?.length || 0} progress bars`);
+      } catch (error) {
+        console.error('Failed to setup audio players:', error);
+      }
+    };
+
+    // Use multiple strategies to ensure setup happens
+    const timer1 = setTimeout(setupAudioPlayers, 100);
+    const timer2 = setTimeout(setupAudioPlayers, 500);
+    const timer3 = setTimeout(setupAudioPlayers, 1000);
+    
+    // Setup immediately and with a delay for content changes
+    setupAudioPlayersOnContentChange();
+    const contentTimer = setTimeout(setupAudioPlayersOnContentChange, 200);
     
     // Capture the ref value to avoid stale closure issues
     const currentContainer = containerRef.current;
     
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(contentTimer);
       if (currentContainer) {
         currentContainer.removeEventListener('click', handleClick);
         currentContainer.removeEventListener('input', handleSeek);
@@ -561,12 +619,16 @@ export default function ResponseSection({
                     
                     {/* Question Text or Edit Input */}
                     <div className="flex-1">
-                      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <h3 className={`font-medium text-gray-700 dark:text-gray-300 mb-1 ${
+                        isTextLarge ? 'text-base' : 'text-sm'
+                      }`}>
                         Your Question
                       </h3>
                       
                       {!isEditingQuestion ? (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                        <p className={`text-gray-600 dark:text-gray-400 leading-relaxed ${
+                          isTextLarge ? 'text-base' : 'text-sm'
+                        }`}>
                           {userQuestion}
                         </p>
                       ) : (
@@ -575,7 +637,9 @@ export default function ResponseSection({
                           name="edit-question"
                           value={editedQuestion}
                           onChange={(e) => setEditedQuestion(e.target.value)}
-                          className="w-full p-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 focus:border-gray-400 dark:focus:border-gray-500 resize-none"
+                          className={`w-full p-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 dark:focus:ring-gray-500 focus:border-gray-400 dark:focus:border-gray-500 resize-none ${
+                            isTextLarge ? 'text-base' : 'text-sm'
+                          }`}
                           rows={2}
                           placeholder="Edit your question..."
                           autoFocus

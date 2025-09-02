@@ -973,3 +973,27 @@ body {
       margin-bottom: 4rem; /* 64px on larger screens */
     }
   }
+  
+  /* Audio player button fixes for production */
+  .ayah-audio-play-btn {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+  }
+  
+  .ayah-audio-play-btn:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+  }
+  
+  .ayah-audio-play-btn:not(:disabled):hover {
+    cursor: pointer !important;
+    transform: scale(1.05) !important;
+  }
+  
+  .ayah-audio-play-btn:not(:disabled):active {
+    transform: scale(0.95) !important;
+  }

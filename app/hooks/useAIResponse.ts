@@ -504,7 +504,7 @@ Question: ${content}`;
                     
                     <!-- Audio Controls -->
                     <div class="flex items-center space-x-3">
-                      <button class="ayah-audio-play-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 hover:bg-gray-700 dark:hover:bg-gray-300 text-white dark:text-gray-800 shadow-md hover:shadow-lg active:scale-95 transition-all duration-200" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}">
+                      <button class="ayah-audio-play-btn w-10 h-10 rounded-full flex items-center justify-center bg-gray-800 dark:bg-gray-200 hover:bg-gray-700 dark:hover:bg-gray-300 text-white dark:text-gray-800 shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}" type="button">
                         <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>

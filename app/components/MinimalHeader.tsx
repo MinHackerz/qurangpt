@@ -64,21 +64,16 @@ export default function MinimalHeader({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleBackToHome}
-            className="flex items-center justify-center w-7 h-7 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             title="Back to home"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M4 12L10 6M4 12L10 18"/>
             </svg>
           </motion.button>
 
           {/* QuranGPT Title */}
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-md flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-              </svg>
-            </div>
             <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-200 tracking-tight">
               QuranGPT
             </h1>
@@ -93,9 +88,9 @@ export default function MinimalHeader({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onTextSizeToggle}
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-all duration-200 ${
+              className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 ${
                 isTextLarge 
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' 
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
               title={isTextLarge ? "Reduce text size" : "Increase text size"}
@@ -103,7 +98,7 @@ export default function MinimalHeader({
               <motion.svg
                 animate={{ scale: isTextLarge ? 1.1 : 1 }}
                 transition={{ duration: 0.2 }}
-                className="w-3.5 h-3.5"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -119,7 +114,7 @@ export default function MinimalHeader({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onCopyAIContent}
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-all duration-200 ${
+              className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 ${
                 showCopySuccess 
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' 
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -134,7 +129,7 @@ export default function MinimalHeader({
                     animate={{ scale: 1, rotate: 0 }}
                     exit={{ scale: 0, rotate: 90 }}
                     transition={{ duration: 0.2 }}
-                    className="w-3.5 h-3.5"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -148,7 +143,7 @@ export default function MinimalHeader({
                     animate={{ scale: 1, rotate: 0 }}
                     exit={{ scale: 0, rotate: -90 }}
                     transition={{ duration: 0.2 }}
-                    className="w-3.5 h-3.5"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -166,22 +161,22 @@ export default function MinimalHeader({
             onClick={toggleTheme}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-7 h-7 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group"
+            className="flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group"
             title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
           >
             <motion.div
               initial={false}
               animate={{ rotate: mounted && theme === 'dark' ? 180 : 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="relative w-3.5 h-3.5"
+              className="relative w-4 h-4"
             >
               {!mounted ? (
-                <div className="w-3.5 h-3.5 bg-gray-300 dark:bg-gray-600 rounded-full animate-pulse"></div>
+                <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded-full animate-pulse"></div>
               ) : theme === 'light' ? (
-                <SunIcon className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-700 transition-colors duration-200" />
+                <SunIcon className="w-4 h-4 text-gray-600 group-hover:text-gray-700 transition-colors duration-200" />
               ) : (
-                <div className="relative w-3.5 h-3.5">
-                  <MoonIcon className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-300 transition-colors duration-200 transform rotate-90" />
+                <div className="relative w-4 h-4">
+                  <MoonIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors duration-200 transform rotate-90" />
                 </div>
               )}
             </motion.div>
@@ -238,7 +233,7 @@ export default function MinimalHeader({
             onClick={onTextSizeToggle}
             className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm ${
               isTextLarge 
-                ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300' 
+                ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' 
                 : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
             }`}
             title={isTextLarge ? "Reduce text size" : "Increase text size"}

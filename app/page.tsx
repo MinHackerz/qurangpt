@@ -588,6 +588,109 @@ export default function Home() {
               />
             )}
 
+            {/* Generation Animation - Shows between QuickQuestions and ChatSection on homepage */}
+            {chatManager.isProcessing && !chatManager.isChatActive && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="max-w-4xl mx-auto px-4 sm:px-0 mb-8"
+              >
+                <div className="w-full">
+                  <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4">
+                    <div className="flex items-center justify-center space-x-4">
+                      {/* Minimalist pulse ring */}
+                      <motion.div
+                        className="relative w-6 h-6 flex items-center justify-center"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      >
+                        <motion.div
+                          className="absolute inset-0 border border-gray-300 dark:border-gray-600 rounded-full"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.3, 0.6, 0.3]
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                        <motion.div
+                          className="w-1.5 h-1.5 bg-gray-500 dark:bg-gray-400 rounded-full"
+                          animate={{
+                            scale: [1, 1.3, 1],
+                            opacity: [0.6, 1, 0.6]
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      </motion.div>
+                      
+                      {/* Elegant text with subtle animation */}
+                      <motion.span
+                        className="text-sm text-gray-700 dark:text-gray-300 font-medium tracking-wide"
+                        animate={{
+                          opacity: [0.8, 1, 0.8]
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      >
+                        Generating response
+                      </motion.span>
+                      
+                      {/* Minimalist progress wave */}
+                      <motion.div
+                        className="flex items-center space-x-0.5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        {[...Array(4)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className="w-0.5 bg-gray-400 dark:bg-gray-500 rounded-full"
+                            animate={{
+                              height: ['4px', '12px', '4px'],
+                              opacity: [0.4, 0.8, 0.4]
+                            }}
+                            transition={{
+                              duration: 1.2,
+                              repeat: Infinity,
+                              delay: i * 0.15,
+                              ease: "easeInOut"
+                            }}
+                          />
+                        ))}
+                      </motion.div>
+                      
+                      {/* Subtle breathing dot */}
+                      <motion.div
+                        className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full"
+                        animate={{
+                          scale: [1, 1.5, 1],
+                          opacity: [0.5, 1, 0.5]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Chat Section - Positioned above IslamicWidgets when not in chat mode */}
             {!chatManager.isChatActive && (
               <div className="mb-8">
@@ -640,6 +743,111 @@ export default function Home() {
               </div>
             )}
 
+            {/* Generation Animation - Shows as overlay in chat mode */}
+            {chatManager.isProcessing && chatManager.isChatActive && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="fixed top-0 left-0 right-0 h-screen flex items-center justify-center z-50"
+              >
+                <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
+                  <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-2xl p-4">
+                    <div className="flex items-center justify-center space-x-4">
+                      {/* Minimalist pulse ring */}
+                      <motion.div
+                        className="relative w-6 h-6 flex items-center justify-center"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      >
+                        <motion.div
+                          className="absolute inset-0 border border-gray-300 dark:border-gray-600 rounded-full"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.3, 0.6, 0.3]
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                        <motion.div
+                          className="w-1.5 h-1.5 bg-gray-500 dark:bg-gray-400 rounded-full"
+                          animate={{
+                            scale: [1, 1.3, 1],
+                            opacity: [0.6, 1, 0.6]
+                          }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                        />
+                      </motion.div>
+                      
+                      {/* Elegant text with subtle animation */}
+                      <motion.span
+                        className="text-sm text-gray-700 dark:text-gray-300 font-medium tracking-wide"
+                        animate={{
+                          opacity: [0.8, 1, 0.8]
+                        }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      >
+                        Generating response
+                      </motion.span>
+                      
+                      {/* Minimalist progress wave */}
+                      <motion.div
+                        className="flex items-center space-x-0.5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        {[...Array(4)].map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className="w-0.5 bg-gray-400 dark:bg-gray-500 rounded-full"
+                            animate={{
+                              height: ['4px', '12px', '4px'],
+                              opacity: [0.4, 0.8, 0.4]
+                            }}
+                            transition={{
+                              duration: 1.2,
+                              repeat: Infinity,
+                              delay: i * 0.15,
+                              ease: "easeInOut"
+                            }}
+                          />
+                        ))}
+                      </motion.div>
+                      
+                      {/* Subtle breathing dot */}
+                      <motion.div
+                        className="w-1 h-1 bg-gray-400 dark:bg-gray-500 rounded-full"
+                        animate={{
+                          scale: [1, 1.5, 1],
+                          opacity: [0.5, 1, 0.5]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+
+
             {/* Thinking Process - Above ChatSection when processing */}
             {/* Removed - Now shows in ChatSection above Translate section */}
 
@@ -664,6 +872,7 @@ export default function Home() {
                 currentLanguage={chatManager.currentLanguage}
                 translatedQuestions={chatManager.translatedQuestions}
                 onQuestionsGenerated={handleQuestionsGenerated}
+                isTextLarge={isTextLarge}
               />
             )}
             

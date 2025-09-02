@@ -244,11 +244,12 @@ export default function ChatSectionOutput({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-      className="mb-0 fixed bottom-[-100px] left-0 right-0 overflow-hidden z-50"
-    >
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+        className="mb-0 fixed bottom-[-100px] left-0 right-0 overflow-hidden z-50"
+      >
+
       {/* Full-width background color from warning text to extreme bottom of page */}
       <div className="absolute bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-950 z-0" style={{ height: '1000vh', width: '100%', bottom: '-900vh' }}></div>
       

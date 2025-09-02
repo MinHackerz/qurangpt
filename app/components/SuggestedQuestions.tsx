@@ -241,6 +241,7 @@ interface SuggestedQuestionsProps {
   currentLanguage?: string;
   translatedQuestions?: string[];
   onQuestionsGenerated?: (questions: string[]) => void; // Callback to notify parent of new questions
+  isTextLarge?: boolean; // Text size state from parent
 }
 
 interface AIQuestionResponse {
@@ -255,7 +256,8 @@ export default function SuggestedQuestions({
   isVisible,
   currentLanguage = 'en',
   translatedQuestions,
-  onQuestionsGenerated
+  onQuestionsGenerated,
+  isTextLarge = false
 }: SuggestedQuestionsProps) {
   const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState<string[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
@@ -502,7 +504,9 @@ export default function SuggestedQuestions({
                   onClick={() => onQuestionClick(question)}
                 >
                   <div className="flex items-start justify-between space-x-3">
-                    <p className="flex-1 text-gray-700 dark:text-gray-300 text-sm leading-relaxed group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200 pr-2 break-words">
+                    <p className={`flex-1 text-gray-700 dark:text-gray-300 leading-relaxed group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200 pr-2 break-words ${
+                      isTextLarge ? 'text-base' : 'text-sm'
+                    }`}>
                       {question}
                     </p>
                     <button className="flex-shrink-0 w-6 h-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full flex items-center justify-center transition-all duration-200 group-hover:scale-110 mt-0.5">
