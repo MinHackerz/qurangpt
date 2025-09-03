@@ -227,14 +227,34 @@ export default function Home() {
     }
   }, [chatManager]);
 
-  // Handle copying AI content
+  // Handle copying AI content (both question and response)
   const handleCopyAIContent = useCallback(async () => {
-    await copyAIContentOnly(
-      chatManager.displayedContent,
-      chatManager.summary,
-      chatManager.setCopied
-    );
-  }, [copyAIContentOnly, chatManager.displayedContent, chatManager.summary, chatManager.setCopied]);
+    try {
+      // Extract AI content for copying
+      const aiContentToCopy = extractAIContentForTranslation(chatManager.displayedContent || chatManager.summary);
+      
+      // Clean up the AI content (remove HTML tags, etc.)
+      const cleanAIContent = aiContentToCopy
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
+        .replace(/^\s+|\s+$/gm, '') // Trim lines
+        .trim();
+
+      // Combine question and response
+      const combinedContent = `Question: ${chatManager.submittedQuestion}\n\nAnswer: ${cleanAIContent}`;
+      
+      await navigator.clipboard.writeText(combinedContent);
+      chatManager.setCopied(true);
+      setTimeout(() => chatManager.setCopied(false), 2000);
+    } catch (error) {
+      // Fallback to copying just the AI content
+      await copyAIContentOnly(
+        chatManager.displayedContent,
+        chatManager.summary,
+        chatManager.setCopied
+      );
+    }
+  }, [copyAIContentOnly, extractAIContentForTranslation, chatManager]);
 
   // Handle text size toggle
   const handleTextSizeToggle = useCallback(() => {

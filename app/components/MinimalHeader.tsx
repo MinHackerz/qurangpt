@@ -56,7 +56,7 @@ export default function MinimalHeader({
       className="fixed top-0 left-0 right-0 z-40 sm:p-6"
     >
       {/* Mobile: Minimalist horizontal header layout */}
-      <div className="flex sm:hidden items-center justify-between w-full px-3 py-2.5 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
+      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
         {/* Left side: Back button + Title */}
         <div className="flex items-center gap-3">
           {/* Back Button - Minimalist */}
@@ -64,7 +64,7 @@ export default function MinimalHeader({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleBackToHome}
-            className="flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             title="Back to home"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@ export default function MinimalHeader({
 
           {/* QuranGPT Title */}
           <div className="flex items-center gap-2">
-            <h1 className="text-xs font-mono text-gray-600 dark:text-gray-400 tracking-wider uppercase">
+            <h1 className="text-sm font-mono text-gray-600 dark:text-gray-400 tracking-wider uppercase">
               QuranGPT
             </h1>
           </div>
@@ -88,7 +88,7 @@ export default function MinimalHeader({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onTextSizeToggle}
-              className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 ${
+              className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
                 isTextLarge 
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' 
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -114,12 +114,12 @@ export default function MinimalHeader({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onCopyAIContent}
-              className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 ${
+              className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
                 showCopySuccess 
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' 
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
-              title="Copy AI response content"
+              title="Copy question and response"
             >
               <AnimatePresence mode="wait">
                 {showCopySuccess ? (
@@ -161,7 +161,7 @@ export default function MinimalHeader({
             onClick={toggleTheme}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group"
+            className="flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group"
             title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
           >
             <motion.div
@@ -262,7 +262,7 @@ export default function MinimalHeader({
                 ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' 
                 : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
             }`}
-            title="Copy AI response content"
+            title="Copy question and response"
           >
             <AnimatePresence mode="wait">
               {showCopySuccess ? (
