@@ -41,11 +41,12 @@ interface IslamicWidgetsProps {
 }
 
 // Segmented Digital Display Component
-const DigitalTimeDisplay = ({ time }: { time: Date }) => {
+const DigitalTimeDisplay = ({ time, timezone }: { time: Date; timezone?: string }) => {
   const timeString = time.toLocaleTimeString('en-US', { 
     hour: '2-digit', 
     minute: '2-digit',
-    hour12: false 
+    hour12: false,
+    timeZone: timezone || 'UTC'
   });
 
   const SegmentedDigit = ({ digit }: { digit: string }) => {
@@ -277,16 +278,17 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           <div className="text-center">
             {/* Time Display - Segmented Digital Style */}
             <div className="mb-3">
-              <DigitalTimeDisplay time={currentTime} />
+              <DigitalTimeDisplay time={currentTime} timezone={islamicData?.location?.timezone} />
             </div>
             
             {/* Date Display - Minimal */}
             <div className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-              {currentTime.toLocaleDateString('en-US', { 
+              {new Intl.DateTimeFormat('en-US', { 
+                timeZone: islamicData?.location?.timezone || 'UTC',
                 weekday: 'short',
                 month: 'short',
                 day: '2-digit'
-              }).toUpperCase()}
+              }).format(currentTime).toUpperCase()}
             </div>
           </div>
         </motion.div>
@@ -310,13 +312,19 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           
           <div className="text-center">
             <div className="text-2xl font-mono font-bold text-gray-900 dark:text-gray-100 mb-1 tracking-wider uppercase">
-              {islamicData?.eidFitr.date ? new Date(islamicData.eidFitr.date).toLocaleDateString('en-US', { 
-                month: 'short',
-                day: 'numeric'
-              }) : 'Mar 31'}
+              {islamicData?.eidFitr.date ? 
+                new Intl.DateTimeFormat('en-US', { 
+                  timeZone: islamicData?.location?.timezone || 'UTC',
+                  month: 'short',
+                  day: 'numeric'
+                }).format(new Date(islamicData.eidFitr.date)) : 'Mar 31'}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-mono tracking-wide uppercase">
-              {islamicData?.eidFitr.date ? new Date(islamicData.eidFitr.date).getFullYear() : '2025'}
+              {islamicData?.eidFitr.date ? 
+                new Intl.DateTimeFormat('en-US', { 
+                  timeZone: islamicData?.location?.timezone || 'UTC',
+                  year: 'numeric'
+                }).format(new Date(islamicData.eidFitr.date)) : '2025'}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-500 font-mono uppercase tracking-wide">
               Festival of Breaking Fast
@@ -343,13 +351,19 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
           
           <div className="text-center">
             <div className="text-2xl font-mono font-bold text-gray-900 dark:text-gray-100 mb-1 tracking-wider uppercase">
-              {islamicData?.eidAdha.date ? new Date(islamicData.eidAdha.date).toLocaleDateString('en-US', { 
-                month: 'short',
-                day: 'numeric'
-              }) : 'Jun 7'}
+              {islamicData?.eidAdha.date ? 
+                new Intl.DateTimeFormat('en-US', { 
+                  timeZone: islamicData?.location?.timezone || 'UTC',
+                  month: 'short',
+                  day: 'numeric'
+                }).format(new Date(islamicData.eidAdha.date)) : 'Jun 7'}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-mono tracking-wide uppercase">
-              {islamicData?.eidAdha.date ? new Date(islamicData.eidAdha.date).getFullYear() : '2025'}
+              {islamicData?.eidAdha.date ? 
+                new Intl.DateTimeFormat('en-US', { 
+                  timeZone: islamicData?.location?.timezone || 'UTC',
+                  year: 'numeric'
+                }).format(new Date(islamicData.eidAdha.date)) : '2025'}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-500 font-mono uppercase tracking-wide">
               Festival of Sacrifice
