@@ -8,24 +8,9 @@ interface QuickQuestionsProps {
 
 export default function QuickQuestions({ insertQuestion }: QuickQuestionsProps) {
   const questions = [
-    { 
-      question: 'What is the purpose of life according to Islam?', 
-      icon: '🌱',
-      description: 'Discover the Islamic perspective on life\'s meaning',
-      category: 'Philosophy'
-    },
-    { 
-      question: 'Who is Prophet Muhammad (PBUH)?', 
-      icon: '☪️',
-      description: 'Learn about the final messenger of Allah',
-      category: 'Prophets'
-    },
-    { 
-      question: 'What does the Quran say about Allah?', 
-      icon: '✨',
-      description: 'Understand the divine attributes and nature',
-      category: 'Theology'
-    }
+    'What is the purpose of life according to Islam?',
+    'Who is Prophet Muhammad (PBUH)?',
+    'What does the Quran say about Allah?'
   ];
 
   return (
@@ -38,19 +23,18 @@ export default function QuickQuestions({ insertQuestion }: QuickQuestionsProps) 
       {/* Questions Container - Exact match to Chat Input Width */}
       <div className="max-w-4xl mx-auto px-0 -mx-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {questions.map((item, index) => (
+          {questions.map((question, index) => (
             <motion.button
-              key={item.question}
+              key={question}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => insertQuestion(item.question)}
-              className="group px-4 py-3 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 text-left "
+              onClick={() => insertQuestion(question)}
+              className="group px-4 py-3 text-xs text-gray-600 dark:text-gray-400 bg-transparent rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 text-left font-mono"
             >
-              <span className="mr-2">{item.icon}</span>
-              <span className="break-words">{item.question}</span>
+              <span className="break-words uppercase tracking-wide">{question}</span>
             </motion.button>
           ))}
         </div>

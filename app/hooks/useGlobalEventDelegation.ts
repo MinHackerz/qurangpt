@@ -364,6 +364,15 @@ export const useGlobalEventDelegation = () => {
           return;
         }
 
+        // Ensure the target element is properly configured for interaction
+        if (isAudioButton || isTafsirButton) {
+          const button = (isAudioButton || isTafsirButton) as HTMLElement;
+          button.style.pointerEvents = 'auto';
+          button.style.cursor = 'pointer';
+          button.style.position = 'relative';
+          button.style.zIndex = '10';
+        }
+
         // Handle tafsir button clicks
         const tafsirButton = target.closest('.tafsir-toggle-btn, .tafsir-close-btn') as HTMLButtonElement;
         if (tafsirButton) {
@@ -603,9 +612,52 @@ export const useGlobalEventDelegation = () => {
     // Initial observation
     observeButtons();
 
-    // Re-observe when new content is added
-    const mutationObserver = new MutationObserver(() => {
-      observeButtons();
+    // Re-observe when new content is added and ensure button clickability
+    const mutationObserver = new MutationObserver((mutations) => {
+      let shouldReobserve = false;
+      
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              // Check if the added node contains our buttons
+              if (element.querySelector && (
+                element.querySelector('.ayah-audio-play-btn') ||
+                element.querySelector('.tafsir-toggle-btn') ||
+                element.querySelector('.tafsir-close-btn') ||
+                element.classList.contains('ayah-audio-play-btn') ||
+                element.classList.contains('tafsir-toggle-btn') ||
+                element.classList.contains('tafsir-close-btn')
+              )) {
+                shouldReobserve = true;
+                
+                // Immediately ensure new buttons are clickable
+                const buttons = element.querySelectorAll ? 
+                  element.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn') :
+                  (element.classList.contains('ayah-audio-play-btn') || 
+                   element.classList.contains('tafsir-toggle-btn') || 
+                   element.classList.contains('tafsir-close-btn')) ? [element] : [];
+                
+                buttons.forEach((button) => {
+                  const btn = button as HTMLElement;
+                  btn.style.pointerEvents = 'auto';
+                  btn.style.cursor = 'pointer';
+                  btn.style.position = 'relative';
+                  btn.style.zIndex = '10';
+                  if (btn instanceof HTMLButtonElement) {
+                    btn.disabled = false;
+                  }
+                });
+              }
+            }
+          });
+        }
+      });
+      
+      if (shouldReobserve) {
+        observeButtons();
+      }
     });
 
     mutationObserver.observe(document.body, { childList: true, subtree: true });

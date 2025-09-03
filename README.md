@@ -31,19 +31,13 @@ Quran GPT has been completely refactored with a sophisticated, professional, and
 - Action buttons (Ask Quran, Reset)
 - Clean, focused interface for user input
 
-#### 4. ThinkingProcess (`app/components/ThinkingProcess.tsx`)
-- **Expandable AI thinking indicator**
-- Shows processing steps in real-time
-- Clickable to expand/collapse detailed process
-- Visual feedback during AI processing
-
-#### 5. ResponseSection (`app/components/ResponseSection.tsx`)
+#### 4. ResponseSection (`app/components/ResponseSection.tsx`)
 - Displays AI-generated answers
 - Copy functionality for responses
 - **Automatic ayah extraction and display**
 - Integration with AyahBox components
 
-#### 6. AyahBox (`app/components/AyahBox.tsx`)
+#### 5. AyahBox (`app/components/AyahBox.tsx`)
 - **Individual boxes for each Quranic verse**
 - **Audio playback functionality** using Islamic Network CDN
 - **Arabic text display** with high-resolution images
@@ -114,7 +108,7 @@ app/
 │   ├── HeroSection.tsx       # Main header
 │   ├── QuickQuestions.tsx    # Question suggestions
 │   ├── ChatSection.tsx       # Input interface
-│   ├── ThinkingProcess.tsx   # AI processing indicator
+
 │   ├── ResponseSection.tsx   # Answer display
 │   ├── AyahBox.tsx          # Verse display with audio
 │   └── Footer.tsx            # Footer component

@@ -74,7 +74,7 @@ export default function MinimalHeader({
 
           {/* QuranGPT Title */}
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-semibold text-gray-800 dark:text-gray-200 tracking-tight">
+            <h1 className="text-xs font-mono text-gray-600 dark:text-gray-400 tracking-wider uppercase">
               QuranGPT
             </h1>
           </div>

@@ -3,9 +3,11 @@ import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils
 
 export interface ChatState {
   content: string;
+  submittedQuestion: string; // The actual question sent by user (separate from current input content)
   isProcessing: boolean;
   summary: string;
   showSummary: boolean;
+  showTranslateSection: boolean; // Separate state for translate section visibility
   error: string;
   copied: boolean;
   displayedContent: string;
@@ -19,9 +21,11 @@ export interface ChatState {
 export const useChatManager = () => {
   const [state, setState] = useState<ChatState>({
     content: '',
+    submittedQuestion: '',
     isProcessing: false,
     summary: '',
     showSummary: false,
+    showTranslateSection: false,
     error: '',
     copied: false,
     displayedContent: '',
@@ -41,6 +45,7 @@ export const useChatManager = () => {
   const insertQuestion = useCallback((question: string) => {
     updateState({
       content: question,
+      submittedQuestion: question, // Also set as submitted question when inserting from quick questions
       error: '',
       isChatActive: true
     });
@@ -49,8 +54,10 @@ export const useChatManager = () => {
   const resetForm = useCallback(() => {
     updateState({
       content: '',
+      submittedQuestion: '',
       summary: '',
-      showSummary: false,
+      showSummary: true, // Keep showSummary true to display welcome message
+      showTranslateSection: false, // Hide translate section when resetting
       isProcessing: false,
       error: '',
       copied: false,
@@ -58,7 +65,7 @@ export const useChatManager = () => {
       currentLanguage: 'en',
       isTranslating: false,
       translationProgress: 0,
-      isChatActive: false,
+      isChatActive: true, // Keep chat mode active - don't return to homepage
       translatedQuestions: undefined,
     });
     
@@ -67,6 +74,10 @@ export const useChatManager = () => {
 
   const setContent = useCallback((content: string) => {
     updateState({ content });
+  }, [updateState]);
+
+  const setSubmittedQuestion = useCallback((submittedQuestion: string) => {
+    updateState({ submittedQuestion });
   }, [updateState]);
 
   const setError = useCallback((error: string) => {
@@ -87,6 +98,10 @@ export const useChatManager = () => {
 
   const setShowSummary = useCallback((showSummary: boolean) => {
     updateState({ showSummary });
+  }, [updateState]);
+
+  const setShowTranslateSection = useCallback((showTranslateSection: boolean) => {
+    updateState({ showTranslateSection });
   }, [updateState]);
 
   const setDisplayedContent = useCallback((displayedContent: string) => {
@@ -118,11 +133,13 @@ export const useChatManager = () => {
     insertQuestion,
     resetForm,
     setContent,
+    setSubmittedQuestion,
     setError,
     setCopied,
     setIsProcessing,
     setSummary,
     setShowSummary,
+    setShowTranslateSection,
     setDisplayedContent,
     setCurrentLanguage,
     setIsTranslating,

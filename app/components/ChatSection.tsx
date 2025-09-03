@@ -272,7 +272,7 @@ export default function ChatSection({
           {showSummary && (
             <div className="absolute -top-12 -left-1 -right-1 z-10 w-full">
               <div className="flex items-center space-x-3 w-full">
-                <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex-shrink-0">Translate:</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wider uppercase flex-shrink-0">Translate:</span>
                 
                 {/* Language buttons with exact LanguageTabs styling - Dynamic from API */}
                 {isLoadingLanguages ? (
@@ -423,17 +423,17 @@ export default function ChatSection({
             </div>
           )}
 
-          {/* Main Input Field - ChatGPT Style */}
-          <div className="relative bg-white dark:bg-transparent rounded-2xl border border-gray-200 dark:border-gray-700 transition-all duration-200">
+          {/* Main Input Field - Minimalist Professional */}
+          <div className="relative bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200">
             
             <textarea
               ref={textareaRef}
-              placeholder="Message Quran GPT... (Shift+Enter for new line)"
+              placeholder="Ask me anything about Quran & Islam..."
               value={content}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               rows={1}
-              className={`chat-input-textarea w-full p-3 sm:p-4 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed min-h-[48px] sm:min-h-[52px] max-h-[200px] sm:max-h-[180px] transition-all duration-200 ${
+              className={`chat-input-textarea w-full p-3 sm:p-4 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 placeholder:font-light placeholder:tracking-wide border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed min-h-[48px] sm:min-h-[52px] max-h-[200px] sm:max-h-[180px] transition-all duration-200 ${
                 (content.trim() || showSummary) ? 'pr-24 sm:pr-28' : 'pr-14 sm:pr-16'
               }`}
               style={{ 
@@ -442,14 +442,14 @@ export default function ChatSection({
               }}
             />
             
-            {/* Subtle highlight animation when content changes */}
+            {/* Minimal highlight when content changes */}
             {content.trim() && (
               <motion.div
                 key={content}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="absolute inset-0 rounded-2xl bg-emerald-50/20 dark:bg-emerald-900/5 border border-emerald-200/30 dark:border-emerald-700/30 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="absolute inset-0 rounded-xl border border-emerald-200 dark:border-emerald-700 pointer-events-none"
                 style={{ zIndex: -1 }}
               />
             )}
@@ -458,22 +458,19 @@ export default function ChatSection({
             
             {/* Action buttons container */}
             <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
-              {/* Send Button - Minimalistic Professional Design */}
+              {/* Send Button - Minimalist Design */}
               <motion.button
-                whileHover={{ 
-                  scale: 1.02,
-                  y: -1
-                }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   setShowLanguageReminder(false);
                   askQuran();
                 }}
                 disabled={isProcessing || !content.trim()}
-                className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
                   content.trim() && !isProcessing
-                    ? 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                    ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                    : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
                 title="Send message"
               >
@@ -490,30 +487,24 @@ export default function ChatSection({
                   )}
                 </div>
                 
-                {/* Professional border accent */}
-                {content.trim() && !isProcessing && (
-                  <div className="absolute inset-0 rounded-full border border-gray-300/40 dark:border-gray-500/40 group-hover:border-gray-400/60 dark:group-hover:border-gray-400/60 transition-colors duration-200"></div>
-                )}
+
               </motion.button>
 
-              {/* Clear Button - Minimalistic Professional Design */}
+              {/* Clear Button - Minimalist Design */}
               <AnimatePresence>
                 {(content.trim() || showSummary) && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  whileHover={{ 
-                    scale: 1.02,
-                    y: -1
-                  }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={resetForm}
                   disabled={isProcessing}
-                  className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                  className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
                     !isProcessing
-                      ? 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                      : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                   }`}
                   title="Clear and reset"
                 >
@@ -526,10 +517,7 @@ export default function ChatSection({
                     </svg>
                   </div>
                   
-                  {/* Professional border accent */}
-                  {!isProcessing && (
-                    <div className="absolute inset-0 rounded-full border border-gray-400/30 dark:border-gray-500/40 group-hover:border-gray-300/50 dark:group-hover:border-gray-400/60 transition-colors duration-200"></div>
-                  )}
+
                 </motion.button>
                 )}
               </AnimatePresence>
@@ -553,8 +541,8 @@ export default function ChatSection({
             )}
           </AnimatePresence>
 
-          {/* Content Clipping Container - Prevents scrolled content from showing below input area */}
-          <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-t from-white dark:from-gray-900 to-transparent pointer-events-none z-20"></div>
+          {/* Content Clipping Container - Minimalist */}
+          <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-t from-transparent to-transparent pointer-events-none z-20"></div>
         </div>
       </div>
 
@@ -594,10 +582,10 @@ export default function ChatSection({
                   
                   {/* Reminder text */}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wide uppercase">
                       Type in your native language
                     </span>
-                    <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono tracking-wide uppercase">
                       • Multilingual support
                     </span>
                   </div>

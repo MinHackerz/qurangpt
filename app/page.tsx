@@ -9,14 +9,14 @@ import {
   QuickQuestions,
   ChatSection,
   ChatSectionOutput,
-  ThinkingProcess,
   ResponseSection,
   Footer,
   IslamicWidgets,
   SuggestedQuestions,
   MinimalHeader,
   TransparencySection,
-  ThemeToggle
+  ThemeToggle,
+  WaveAnimationContainer
 } from './components';
 
 
@@ -37,6 +37,25 @@ export default function Home() {
   // Use custom hooks for better organization
   const chatManager = useChatManager();
   const { copyAIContentOnly, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent } = useTranslationManager();
+  
+  // Prevent scrolling during wave animation
+  useEffect(() => {
+    if (chatManager.isProcessing && chatManager.isChatActive) {
+      // Prevent scrolling
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      // Restore scrolling
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [chatManager.isProcessing, chatManager.isChatActive]);
   
   // Audio functionality is now handled directly in ResponseSection component
   
@@ -102,15 +121,20 @@ export default function Home() {
       return;
     }
     
+    // Set the submitted question when user actually sends the message
+    const questionText = chatManager.content.trim();
+    chatManager.setSubmittedQuestion(questionText);
+    
     try {
       await askQuran(
-        chatManager.content,
+        questionText, // Use the same question text to ensure consistency
         chatManager.setIsProcessing,
         chatManager.setSummary,
         chatManager.setShowSummary,
         chatManager.setError,
         chatManager.setDisplayedContent,
         chatManager.setCurrentLanguage,
+        chatManager.setShowTranslateSection, // Pass the new setter function
         // Audio is now handled in ResponseSection
       );
       
@@ -139,6 +163,9 @@ export default function Home() {
     
     // IMMEDIATELY update the input field content so user can see their question
     chatManager.setContent(question);
+    
+    // Set the submitted question so it shows in the response section
+    chatManager.setSubmittedQuestion(question);
     
     // Reset the form and start fresh with the new question
     chatManager.setSummary('');
@@ -639,6 +666,8 @@ export default function Home() {
                 insertQuestion={(question) => {
                   // Set the question content first
                   chatManager.setContent(question);
+                  // Set the submitted question for SuggestedQuestions generation
+                  chatManager.setSubmittedQuestion(question);
                   // Activate chat mode
                   chatManager.setIsChatActive(true);
                   // Clear any previous errors
@@ -654,6 +683,7 @@ export default function Home() {
                       chatManager.setError,
                       chatManager.setDisplayedContent,
                       chatManager.setCurrentLanguage,
+                      chatManager.setShowTranslateSection, // Add the missing setShowTranslateSection parameter
                       // Audio is now handled in ResponseSection
                     );
                   }, 100);
@@ -661,32 +691,36 @@ export default function Home() {
               />
             )}
 
-            {/* Generation Animation - Shows between QuickQuestions and ChatSection on homepage */}
+            {/* Wave Animation Container - Only takes space when animation is active */}
             {chatManager.isProcessing && !chatManager.isChatActive && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="flex items-center justify-center space-x-2 w-full mb-8"
-              >
-                {[...Array(12)].map((_, i) => (
+              <div className="max-w-4xl mx-auto px-0 -mx-1 mb-4">
+                <div className="h-24 flex items-center justify-center">
                   <motion.div
-                    key={i}
-                    className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
-                    animate={{
-                      height: ['20px', '60px', '20px'],
-                      opacity: [0.4, 0.8, 0.4]
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      delay: i * 0.1,
-                      ease: "easeInOut"
-                    }}
-                  />
-                ))}
-              </motion.div>
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="flex items-center justify-center space-x-2 w-full"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
+                        animate={{
+                          height: ['20px', '60px', '20px'],
+                          opacity: [0.4, 0.8, 0.4]
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          delay: i * 0.1,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    ))}
+                  </motion.div>
+                </div>
+              </div>
             )}
 
             {/* Chat Section - Positioned above IslamicWidgets when not in chat mode */}
@@ -731,6 +765,7 @@ export default function Home() {
                   isProcessing={chatManager.isProcessing}
                   error={chatManager.error}
                   showSummary={chatManager.showSummary}
+                  showTranslateSection={chatManager.showTranslateSection}
                   // Language translation props
                   originalText={chatManager.summary}
                   onTranslationChange={handleTranslationChange}
@@ -741,35 +776,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Generation Animation - Shows as overlay in chat mode */}
-            {chatManager.isProcessing && chatManager.isChatActive && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="fixed top-0 left-0 right-0 h-screen flex items-center justify-center z-50"
-              >
-                <div className="flex items-center justify-center space-x-2 w-full">
-                  {[...Array(12)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
-                      animate={{
-                        height: ['20px', '60px', '20px'],
-                        opacity: [0.4, 0.8, 0.4]
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        delay: i * 0.1,
-                        ease: "easeInOut"
-                      }}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
+
 
 
 
@@ -777,21 +784,36 @@ export default function Home() {
             {/* Removed - Now shows in ChatSection above Translate section */}
 
             {/* Response Section */}
-            <ResponseSection 
-              showSummary={chatManager.showSummary}
-              summary={chatManager.summary}
-              copied={chatManager.copied}
-              displayedContent={chatManager.displayedContent}
-              onCopyAIContent={handleCopyAIContent}
-              userQuestion={chatManager.content}
-              onQuestionEdit={handleSuggestedQuestionClick}
-              isTextLarge={isTextLarge}
-            />
+            <div className="relative">
+              {/* Wave Animation Container - Shows in center when processing */}
+              {chatManager.isProcessing && chatManager.isChatActive && (
+                <div className="flex items-center justify-center min-h-[400px] py-20">
+                  <WaveAnimationContainer 
+                    isVisible={true} 
+                    className="bg-transparent"
+                  />
+                </div>
+              )}
+              
+              {/* Response Content - Hidden during processing to show animation */}
+              {!chatManager.isProcessing && (
+                <ResponseSection
+                  showSummary={chatManager.showSummary}
+                  summary={chatManager.summary}
+                  copied={chatManager.copied}
+                  displayedContent={chatManager.displayedContent}
+                  onCopyAIContent={handleCopyAIContent}
+                  userQuestion={chatManager.submittedQuestion}
+                  onQuestionEdit={handleSuggestedQuestionClick}
+                  isTextLarge={isTextLarge}
+                />
+              )}
+            </div>
 
             {/* Suggested Questions - Below Response */}
-            {chatManager.showSummary && (
+            {chatManager.showSummary && !chatManager.isProcessing && (
               <SuggestedQuestions
-                userQuestion={chatManager.content}
+                userQuestion={chatManager.submittedQuestion}
                 onQuestionClick={handleSuggestedQuestionClick}
                 isVisible={true}
                 currentLanguage={chatManager.currentLanguage}
