@@ -1226,11 +1226,11 @@ body {
       user-select: text;
     }
     
-    /* PWA status bar styling */
-    .pwa-status-bar {
-      height: env(safe-area-inset-top, 0px);
-      background: var(--primary-color);
-    }
+      /* PWA status bar styling */
+  .pwa-status-bar {
+    height: env(safe-area-inset-top, 0px);
+    background: #f3f4f6;
+  }
   }
   
   /* PWA splash screen styles */

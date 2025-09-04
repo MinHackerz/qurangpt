@@ -96,19 +96,19 @@ export default function InstallPrompt() {
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="fixed bottom-4 left-4 right-4 z-50 max-w-sm mx-auto"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                <DevicePhoneMobileIcon className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <DevicePhoneMobileIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
-                  Install QuranGPT
+                <h3 className="font-medium text-gray-900 dark:text-white text-sm">
+                  Install App
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Add to your home screen
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Quick access from home screen
                 </p>
               </div>
             </div>
@@ -117,29 +117,27 @@ export default function InstallPrompt() {
               onClick={handleDismiss}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <XMarkIcon className="w-4 h-4 text-gray-500" />
+              <XMarkIcon className="w-4 h-4 text-gray-400" />
             </button>
           </div>
 
           {/* Content */}
           <div className="mb-4">
-            <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
               {isIOS ? (
                 <>
-                  Tap the <PlusIcon className="w-4 h-4 inline mx-1" /> button and select 
-                  "Add to Home Screen" to install QuranGPT as an app.
+                  Tap the share button and select "Add to Home Screen" to install.
                 </>
               ) : (
                 <>
-                  Install QuranGPT for quick access to Islamic guidance. 
-                  Get instant answers about Quran and Islam right from your home screen.
+                  Install for quick access to Islamic guidance and instant answers.
                 </>
               )}
             </p>
             
             {isIOS && (
-              <div className="flex items-center space-x-2 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-2 rounded-lg">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
                 <span>Look for the share button in your browser</span>
               </div>
             )}
@@ -152,10 +150,10 @@ export default function InstallPrompt() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleInstallClick}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center space-x-2"
+                className="flex-1 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 text-sm font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
               >
                 <PlusIcon className="w-4 h-4" />
-                <span>Install App</span>
+                <span>Install</span>
               </motion.button>
             )}
             
@@ -163,19 +161,10 @@ export default function InstallPrompt() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleDismiss}
-              className={`${isIOS ? 'flex-1' : 'px-4'} bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium py-2.5 rounded-xl transition-colors`}
+              className={`${isIOS ? 'flex-1' : 'px-4'} bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium py-2.5 rounded-lg transition-colors`}
             >
               {isIOS ? 'Got it' : 'Later'}
             </motion.button>
-          </div>
-
-          {/* Benefits */}
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-              <span>✓ Offline access</span>
-              <span>✓ Fast loading</span>
-              <span>✓ Native feel</span>
-            </div>
           </div>
         </div>
       </motion.div>
