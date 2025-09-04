@@ -428,12 +428,18 @@ export async function POST(request: NextRequest) {
 
     // Using API keys for translation
 
-    const translationResult = await apiManager.translateText(
+    // Create the proper translation prompt
+    const translationPrompt = createTranslationPrompt(
       text,
       targetLanguage,
       detectedSourceLang,
       context,
-      preserveFormatting,
+      preserveFormatting
+    );
+
+    // Use the generateContent method with the proper prompt instead of translateText
+    const translationResult = await apiManager.generateContent(
+      translationPrompt,
       'gemini-2.0-flash'
     );
 

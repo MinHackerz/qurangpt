@@ -3,47 +3,28 @@ import { useAIResponse } from './useAIResponse';
 
 export const useTranslationManager = () => {
   const { formatResponse } = useAIResponse();
-  // Function to extract AI-generated content for translation
+  // Function to extract AI-generated content for translation while preserving structure
   const extractAIContentForTranslation = useCallback((formattedResponse: string) => {
     try {
       // Create a temporary DOM element to parse the HTML
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = formattedResponse;
       
-      // Extract only the AI-generated text content, excluding API-fetched components
-      const aiContent: string[] = [];
+      // Find all ayah boxes and replace them with placeholders
+      const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
+      const placeholders: string[] = [];
       
-      // Walk through all text nodes and extract content
-      const walkTextNodes = (node: Node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          const text = node.textContent?.trim();
-          if (text && text.length > 0) {
-            // Check if this text is not part of API-fetched components
-            const parent = node.parentElement;
-            if (parent && !parent.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
-              aiContent.push(text);
-            }
-          }
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          const element = node as Element;
-          // Skip API-fetched components
-          if (!element.classList.contains('stylish-ayah-reference') && 
-              !element.classList.contains('tafsir-content') && 
-              !element.classList.contains('enhanced-audio-player') &&
-              !element.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
-            // Extract text from elements that are not API-fetched
-            for (const child of Array.from(element.childNodes)) {
-              walkTextNodes(child);
-            }
-          }
-        }
-      };
+      ayahBoxes.forEach((ayahBox, index) => {
+        const placeholder = `__AYAH_BOX_${index}__`;
+        placeholders.push(ayahBox.outerHTML);
+        ayahBox.outerHTML = placeholder;
+      });
       
-      walkTextNodes(tempDiv);
+      // Store placeholders for later restoration
+      (tempDiv as any).ayahPlaceholders = placeholders;
       
-      const result = aiContent.join('\n\n');
-      // AI content extracted successfully
-      return result;
+      // Return the HTML with ayah boxes replaced by placeholders
+      return tempDiv.innerHTML;
     } catch (error) {
       // Error extracting AI content
       // Fallback: simple text extraction without DOM manipulation
@@ -54,12 +35,23 @@ export const useTranslationManager = () => {
   // Function to merge translated AI content with preserved API content
   const mergeTranslatedContent = useCallback(async (originalFormattedResponse: string, translatedAIContent: string) => {
     try {
-      // First, process the translated content for ayah references
-      const processedTranslatedContent = await formatResponse(translatedAIContent);
+      // Extract ayah boxes from original response
+      const originalDiv = document.createElement('div');
+      originalDiv.innerHTML = originalFormattedResponse;
+      const ayahBoxes = originalDiv.querySelectorAll('.stylish-ayah-reference');
+      const ayahBoxesArray = Array.from(ayahBoxes).map(box => box.outerHTML);
       
-      // Simply return the processed translated content
-      // This ensures ayah references in translated content are properly converted to ayah boxes
-      return processedTranslatedContent;
+      // Replace placeholders in translated content with original ayah boxes
+      let mergedContent = translatedAIContent;
+      ayahBoxesArray.forEach((ayahBox, index) => {
+        const placeholder = `__AYAH_BOX_${index}__`;
+        mergedContent = mergedContent.replace(placeholder, ayahBox);
+      });
+      
+      // Process any new ayah references that might have been created in the translated text
+      const processedContent = await formatResponse(mergedContent);
+      
+      return processedContent;
     } catch (error) {
       // Error merging translated content
       // Fallback: return the translated content directly if merging fails

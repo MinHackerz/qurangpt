@@ -375,9 +375,23 @@ export default function Home() {
         }
 
         // Use optimized translation for AI content only - translate TO English
-        // Detect source language from current content to translate back to English
-        const detectedSourceLang = detectLanguage(aiContentToTranslate);
-        const translation = await translateAIContent(aiContentToTranslate, 'en', detectedSourceLang);
+        // Use the current language as source (since we know what language the content is currently in)
+        const sourceLanguage = chatManager.currentLanguage || detectLanguage(aiContentToTranslate);
+        console.log('🔄 Translating to English from:', sourceLanguage);
+        console.log('🔄 Current content language:', chatManager.currentLanguage);
+        console.log('🔄 AI content to translate (first 200 chars):', aiContentToTranslate.substring(0, 200));
+        
+        // If source language is English, no need to translate
+        if (sourceLanguage === 'en') {
+          console.log('🔄 Content is already in English, no translation needed');
+          chatManager.setCurrentLanguage('en');
+          chatManager.setIsTranslating(false);
+          chatManager.setTranslationProgress(0);
+          clearInterval(progressInterval);
+          return;
+        }
+        
+        const translation = await translateAIContent(aiContentToTranslate, 'en', sourceLanguage);
         
         // Complete progress with smooth animation
         chatManager.setTranslationProgress(100);
@@ -404,7 +418,7 @@ export default function Home() {
           if (questionsToTranslate.length > 0) {
             // Translating questions to English
             const questionsToTranslateText = questionsToTranslate.join('\n\n');
-            const translatedQuestionsText = await translateAIContent(questionsToTranslateText, 'en', detectedSourceLang);
+            const translatedQuestionsText = await translateAIContent(questionsToTranslateText, 'en', sourceLanguage);
             const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
             
             // Questions translation completed
