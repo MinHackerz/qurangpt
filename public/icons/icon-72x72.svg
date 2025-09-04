@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="36" cy="36" r="34" fill="url(#grad1)" stroke="#ffffff" stroke-width="2"/>
+  
+  <!-- Quran book icon -->
+  <rect x="18" y="14.4" width="36" height="43.199999999999996" rx="2" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Book lines -->
+  <line x1="21.599999999999998" y1="25.2" x2="50.4" y2="25.2" stroke="#10b981" stroke-width="1.5"/>
+  <line x1="21.599999999999998" y1="32.4" x2="50.4" y2="32.4" stroke="#10b981" stroke-width="1.5"/>
+  <line x1="21.599999999999998" y1="39.6" x2="50.4" y2="39.6" stroke="#10b981" stroke-width="1.5"/>
+  <line x1="21.599999999999998" y1="46.800000000000004" x2="50.4" y2="46.800000000000004" stroke="#10b981" stroke-width="1.5"/>
+  
+  <!-- Crescent moon -->
+  <path d="M 43.199999999999996 10.799999999999999 A 8 8 0 0 1 43.199999999999996 18 A 6 6 0 0 0 43.199999999999996 10.799999999999999 Z" fill="#ffffff" opacity="0.8"/>
+  
+  <!-- Star -->
+  <polygon points="43.199999999999996,7.2 44.64,12.959999999999999 50.4,12.959999999999999 46.08,15.84 47.52,21.599999999999998 43.199999999999996,18.72 38.88,21.599999999999998 40.32000000000001,15.84 36,12.959999999999999 41.76,12.959999999999999" fill="#ffffff" opacity="0.9"/>
+</svg>

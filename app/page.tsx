@@ -18,6 +18,8 @@ import {
   ThemeToggle,
   WaveAnimationContainer
 } from './components';
+import InstallPrompt from './components/InstallPrompt';
+import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 
 
 import { useChatManager } from './hooks/useChatManager';
@@ -848,6 +850,12 @@ export default function Home() {
 
         {/* Footer - Hidden when chat is active */}
         {!chatManager.isChatActive && <Footer />}
+        
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
+        
+        {/* Service Worker Registration */}
+        <ServiceWorkerRegistration />
       </div>
 
       {/* Tafsir functionality is now handled in ResponseSection component */}

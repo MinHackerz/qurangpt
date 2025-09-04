@@ -250,6 +250,10 @@ export default function ChatSectionOutput({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         className="mb-0 fixed bottom-[-100px] left-0 right-0 overflow-hidden z-50"
+        style={{
+          // PWA safe area support
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
 
       {/* Full-width background color from warning text to extreme bottom of page */}

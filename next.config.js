@@ -5,6 +5,16 @@ const nextConfig = {
     optimizePackageImports: ['@heroicons/react'],
   },
   
+  // PWA configuration
+  async rewrites() {
+    return [
+      {
+        source: '/sw.js',
+        destination: '/sw.js',
+      },
+    ];
+  },
+  
   // Headers for production audio compatibility
   async headers() {
     return [
