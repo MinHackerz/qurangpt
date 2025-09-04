@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
+import { useAIResponse } from './useAIResponse';
 
 export const useTranslationManager = () => {
+  const { formatResponse } = useAIResponse();
   // Function to extract AI-generated content for translation
   const extractAIContentForTranslation = useCallback((formattedResponse: string) => {
     try {
@@ -50,56 +52,21 @@ export const useTranslationManager = () => {
   }, []);
 
   // Function to merge translated AI content with preserved API content
-  const mergeTranslatedContent = useCallback((originalFormattedResponse: string, translatedAIContent: string) => {
+  const mergeTranslatedContent = useCallback(async (originalFormattedResponse: string, translatedAIContent: string) => {
     try {
-      // Create a temporary DOM element to parse the original HTML
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = originalFormattedResponse;
+      // First, process the translated content for ayah references
+      const processedTranslatedContent = await formatResponse(translatedAIContent);
       
-      // Split the translated AI content into paragraphs
-      const translatedParagraphs = translatedAIContent.split('\n\n').filter(p => p.trim().length > 0);
-      let paragraphIndex = 0;
-      
-      // Function to replace AI-generated text while preserving API components
-      const replaceAIText = (node: Node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          const text = node.textContent?.trim();
-          if (text && text.length > 0) {
-            const parent = node.parentElement;
-            if (parent && !parent.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
-              // This is AI-generated text that should be replaced
-              if (paragraphIndex < translatedParagraphs.length) {
-                node.textContent = translatedParagraphs[paragraphIndex];
-                paragraphIndex++;
-              }
-            }
-          }
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          const element = node as Element;
-          // Skip API-fetched components
-          if (!element.classList.contains('stylish-ayah-reference') && 
-              !element.classList.contains('tafsir-content') && 
-              !element.classList.contains('enhanced-audio-player') &&
-              !element.closest('.stylish-ayah-reference, .tafsir-content, .enhanced-audio-player')) {
-            // Process child nodes for AI-generated content
-            for (const child of Array.from(element.childNodes)) {
-              replaceAIText(child);
-            }
-          }
-        }
-      };
-      
-      replaceAIText(tempDiv);
-      
-      const result = tempDiv.innerHTML;
-      // Content merged successfully
-      return result;
+      // Simply return the processed translated content
+      // This ensures ayah references in translated content are properly converted to ayah boxes
+      return processedTranslatedContent;
     } catch (error) {
       // Error merging translated content
       // Fallback: return the translated content directly if merging fails
+      console.error('Error merging translated content:', error);
       return translatedAIContent;
     }
-  }, []);
+  }, [formatResponse]);
 
   // Optimized translation function for AI content only
   const translateAIContent = useCallback(async (aiContent: string, targetLanguage: string, sourceLanguage?: string): Promise<string> => {

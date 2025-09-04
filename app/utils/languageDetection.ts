@@ -2,22 +2,69 @@
 // Extracted from SuggestedQuestions.tsx for consistent language detection across the app
 
 export const detectLanguage = (text: string): string => {
+  // PRODUCTION-GRADE LANGUAGE DETECTION
   // If text is very short, default to English
   if (text.length < 10) {
     return 'en';
   }
-
-  // Check if text is predominantly English (common words, punctuation, etc.)
-  const englishPattern = /^[a-zA-Z\s\.,!?'"()-]+$/;
-  if (englishPattern.test(text)) {
+  
+  // CRITICAL: Special handling for QuickQuestions - always treat as English
+  const quickQuestionPatterns = [
+    'What is the purpose of life according to Islam?',
+    'Who is Prophet Muhammad (PBUH)?',
+    'What does the Quran say about Allah?'
+  ];
+  
+  if (quickQuestionPatterns.some(pattern => text.includes(pattern) || pattern.includes(text))) {
+    console.log('🔒 PRODUCTION: QuickQuestion detected - forcing English');
+    return 'en';
+  }
+  
+  // CRITICAL: Force English for any question that starts with English question words
+  const englishQuestionStarters = /^(what|who|when|where|why|how|which|whose|whom|is|are|was|were|do|does|did|will|would|could|should|may|might|can|must|shall)\s/i;
+  if (englishQuestionStarters.test(text.trim())) {
+    console.log('🔒 PRODUCTION: English question starter detected - forcing English');
+    return 'en';
+  }
+  
+  // CRITICAL: Force English for any text containing Islamic terms in English
+  const islamicEnglishTerms = /(islam|quran|allah|prophet|muhammad|purpose|life|according|says|about|question|answer|explain|tell|me|please|thank|thanks|islamic|muslim|faith|belief|prayer|fasting|charity|pilgrimage|hajj|umrah|mosque|imam|sheikh|scholar|tafsir|hadith|sunnah|sharia|fiqh|aqeedah|tawheed|salah|zakat|sawm|hajj|umrah)/i;
+  if (islamicEnglishTerms.test(text)) {
+    console.log('🔒 PRODUCTION: Islamic English terms detected - forcing English');
     return 'en';
   }
 
-  // Check if text contains mostly English words with some special characters
-  const englishWords = text.toLowerCase().match(/[a-z]+/g) || [];
-  const totalWords = text.split(/\s+/).filter(word => word.length > 0).length;
-  if (totalWords > 0 && englishWords.length / totalWords > 0.7) {
-    return 'en';
+  // Check if text contains non-Latin characters first (skip English check if so)
+  const nonLatinPattern = /[^\u0000-\u007F\u00A0-\u00FF\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]/;
+  if (nonLatinPattern.test(text)) {
+    // Contains non-Latin characters, skip English pattern check
+  } else {
+    // Only check for English if text contains only Latin characters
+    const englishPattern = /^[a-zA-Z0-9\s\.,!?'"()\-:;@#$%&*+=<>[\]{}|\\\/~`]+$/;
+    if (englishPattern.test(text)) {
+      // This could be English or another Latin-script language, continue to word analysis
+    }
+  }
+
+  // Check if text contains common English words (more reliable than character-based detection)
+  const commonEnglishWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must', 'shall', 'this', 'that', 'these', 'those', 'a', 'an', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'what', 'who', 'when', 'where', 'why', 'how', 'which', 'whose', 'whom', 'islam', 'quran', 'allah', 'prophet', 'muhammad', 'purpose', 'life', 'according', 'says', 'about', 'question', 'answer', 'explain', 'tell', 'me', 'please', 'thank', 'thanks'];
+  const textWords = text.toLowerCase().match(/[a-z]+/g) || [];
+  const englishWordCount = textWords.filter(word => commonEnglishWords.includes(word)).length;
+  
+  // More aggressive English detection for Islamic content
+  if (textWords.length > 0) {
+    const englishRatio = englishWordCount / textWords.length;
+    // Lower threshold for English detection, especially for Islamic content
+    if (englishRatio > 0.2) {
+      return 'en';
+    }
+    
+    // Special case: if text contains Islamic terms in English, likely English
+    const islamicEnglishTerms = ['islam', 'quran', 'allah', 'prophet', 'muhammad', 'purpose', 'life', 'according', 'says', 'about', 'question', 'answer', 'explain', 'tell', 'me', 'please', 'thank', 'thanks', 'what', 'who', 'when', 'where', 'why', 'how', 'which', 'whose', 'whom'];
+    const hasIslamicTerms = textWords.some(word => islamicEnglishTerms.includes(word));
+    if (hasIslamicTerms && englishRatio > 0.1) {
+      return 'en';
+    }
   }
 
   // Unicode script-based detection for non-Latin scripts
@@ -72,12 +119,20 @@ export const detectLanguage = (text: string): string => {
     ka: /[\u10A0-\u10FF]{3,}/, // Require at least 3 Georgian characters
     hy: /[\u0530-\u058F]{3,}/, // Require at least 3 Armenian characters
     
+    // Baltic languages - more conservative detection
+    et: /[\u0100-\u017F]{3,}/, // Require at least 3 Estonian characters (Latin with diacritics)
+    lv: /[\u0100-\u017F]{3,}/, // Require at least 3 Latvian characters (Latin with diacritics)
+    lt: /[\u0100-\u017F]{3,}/, // Require at least 3 Lithuanian characters (Latin with diacritics)
+    
+    // Turkic languages - more conservative detection
+    az: /[\u0100-\u017F\u0180-\u024F]{3,}/, // Require at least 3 Azerbaijani characters (Latin with extended)
+    kk: /[\u0400-\u04FF\u0490-\u0491]{3,}/, // Require at least 3 Kazakh characters (Cyrillic with Kazakh-specific)
+    ky: /[\u0400-\u04FF\u0490-\u0491]{3,}/, // Require at least 3 Kyrgyz characters (Cyrillic with Kyrgyz-specific)
+    uz: /[\u0400-\u04FF\u0490-\u0491]{3,}/, // Require at least 3 Uzbek characters (Cyrillic with Uzbek-specific)
+    tk: /[\u0400-\u04FF\u0490-\u0491]{3,}/, // Require at least 3 Turkmen characters (Cyrillic with Turkmen-specific)
+    tg: /[\u0400-\u04FF\u0490-\u0491]{3,}/, // Require at least 3 Tajik characters (Cyrillic with Tajik-specific)
+    
     // Central Asian scripts - more conservative detection
-    kk: /[\u0400-\u04FF]{3,}/, // Require at least 3 Kazakh characters
-    ky: /[\u0400-\u04FF]{3,}/, // Require at least 3 Kyrgyz characters
-    uz: /[\u0400-\u04FF]{3,}/, // Require at least 3 Uzbek characters
-    tk: /[\u0400-\u04FF]{3,}/, // Require at least 3 Turkmen characters
-    tg: /[\u0400-\u04FF]{3,}/, // Require at least 3 Tajik characters
     mn: /[\u1800-\u18AF]{3,}/, // Require at least 3 Mongolian characters
     
     // African scripts - more conservative detection
@@ -131,8 +186,8 @@ export const detectLanguage = (text: string): string => {
       el: ['που', 'με', 'ένα', 'για', 'είναι', 'πώς', 'περισσότερο', 'από', 'και', 'τους', 'αυτό', 'αυτή', 'είναι', 'έχει', 'κάνει', 'λέει'],
       
       // Asian languages
-      id: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan'],
-      ms: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan'],
+      id: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan', 'dengan', 'adalah', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan'],
+      ms: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan', 'sudah', 'bisa', 'tidak', 'adalah', 'ada', 'membuat', 'mengatakan', 'kejayaan', 'berkait', 'rapat', 'pemahaman', 'pelaksanaan', 'tujuan', 'ditentukan', 'oleh', 'sejati', 'diukur', 'kebendaan', 'pencapaian', 'duniawi', 'ketaatan', 'keimanan', 'soleh', 'keredhaan', 'matlamat', 'mencapai', 'kebahagiaan', 'dunia', 'akhirat'],
       jv: ['sing', 'lan', 'iki', 'iku', 'kanggo', 'ing', 'jero', 'karo', 'saka', 'bakal', 'wis', 'bisa', 'ora', 'iku', 'ana', 'gawe', 'ngomong'],
       su: ['anu', 'jeung', 'ieu', 'eta', 'pikeun', 'di', 'jero', 'jeung', 'ti', 'bakal', 'geus', 'bisa', 'henteu', 'eta', 'aya', 'nyieun', 'ngomong'],
       ceb: ['nga', 'ug', 'kini', 'kana', 'para', 'sa', 'sa', 'ug', 'gikan', 'mahimong', 'na', 'makahimo', 'dili', 'kana', 'naa', 'buhat', 'ingon'],
@@ -153,6 +208,14 @@ export const detectLanguage = (text: string): string => {
       ig: ['nke', 'na', 'nke', 'nke', 'maka', 'na', 'na', 'na', 'site', 'nke', 'nke', 'bụ', 'kwa', 'nke', 'dị', 'bụ', 'nwere', 'mee', 'kwuo'],
       am: ['የሚሆን', 'እና', 'ይህ', 'ያ', 'ለ', 'ውስጥ', 'እና', 'እና', 'ከ', 'ይህ', 'ያ', 'ነው', 'ም', 'በጣም', 'እንደ', 'ሆን', 'አለው', 'ያድርግ', 'ንገር'],
       so: ['kaas', 'iyo', 'kani', 'kaas', 'u', 'ku', 'iyo', 'iyo', 'ka', 'kani', 'kaas', 'waa', 'sidoo', 'aad', 'sida', 'ah', 'leeyahay', 'samee', 'sheeg'],
+      
+      // Baltic languages
+      et: ['mis', 'ja', 'see', 'on', 'et', 'kui', 'või', 'aga', 'kõik', 'see', 'see', 'on', 'olema', 'tegema', 'ütlema'],
+      lv: ['kas', 'un', 'tas', 'ir', 'ka', 'kā', 'vai', 'bet', 'visi', 'tas', 'tas', 'ir', 'būt', 'darīt', 'teikt'],
+      lt: ['kuris', 'ir', 'vienas', 'dėl', 'yra', 'kaip', 'daugiau', 'iš', 'ir', 'jų', 'šis', 'šis', 'yra', 'turėti', 'daryti', 'sakyti'],
+      
+      // Turkic languages
+      az: ['hansı', 'ilə', 'bir', 'üçün', 'var', 'necə', 'daha', 'dan', 'və', 'onların', 'bu', 'bu', 'var', 'olmaq', 'etmək', 'demək'],
       
       // Other languages
       af: ['wat', 'met', 'een', 'vir', 'is', 'hoe', 'meer', 'van', 'en', 'har', 'dit', 'dit', 'is', 'hawwe', 'dwaan', 'sizze'],
@@ -224,6 +287,11 @@ export const detectLanguage = (text: string): string => {
 
 // Validate and sanitize language code
 export const validateLanguageCode = (lang: string): string => {
-  const supportedLanguages = ['en', 'ar', 'ur', 'hi', 'bn', 'id', 'ms', 'tr', 'fa', 'es', 'fr', 'de', 'ru', 'zh', 'ja', 'ko', 'ta', 'te', 'ml', 'kn', 'gu', 'pa', 'or', 'as', 'mr', 'ne', 'si', 'my', 'km', 'lo', 'th', 'vi', 'sw', 'ha', 'yo', 'ig', 'am', 'so'];
+  const supportedLanguages = [
+    // Major languages
+    'en', 'ar', 'zh', 'hi', 'es', 'fr', 'de', 'ja', 'ko', 'pt', 'it', 'ru', 'tr', 'nl', 'sv', 'da', 'no', 'fi', 'pl', 'cs', 'hu', 'ro', 'bg', 'hr', 'sk', 'sl', 'et', 'lv', 'lt', 'el', 'he', 'th', 'vi', 'id', 'ms', 'tl', 'bn', 'ur', 'fa', 'ta', 'te', 'ml', 'kn', 'gu', 'pa', 'or', 'as', 'mr', 'ne', 'si', 'my', 'km', 'lo', 'sw', 'ha', 'yo', 'ig', 'am', 'so', 'zu', 'xh', 'af', 'sq', 'mk', 'be', 'uk', 'kk', 'ky', 'uz', 'tk', 'tg', 'mn', 'ka', 'hy', 'az',
+    // Additional languages
+    'ku', 'ps', 'sd', 'ug', 'ckb', 'yi', 'jv', 'su', 'ceb', 'haw', 'mi', 'sm', 'to', 'fj', 'eo', 'la', 'hmn', 'co', 'fy', 'ht', 'lb', 'mg', 'ny', 'sn', 'ff', 'wo', 'bm', 'dyu', 'ee', 'gaa', 'ti', 'om'
+  ];
   return supportedLanguages.includes(lang) ? lang : 'en';
 };

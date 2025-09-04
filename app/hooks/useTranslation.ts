@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { detectLanguage as detectLanguageUtil, validateLanguageCode } from '../utils/languageDetection';
 
 interface Translation {
   translatedText: string;
@@ -162,66 +163,8 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
   }, [cache, cacheTimeout, generateCacheKey]);
 
   const detectLanguage = useCallback(async (text: string): Promise<string> => {
-    // Advanced language detection using multiple heuristics
-    const patterns = {
-      ar: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/,
-      fa: /[\u0600-\u06FF].*[\u06A9\u06AF\u06CC\u067E\u0686\u0698]/,
-      ur: /[\u0600-\u06FF].*[\u0627\u0628\u067E\u062A\u0679]/,
-      hi: /[\u0900-\u097F]/,
-      bn: /[\u0980-\u09FF]/,
-      ta: /[\u0B80-\u0BFF]/,
-      te: /[\u0C00-\u0C7F]/,
-      ml: /[\u0D00-\u0D7F]/,
-      zh: /[\u4e00-\u9fff]/,
-      ja: /[\u3040-\u309f\u30a0-\u30ff]/,
-      ko: /[\uac00-\ud7af]/,
-      ru: /[\u0400-\u04FF]/,
-      th: /[\u0E00-\u0E7F]/,
-      am: /[\u1200-\u137F]/,
-      so: /[qxc].*[aeiou]|dh|kh|sh/i,
-      sw: /na|wa|ya|ni|ku|m[aeiou]/i,
-    };
-
-    // Check for script-based detection first
-    for (const [lang, pattern] of Object.entries(patterns)) {
-      if (pattern.test(text)) {
-        return lang;
-      }
-    }
-
-    // Statistical analysis for Latin-script languages
-    const textLower = text.toLowerCase();
-    const words = textLower.split(/\s+/).filter(word => word.length > 2);
-    
-    if (words.length === 0) return 'en';
-
-    // Language-specific word patterns and frequency analysis
-    const languageIndicators = {
-      es: ['que', 'con', 'una', 'por', 'para', 'como', 'más', 'pero', 'sus', 'les'],
-      fr: ['que', 'des', 'les', 'une', 'sur', 'avec', 'son', 'dans', 'pour', 'tout'],
-      de: ['der', 'die', 'und', 'den', 'das', 'von', 'ist', 'mit', 'auf', 'für'],
-      it: ['che', 'con', 'una', 'per', 'sono', 'come', 'più', 'dalla', 'anche', 'loro'],
-      pt: ['que', 'com', 'uma', 'para', 'são', 'como', 'mais', 'pela', 'seus', 'tem'],
-      id: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan'],
-      ms: ['yang', 'dan', 'ini', 'itu', 'untuk', 'pada', 'dalam', 'dengan', 'dari', 'akan'],
-      tr: ['bir', 'bu', 've', 'de', 'da', 'ile', 'için', 'var', 'olan', 'gibi'],
-      vi: ['của', 'và', 'có', 'trong', 'với', 'để', 'được', 'cho', 'từ', 'này']
-    };
-
-    let maxScore = 0;
-    let detectedLang = 'en';
-
-    for (const [lang, indicators] of Object.entries(languageIndicators)) {
-      const matches = words.filter(word => indicators.includes(word)).length;
-      const score = matches / Math.min(words.length, 20); // Normalize by text length
-      
-      if (score > maxScore) {
-        maxScore = score;
-        detectedLang = lang;
-      }
-    }
-
-    return maxScore > 0.1 ? detectedLang : 'en';
+    // Use the centralized language detection utility
+    return detectLanguageUtil(text);
   }, []);
 
   const translate = useCallback(async (
@@ -242,12 +185,15 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
     // Detect source language if not provided
     const detectedSourceLang = sourceLanguage || await detectLanguage(text);
     
+    // Validate target language
+    const validatedTargetLang = validateLanguageCode(targetLanguage);
+    
     // Skip translation if source and target are the same
-    if (detectedSourceLang === targetLanguage) {
+    if (detectedSourceLang === validatedTargetLang) {
       const sameLanguageResult: Translation = {
         translatedText: text,
         sourceLanguage: detectedSourceLang,
-        targetLanguage,
+        targetLanguage: validatedTargetLang,
         confidence: 1.0,
         translationId: `same_${Date.now()}`
       };
@@ -280,7 +226,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
           },
           body: JSON.stringify({
             text,
-            targetLanguage,
+            targetLanguage: validatedTargetLang,
             sourceLanguage: detectedSourceLang,
             context,
             preserveFormatting
@@ -305,7 +251,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
         const translation: Translation = await response.json();
         
         // Cache the successful translation
-        const cacheKey = generateCacheKey(text, targetLanguage);
+        const cacheKey = generateCacheKey(text, validatedTargetLang);
         setCache(prev => ({
           ...prev,
           [cacheKey]: {
@@ -376,16 +322,139 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
   ]);
 
   const getSupportedLanguages = useCallback(async () => {
-    try {
-      const response = await fetch('/api/translate');
-      if (!response.ok) {
-        throw new Error('Failed to fetch supported languages');
+    // Return comprehensive supported languages list matching languageDetection.ts
+    return {
+      supportedLanguages: {
+        // Major languages
+        'en': { name: 'English', nativeName: 'English' },
+        'ar': { name: 'Arabic', nativeName: 'العربية' },
+        'zh': { name: 'Chinese', nativeName: '中文' },
+        'hi': { name: 'Hindi', nativeName: 'हिन्दी' },
+        'es': { name: 'Spanish', nativeName: 'Español' },
+        'fr': { name: 'French', nativeName: 'Français' },
+        'de': { name: 'German', nativeName: 'Deutsch' },
+        'ja': { name: 'Japanese', nativeName: '日本語' },
+        'ko': { name: 'Korean', nativeName: '한국어' },
+        'pt': { name: 'Portuguese', nativeName: 'Português' },
+        'it': { name: 'Italian', nativeName: 'Italiano' },
+        'ru': { name: 'Russian', nativeName: 'Русский' },
+        'tr': { name: 'Turkish', nativeName: 'Türkçe' },
+        'nl': { name: 'Dutch', nativeName: 'Nederlands' },
+        'sv': { name: 'Swedish', nativeName: 'Svenska' },
+        'da': { name: 'Danish', nativeName: 'Dansk' },
+        'no': { name: 'Norwegian', nativeName: 'Norsk' },
+        'fi': { name: 'Finnish', nativeName: 'Suomi' },
+        'pl': { name: 'Polish', nativeName: 'Polski' },
+        'cs': { name: 'Czech', nativeName: 'Čeština' },
+        'hu': { name: 'Hungarian', nativeName: 'Magyar' },
+        'ro': { name: 'Romanian', nativeName: 'Română' },
+        'bg': { name: 'Bulgarian', nativeName: 'Български' },
+        'hr': { name: 'Croatian', nativeName: 'Hrvatski' },
+        'sk': { name: 'Slovak', nativeName: 'Slovenčina' },
+        'sl': { name: 'Slovenian', nativeName: 'Slovenščina' },
+        'et': { name: 'Estonian', nativeName: 'Eesti' },
+        'lv': { name: 'Latvian', nativeName: 'Latviešu' },
+        'lt': { name: 'Lithuanian', nativeName: 'Lietuvių' },
+        'el': { name: 'Greek', nativeName: 'Ελληνικά' },
+        'he': { name: 'Hebrew', nativeName: 'עברית' },
+        'th': { name: 'Thai', nativeName: 'ไทย' },
+        'vi': { name: 'Vietnamese', nativeName: 'Tiếng Việt' },
+        'id': { name: 'Indonesian', nativeName: 'Bahasa Indonesia' },
+        'ms': { name: 'Malay', nativeName: 'Bahasa Melayu' },
+        'tl': { name: 'Filipino', nativeName: 'Filipino' },
+        'bn': { name: 'Bengali', nativeName: 'বাংলা' },
+        'ur': { name: 'Urdu', nativeName: 'اردو' },
+        'fa': { name: 'Persian', nativeName: 'فارسی' },
+        'ta': { name: 'Tamil', nativeName: 'தமிழ்' },
+        'te': { name: 'Telugu', nativeName: 'తెలుగు' },
+        'ml': { name: 'Malayalam', nativeName: 'മലയാളം' },
+        'kn': { name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
+        'gu': { name: 'Gujarati', nativeName: 'ગુજરાતી' },
+        'pa': { name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ' },
+        'or': { name: 'Odia', nativeName: 'ଓଡ଼ିଆ' },
+        'as': { name: 'Assamese', nativeName: 'অসমীয়া' },
+        'mr': { name: 'Marathi', nativeName: 'मराठी' },
+        'ne': { name: 'Nepali', nativeName: 'नेपाली' },
+        'si': { name: 'Sinhala', nativeName: 'සිංහල' },
+        'my': { name: 'Myanmar', nativeName: 'မြန်မာ' },
+        'km': { name: 'Khmer', nativeName: 'ខ្មែរ' },
+        'lo': { name: 'Lao', nativeName: 'ລາວ' },
+        'sw': { name: 'Swahili', nativeName: 'Kiswahili' },
+        'ha': { name: 'Hausa', nativeName: 'Hausa' },
+        'yo': { name: 'Yoruba', nativeName: 'Yorùbá' },
+        'ig': { name: 'Igbo', nativeName: 'Igbo' },
+        'am': { name: 'Amharic', nativeName: 'አማርኛ' },
+        'so': { name: 'Somali', nativeName: 'Soomaali' },
+        'zu': { name: 'Zulu', nativeName: 'IsiZulu' },
+        'xh': { name: 'Xhosa', nativeName: 'IsiXhosa' },
+        'af': { name: 'Afrikaans', nativeName: 'Afrikaans' },
+        'sq': { name: 'Albanian', nativeName: 'Shqip' },
+        'mk': { name: 'Macedonian', nativeName: 'Македонски' },
+        'be': { name: 'Belarusian', nativeName: 'Беларуская' },
+        'uk': { name: 'Ukrainian', nativeName: 'Українська' },
+        'kk': { name: 'Kazakh', nativeName: 'Қазақша' },
+        'ky': { name: 'Kyrgyz', nativeName: 'Кыргызча' },
+        'uz': { name: 'Uzbek', nativeName: 'Oʻzbekcha' },
+        'tk': { name: 'Turkmen', nativeName: 'Türkmençe' },
+        'tg': { name: 'Tajik', nativeName: 'Тоҷикӣ' },
+        'mn': { name: 'Mongolian', nativeName: 'Монгол' },
+        'ka': { name: 'Georgian', nativeName: 'ქართული' },
+        'hy': { name: 'Armenian', nativeName: 'Հայերեն' },
+        'az': { name: 'Azerbaijani', nativeName: 'Azərbaycan' },
+        
+        // Additional languages from languageDetection.ts
+        'ku': { name: 'Kurdish', nativeName: 'Kurdî' },
+        'ps': { name: 'Pashto', nativeName: 'پښتو' },
+        'sd': { name: 'Sindhi', nativeName: 'سنڌي' },
+        'ug': { name: 'Uyghur', nativeName: 'ئۇيغۇرچە' },
+        'ckb': { name: 'Central Kurdish', nativeName: 'کوردیی ناوەندی' },
+        'yi': { name: 'Yiddish', nativeName: 'ייִדיש' },
+        'jv': { name: 'Javanese', nativeName: 'Basa Jawa' },
+        'su': { name: 'Sundanese', nativeName: 'Basa Sunda' },
+        'ceb': { name: 'Cebuano', nativeName: 'Cebuano' },
+        'haw': { name: 'Hawaiian', nativeName: 'ʻŌlelo Hawaiʻi' },
+        'mi': { name: 'Maori', nativeName: 'Te Reo Māori' },
+        'sm': { name: 'Samoan', nativeName: 'Gagana Samoa' },
+        'to': { name: 'Tongan', nativeName: 'Lea fakatonga' },
+        'fj': { name: 'Fijian', nativeName: 'Vosa Vakaviti' },
+        'eo': { name: 'Esperanto', nativeName: 'Esperanto' },
+        'la': { name: 'Latin', nativeName: 'Latina' },
+        'hmn': { name: 'Hmong', nativeName: 'Hmoob' },
+        'co': { name: 'Corsican', nativeName: 'Corsu' },
+        'fy': { name: 'Frisian', nativeName: 'Frysk' },
+        'ht': { name: 'Haitian Creole', nativeName: 'Kreyòl ayisyen' },
+        'lb': { name: 'Luxembourgish', nativeName: 'Lëtzebuergesch' },
+        'mg': { name: 'Malagasy', nativeName: 'Malagasy' },
+        'ny': { name: 'Chichewa', nativeName: 'Chichewa' },
+        'sn': { name: 'Shona', nativeName: 'ChiShona' },
+        'ff': { name: 'Fulani', nativeName: 'Fulfulde' },
+        'wo': { name: 'Wolof', nativeName: 'Wolof' },
+        'bm': { name: 'Bambara', nativeName: 'Bamanankan' },
+        'dyu': { name: 'Dyula', nativeName: 'Dyula' },
+        'ee': { name: 'Ewe', nativeName: 'Eʋegbe' },
+        'gaa': { name: 'Ga', nativeName: 'Ga' },
+        'ti': { name: 'Tigrinya', nativeName: 'ትግርኛ' },
+        'om': { name: 'Oromo', nativeName: 'Afaan Oromoo' },
+        
+        // Additional missing languages from languageDetection.ts
+        'ak': { name: 'Akan', nativeName: 'Akan' },
+        'bs': { name: 'Bosnian', nativeName: 'Bosanski' },
+        'ca': { name: 'Catalan', nativeName: 'Català' },
+        'gl': { name: 'Galician', nativeName: 'Galego' },
+        'is': { name: 'Icelandic', nativeName: 'Íslenska' },
+        'lg': { name: 'Luganda', nativeName: 'Luganda' },
+        'nr': { name: 'Southern Ndebele', nativeName: 'IsiNdebele' },
+        'rn': { name: 'Kirundi', nativeName: 'Ikirundi' },
+        'rw': { name: 'Kinyarwanda', nativeName: 'Ikinyarwanda' },
+        'sr': { name: 'Serbian', nativeName: 'Српски' },
+        'ss': { name: 'Swati', nativeName: 'SiSwati' },
+        'st': { name: 'Sesotho', nativeName: 'Sesotho' },
+        'tn': { name: 'Tswana', nativeName: 'Setswana' },
+        'ts': { name: 'Tsonga', nativeName: 'Xitsonga' },
+        'tw': { name: 'Twi', nativeName: 'Twi' },
+        've': { name: 'Venda', nativeName: 'Tshivenḓa' }
       }
-      return await response.json();
-    } catch (err) {
-      // Error fetching supported languages
-      throw err;
-    }
+    };
   }, []);
 
   const clearCache = useCallback(() => {

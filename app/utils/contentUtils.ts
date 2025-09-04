@@ -2,9 +2,15 @@
 export const processContentLinks = (content: string): string => {
   if (!content) return '';
   
-  // Check if content already contains HTML (like audio buttons)
+  // Check if content already contains HTML (like audio buttons or ayah boxes)
   // If it does, only process markdown links that are not inside HTML tags
   if (content.includes('<') && content.includes('>')) {
+    // Skip processing if content contains ayah boxes (stylish-ayah-reference class)
+    // This prevents interference with the ayah box formatting
+    if (content.includes('stylish-ayah-reference')) {
+      return content;
+    }
+    
     // Content contains HTML, process markdown links more carefully
     return content.replace(
       /(?<!<[^>]*)\[([^\]]+)\]\s*\(([^)]+)\)(?!\s*<)/g,

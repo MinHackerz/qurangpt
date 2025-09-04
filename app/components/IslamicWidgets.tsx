@@ -125,8 +125,13 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
     return () => clearInterval(timer);
   }, []);
 
-  // Get user location and fetch Islamic data
+  // Get user location and fetch Islamic data only when widgets are shown
   useEffect(() => {
+    // Only fetch data if widgets are actually shown
+    if (!showWidgets) {
+      return;
+    }
+
     const fetchIslamicData = async () => {
       try {
         setLoading(true);
@@ -207,7 +212,7 @@ export default function IslamicWidgets({ showWidgets }: IslamicWidgetsProps) {
     };
 
     fetchIslamicData();
-  }, []);
+  }, [showWidgets]); // Only run when showWidgets changes
 
   // Don't render if widgets should be hidden
   if (!showWidgets) {

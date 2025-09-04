@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
 import { detectLanguage } from '../utils/languageDetection';
+import { detectAyahReferences, AyahMatch } from '../utils/simpleAyahDetection';
 
 
 
@@ -58,16 +59,68 @@ export const useAIResponse = (isTextLarge: boolean = false) => {
   }, []);
 
   const getPrompt = useCallback((content: string) => {
-    const detectedLanguage = detectLanguage(content);
-    const languageInstructions = detectedLanguage !== 'en' ? 
-      `\n\n🚨 CRITICAL LANGUAGE REQUIREMENT - YOU MUST FOLLOW THIS EXACTLY: 
-- You MUST respond in the SAME LANGUAGE as the user's question (${detectedLanguage})
-- ALL your content must be in ${detectedLanguage} - introduction, explanations, conclusions, AND suggested questions
-- Only the Quranic verse references and technical formatting should remain in English
-- The suggested questions at the end must also be in ${detectedLanguage}
-- Do NOT mix languages - keep everything consistent
-- If you fail to follow this language requirement, your response will be rejected
-- This is a strict requirement - no exceptions allowed` : '';
+    // PRODUCTION-GRADE LANGUAGE DETECTION AND VALIDATION
+    let detectedLanguage = detectLanguage(content);
+    
+    // CRITICAL: Force English for any content that could be English
+    const isDefinitelyEnglish = (text: string): boolean => {
+      // Check for English structure
+      const englishPattern = /^[a-zA-Z0-9\s\.,!?'"()\-:;@#$%&*+=<>[\]{}|\\\/~`]+$/;
+      if (!englishPattern.test(text)) return false;
+      
+      // Check for English words (including Islamic terms)
+      const englishWords = /(what|who|when|where|why|how|is|are|was|were|the|and|or|but|in|on|at|to|for|of|with|by|islam|quran|allah|prophet|muhammad|purpose|life|according|says|about|question|answer|explain|tell|me|please|thank|thanks)/i;
+      return englishWords.test(text);
+    };
+    
+    // FORCE ENGLISH for any content that looks like English
+    if (isDefinitelyEnglish(content)) {
+      detectedLanguage = 'en';
+      console.log('🔒 PRODUCTION: Forcing English detection for content that is definitely English');
+    }
+    
+    // PRODUCTION LOGGING
+    console.log('🔍 PRODUCTION Language Detection:', {
+      content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+      detectedLanguage,
+      isQuickQuestion: content.includes('What is the purpose of life according to Islam?') || 
+                     content.includes('Who is Prophet Muhammad (PBUH)?') || 
+                     content.includes('What does the Quran say about Allah?'),
+      timestamp: new Date().toISOString()
+    });
+    
+    // PRODUCTION-GRADE LANGUAGE INSTRUCTIONS
+    let languageInstructions = '';
+    if (detectedLanguage === 'en') {
+      languageInstructions = `\n\n🚨🚨🚨 CRITICAL PRODUCTION REQUIREMENT - ZERO TOLERANCE FOR LANGUAGE INCONSISTENCY 🚨🚨🚨
+
+YOU ARE RESPONDING TO AN ENGLISH QUESTION. YOU MUST FOLLOW THESE RULES EXACTLY:
+
+1. RESPOND ONLY IN ENGLISH - NO OTHER LANGUAGE ALLOWED
+2. ALL content must be in English: introduction, explanations, conclusions, suggested questions
+3. ONLY Quranic verse references and technical formatting remain in English
+4. DO NOT use Arabic, Urdu, or any other language in your response
+5. MAINTAIN English consistency throughout the entire response
+6. THIS IS A PRODUCTION APPLICATION - ZERO TOLERANCE FOR LANGUAGE MIXING
+7. IF YOU MIX LANGUAGES, YOUR RESPONSE WILL BE REJECTED
+8. USERS DEPEND ON THIS FOR CRITICAL ISLAMIC RESEARCH - NO MISTAKES ALLOWED
+
+VIOLATION OF THESE RULES WILL RESULT IN RESPONSE REJECTION.`;
+    } else {
+      languageInstructions = `\n\n🚨🚨🚨 CRITICAL PRODUCTION REQUIREMENT - ZERO TOLERANCE FOR LANGUAGE INCONSISTENCY 🚨🚨🚨
+
+YOU ARE RESPONDING TO A ${detectedLanguage.toUpperCase()} QUESTION. YOU MUST FOLLOW THESE RULES EXACTLY:
+
+1. RESPOND ONLY IN ${detectedLanguage.toUpperCase()} - NO OTHER LANGUAGE ALLOWED
+2. ALL content must be in ${detectedLanguage}: introduction, explanations, conclusions, suggested questions
+3. ONLY Quranic verse references and technical formatting remain in English
+4. DO NOT mix languages - maintain ${detectedLanguage} consistency throughout
+5. THIS IS A PRODUCTION APPLICATION - ZERO TOLERANCE FOR LANGUAGE MIXING
+6. IF YOU MIX LANGUAGES, YOUR RESPONSE WILL BE REJECTED
+7. USERS DEPEND ON THIS FOR CRITICAL ISLAMIC RESEARCH - NO MISTAKES ALLOWED
+
+VIOLATION OF THESE RULES WILL RESULT IN RESPONSE REJECTION.`;
+    }
 
     return `You are an AI-powered Islamic Library with experience as a Quran Scholar/Researcher. Your task is to answer questions by providing authentic references from the Holy Quran.
 
@@ -110,13 +163,7 @@ CRITICAL RESPONSE QUALITY REQUIREMENTS:
 - Write in complete, well-formed sentences
 - Avoid any text that appears to be cut off or incomplete
 
-🚨 CRITICAL LANGUAGE CONSISTENCY REQUIREMENTS:
-- The ENTIRE response must be in the SAME LANGUAGE as the user's question
-- This includes: introduction, explanations, and conclusions
-- Do NOT mix languages - keep everything consistent
-- Only Quranic references and technical formatting should remain in English
-- If you write in English when the user asked in ${detectedLanguage}, your response will be rejected
-- This is a strict requirement with no exceptions${languageInstructions}
+${languageInstructions}
 
 Example format:
 "Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
@@ -130,37 +177,46 @@ Question: ${content}`;
     // First, validate that the response is complete and properly formatted
     const validatedResponse = validateAndCleanResponse(response);
     
-    // Find all ayah references and prepare them with tafsir data
-    const ayahRegex = /"([^"]+)"\s*\[(.*?)\:\s*(\d+)\]\((https?:\/\/[^\s)]+)\)/g;
-    const ayahMatches: RegExpExecArray[] = [];
-    let match;
-    
-    // Extract all matches
-    while ((match = ayahRegex.exec(validatedResponse)) !== null) {
-      ayahMatches.push(match);
-    }
+    // Find all ayah references using universal detection system
+    const ayahMatches = detectAyahReferences(validatedResponse);
     
     // Process each ayah with tafsir data
     const ayahReplacements = await Promise.all(
-      ayahMatches.map(async (match) => {
-        const [, verseText, surahName, ayahNumber, url] = match;
+      ayahMatches.map(async (match: AyahMatch) => {
+        const { verseText, surahName, ayahNumber, url } = match;
+        
         const surahNumber = getSurahNumber(surahName.trim());
         if (!surahNumber) {
-          // Could not find surah number - using fallback value 1
+          console.log(`⚠️ Could not find surah number for: "${surahName}" - using fallback value 1`);
         }
         const finalSurahNumber = surahNumber || 1;
-        const ayahNum = parseInt(ayahNumber);
+        
+        // Handle verse ranges (e.g., "45-46" -> use "45" for tafsir)
+        const ayahNumberStr = ayahNumber.toString();
+        const isRange = ayahNumberStr.includes('-');
+        const ayahNum = isRange ? parseInt(ayahNumberStr.split('-')[0]) : parseInt(ayahNumberStr);
         const globalAyahNumber = calculateGlobalAyahNumber(finalSurahNumber, ayahNum);
         const ayahId = `ayah-${finalSurahNumber}-${ayahNum}-${Date.now()}`;
         
+        console.log(`📋 Final ayah data:`, { 
+          finalSurahNumber, 
+          ayahNum, 
+          ayahNumber: ayahNumberStr,
+          isRange,
+          surahName: surahName.trim() 
+        });
+        
         // Fetch tafsir data
+        console.log(`🔍 Fetching tafsir for Surah ${finalSurahNumber}, Ayah ${ayahNum}`);
         const tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
+        console.log(`📚 Tafsir data received:`, tafsirData);
         
         // Generate tafsir buttons and content
         let tafsirButtonsHTML = '';
         let tafsirContentHTML = '';
         
         if (tafsirData && tafsirData.tafsirs && tafsirData.tafsirs.length > 0) {
+          console.log(`✅ Tafsir found: ${tafsirData.tafsirs.length} tafsirs available`);
           tafsirButtonsHTML = `
             <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
               <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,6 +277,7 @@ Question: ${content}`;
           tafsirButtonsHTML += `
               </div>`;
         } else {
+          console.log(`❌ No tafsir found for Surah ${finalSurahNumber}, Ayah ${ayahNum}`);
           tafsirButtonsHTML = `
             <div class="text-center text-gray-500 dark:text-gray-400 flex-1 flex flex-col justify-center">
               <svg class="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,12 +289,13 @@ Question: ${content}`;
         }
         
         return {
-          match: match[0],
+          match: match.originalMatch,
           replacement: `<div class="stylish-ayah-reference mb-8 max-w-none w-full pt-5 pb-5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
-            <div class="bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full ">
-              <!-- Clean Header -->
-              <div class="bg-gray-100 dark:bg-gray-900 px-4 py-3">
+            <div class="bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full relative">
+              <!-- CORRECTED HEADER: Top left = Surah name + verse number, Top right = surah:verse format -->
+              <div class="bg-gray-100 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
+                  <!-- Top Left: Surah name and verse number -->
                   <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                       <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
@@ -246,16 +304,16 @@ Question: ${content}`;
                     </div>
                     <div>
                       <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)]">${surahName}</h3>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">Verse ${ayahNumber}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Verse ${ayahNumberStr}</p>
                     </div>
                   </div>
-                  <span class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-mono rounded-lg">${finalSurahNumber}:${ayahNumber}</span>
+                  <!-- Top Right: Surah:Verse format -->
+                  <span class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-mono rounded-lg">${finalSurahNumber}:${ayahNumberStr}</span>
                 </div>
               </div>
               
-              <!-- Verse Content -->
+              <!-- AYAH TEXT: Exact ayah text below header -->
               <div class="p-4">
-                <!-- Verse Text -->
                 <div class="text-center mb-6">
                   <div class="relative">
                     <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -left-4">"</div>
@@ -266,32 +324,12 @@ Question: ${content}`;
                   </div>
                 </div>
                 
-                <!-- Audio Player and Tafsir Buttons -->
+                <!-- AUDIO AND TAFSIR BOXES: Left = Audio, Right = Tafsir -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <!-- Audio Player -->
+                  <!-- LEFT BOX: Audio Player -->
                   <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between shadow-sm">
-                    <!-- Surah and Ayah Info Header -->
-                    <div class="bg-gray-100 dark:bg-gray-900 mb-2 pb-2 border-b border-gray-200 dark:border-gray-700 px-3 py-2 -mx-3 -mt-3 rounded-t-xl">
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                          <div class="w-6 h-6 bg-gray-800 dark:bg-gray-200 rounded-full flex items-center justify-center shadow-sm">
-                            <svg class="w-3 h-3 text-white dark:text-gray-800" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
-                          </div>
-                          <div>
-                            <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">${surahName}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">Ayah ${ayahNumber}</div>
-                          </div>
-                        </div>
-                        <div class="text-right">
-                          <div class="text-xs text-gray-600 dark:text-gray-400 font-medium">Surah ${finalSurahNumber}</div>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <!-- Audio Controls -->
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 mb-3">
                       <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}" type="button">
                         <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
@@ -303,7 +341,7 @@ Question: ${content}`;
                       </div>
                     </div>
                     
-                    <!-- Full-Width Audio Waveform Progress Bar -->
+                    <!-- Audio Waveform Progress Bar -->
                     <div class="mt-3">
                       <style>
                         @keyframes waveProgress {
@@ -374,8 +412,8 @@ Question: ${content}`;
                     </div>
                   </div>
                   
-                  <!-- Tafsir Buttons -->
-                  <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between ">
+                  <!-- RIGHT BOX: Tafsir Buttons -->
+                  <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between">
                     ${tafsirButtonsHTML}
                   </div>
                 </div>
@@ -385,7 +423,7 @@ Question: ${content}`;
                 
                 <!-- Source Button - Bottom Right Corner -->
                 <div class="absolute bottom-3 right-3">
-                  <a href="https://alquran.cloud/ayah?reference=${finalSurahNumber}:${ayahNumber}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-md border border-gray-200 dark:border-gray-600 transition-all duration-200 text-xs font-medium">
+                  <a href="https://alquran.cloud/ayah?reference=${finalSurahNumber}:${ayahNumberStr}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-md border border-gray-200 dark:border-gray-600 transition-all duration-200 text-xs font-medium">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
@@ -403,6 +441,21 @@ Question: ${content}`;
     let processedText = response;
     ayahReplacements.forEach(({ match, replacement }) => {
       processedText = processedText.replace(match, replacement);
+    });
+    
+    // FALLBACK: Convert any remaining ayah references to simple inline links
+    // This ensures ALL ayah references are displayed as clickable links
+    const fallbackAyahPattern = /"([^"]+)"\s*\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
+    processedText = processedText.replace(fallbackAyahPattern, (match, verseText, surahName, ayahNumber, url) => {
+      // Convert to simple inline format: "verse text" [Surah Name: Ayah Number](link)
+      return `"${verseText}" <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 underline decoration-green-500 hover:decoration-green-600 transition-colors duration-200 font-medium">[${surahName}: ${ayahNumber}]</a>`;
+    });
+    
+    // Also handle unquoted ayah references as fallback
+    const fallbackUnquotedPattern = /\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
+    processedText = processedText.replace(fallbackUnquotedPattern, (match, surahName, ayahNumber, url) => {
+      // Convert to simple inline format: [Surah Name: Ayah Number](link)
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 underline decoration-green-500 hover:decoration-green-600 transition-colors duration-200 font-medium">[${surahName}: ${ayahNumber}]</a>`;
     });
     
     // Continue with other formatting
@@ -489,19 +542,29 @@ Question: ${content}`;
       return;
     }
 
+    // PRODUCTION: Force English detection for any content that could be English
+    const detectedLanguage = detectLanguage(trimmedContent);
+    console.log('🔍 PRODUCTION: Final language detection result:', detectedLanguage);
+
     // Audio cleanup is now handled in ResponseSection component
 
     // Activate chat mode
     setIsProcessing(true);
     setSummary('');
+    setDisplayedContent('');
+    setCurrentLanguage('');
+    setShowTranslateSection?.(false);
     // Don't set showSummary(false) to avoid hiding SuggestedQuestions during processing
     setError('');
 
     const prompt = getPrompt(trimmedContent);
-    const detectedLanguage = detectLanguage(trimmedContent);
 
     try {
+      console.log(`🔄 PRODUCTION: Generating response for question: ${trimmedContent.substring(0, 50)}...`);
+      
       const response = await generate_response_with_gemini(prompt);
+      
+      console.log(`✅ PRODUCTION: Response generated successfully`);
       
       const formattedResponse = await formatResponse(response);
       
@@ -509,12 +572,16 @@ Question: ${content}`;
       setDisplayedContent(formattedResponse);
       setCurrentLanguage(detectedLanguage);
       setShowSummary(true);
-      setShowTranslateSection?.(true); // Show translate section when response is received
+      setShowTranslateSection?.(true);
+      
+      console.log('✅ PRODUCTION: Response displayed successfully');
+      
     } catch (error) {
+      console.error('🚨 PRODUCTION: Error generating response:', error);
       if (error instanceof Error) {
-        setError(error.message);
+        setError(`Failed to generate response: ${error.message}. Please try again.`);
       } else {
-        setError('An unexpected error occurred');
+        setError('An unexpected error occurred. Please try again.');
       }
     } finally {
       setIsProcessing(false);

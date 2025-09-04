@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Head from 'next/head';
 import Script from 'next/script';
+import { detectLanguage } from './utils/languageDetection';
 import {
   HeroSection,
   QuickQuestions,
@@ -61,36 +62,6 @@ export default function Home() {
   }, [chatManager.isProcessing, chatManager.isChatActive]);
   
   // Audio functionality is now handled directly in ResponseSection component
-  
-  // Simple language detection function
-  const detectLanguage = useCallback((text: string): string => {
-    // Unicode script-based detection for major languages
-    const patterns = {
-      ar: /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/,
-      hi: /[\u0900-\u097F]/,
-      bn: /[\u0980-\u09FF]/,
-      ur: /[\u0600-\u06FF]/,
-      fa: /[\u0600-\u06FF]/,
-      tr: /[\u00C7\u00E7\u011E\u011F\u0130\u0131\u015E\u015F]/,
-      es: /[áéíóúñü]/,
-      fr: /[àâäéèêëïîôöùûüÿç]/,
-      de: /[äöüß]/,
-      ru: /[\u0400-\u04FF]/,
-      zh: /[\u4e00-\u9fff]/,
-      ja: /[\u3040-\u309f\u30a0-\u30ff]/,
-      ko: /[\uac00-\ud7af]/,
-      th: /[\u0E00-\u0E7F]/
-    };
-    
-    for (const [lang, pattern] of Object.entries(patterns)) {
-      if (pattern.test(text)) {
-        return lang;
-      }
-    }
-    
-    // Default to English
-    return 'en';
-  }, []);
   
   // Cache for original language output to restore when switching back
   const [originalLanguageCache, setOriginalLanguageCache] = useState<{
@@ -412,7 +383,7 @@ export default function Home() {
         chatManager.setTranslationProgress(100);
         
         // Merge translated AI content with preserved API components
-        const mergedContent = mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation);
+        const mergedContent = await mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation);
         
         chatManager.setDisplayedContent(mergedContent);
         chatManager.setCurrentLanguage('en');
@@ -504,7 +475,7 @@ export default function Home() {
       // Translation result
       
             // Merge translated AI content with preserved API components
-      const mergedContent = mergeTranslatedContent(contentToExtract, translation);
+      const mergedContent = await mergeTranslatedContent(contentToExtract, translation);
       
       // Merged content
       
@@ -556,7 +527,7 @@ export default function Home() {
       chatManager.setIsTranslating(false);
       chatManager.setTranslationProgress(0);
     }
-  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, originalLanguageCache, detectLanguage, originalAIQuestions]);
+  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, originalLanguageCache, originalAIQuestions]);
 
   // Audio management functions are now handled directly in ResponseSection component
 
