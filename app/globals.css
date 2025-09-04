@@ -1229,7 +1229,11 @@ body {
       /* PWA status bar styling */
   .pwa-status-bar {
     height: env(safe-area-inset-top, 0px);
-    background: #f9fafb;
+    background: #f9fafb; /* Light mode - matches bg-gray-50 */
+  }
+  
+  .dark .pwa-status-bar {
+    background: #030712; /* Dark mode - matches bg-gray-950 */
   }
   }
   

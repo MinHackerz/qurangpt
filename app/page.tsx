@@ -20,6 +20,7 @@ import {
 } from './components';
 import InstallPrompt from './components/InstallPrompt';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
+import DynamicThemeColor from './components/DynamicThemeColor';
 
 
 import { useChatManager } from './hooks/useChatManager';
@@ -856,6 +857,9 @@ export default function Home() {
         
         {/* Service Worker Registration */}
         <ServiceWorkerRegistration />
+        
+        {/* Dynamic Theme Color */}
+        <DynamicThemeColor />
       </div>
 
       {/* Tafsir functionality is now handled in ResponseSection component */}
