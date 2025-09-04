@@ -1229,7 +1229,7 @@ body {
       /* PWA status bar styling */
   .pwa-status-bar {
     height: env(safe-area-inset-top, 0px);
-    background: #f3f4f6;
+    background: #f9fafb;
   }
   }
   

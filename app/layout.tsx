@@ -50,7 +50,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#f3f4f6',
+  themeColor: '#f9fafb',
 };
 
 export default function RootLayout({
@@ -67,7 +67,7 @@ export default function RootLayout({
         
         {/* PWA Meta Tags */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#f3f4f6" />
+        <meta name="theme-color" content="#f9fafb" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="QuranGPT" />
