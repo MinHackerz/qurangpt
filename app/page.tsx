@@ -40,7 +40,7 @@ declare global {
 export default function Home() {
   // Use custom hooks for better organization
   const chatManager = useChatManager();
-  const { copyAIContentOnly, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent } = useTranslationManager();
+  const { copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, mergeTranslatedContent, translateAIContent } = useTranslationManager();
   
   // Prevent scrolling during wave animation
   useEffect(() => {
@@ -204,15 +204,27 @@ export default function Home() {
   // Handle copying AI content (both question and response)
   const handleCopyAIContent = useCallback(async () => {
     try {
+      // Extract ayah info before processing
+      const ayahInfo = extractAyahInfoForCopy(chatManager.displayedContent || chatManager.summary);
+      
       // Extract AI content for copying
       const aiContentToCopy = extractAIContentForTranslation(chatManager.displayedContent || chatManager.summary);
       
       // Clean up the AI content (remove HTML tags, etc.)
-      const cleanAIContent = aiContentToCopy
+      let cleanAIContent = aiContentToCopy
         .replace(/<[^>]*>/g, '') // Remove HTML tags
         .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
         .replace(/^\s+|\s+$/gm, '') // Trim lines
         .trim();
+
+      // Replace __AYAH_BOX_N__ placeholders with formatted ayah references
+      if (ayahInfo.length > 0) {
+        ayahInfo.forEach((ayah, index) => {
+          const placeholder = `__AYAH_BOX_${index}__`;
+          const formattedAyah = `"${ayah.text}" (${ayah.surahName} ${ayah.ayahNumber})`;
+          cleanAIContent = cleanAIContent.replace(placeholder, formattedAyah);
+        });
+      }
 
       // Combine question and response
       const combinedContent = `Question: ${chatManager.submittedQuestion}\n\nAnswer: ${cleanAIContent}`;
@@ -228,7 +240,7 @@ export default function Home() {
         chatManager.setCopied
       );
     }
-  }, [copyAIContentOnly, extractAIContentForTranslation, chatManager]);
+  }, [copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, chatManager]);
 
   // Handle text size toggle
   const handleTextSizeToggle = useCallback(() => {

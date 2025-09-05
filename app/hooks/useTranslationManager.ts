@@ -90,9 +90,51 @@ export const useTranslationManager = () => {
     }
   }, []);
 
+  // Function to extract ayah information from ayah boxes for copying
+  const extractAyahInfoForCopy = useCallback((formattedResponse: string) => {
+    try {
+      // Create a temporary DOM element to parse the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = formattedResponse;
+      
+      // Find all ayah boxes and extract their information
+      const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
+      const ayahInfo: Array<{text: string, surahName: string, ayahNumber: string, surahNumber: string}> = [];
+      
+      ayahBoxes.forEach((ayahBox) => {
+        // Find the blockquote containing the ayah text
+        const blockquote = ayahBox.querySelector('blockquote');
+        if (blockquote) {
+          const ayahText = blockquote.textContent?.trim();
+          if (ayahText) {
+            // Extract surah name and ayah number from data attributes
+            const surahName = ayahBox.getAttribute('data-surah-name') || '';
+            const ayahNumber = ayahBox.getAttribute('data-ayah-number') || '';
+            const surahNumber = ayahBox.getAttribute('data-surah-number') || '';
+            
+            ayahInfo.push({
+              text: ayahText,
+              surahName: surahName,
+              ayahNumber: ayahNumber,
+              surahNumber: surahNumber
+            });
+          }
+        }
+      });
+      
+      return ayahInfo;
+    } catch (error) {
+      console.error('Error extracting ayah info:', error);
+      return [];
+    }
+  }, []);
+
   // Function to copy only AI-generated content (excluding API components)
   const copyAIContentOnly = useCallback(async (displayedContent: string, summary: string, setCopied: (copied: boolean) => void) => {
     try {
+      // Extract ayah info before processing
+      const ayahInfo = extractAyahInfoForCopy(displayedContent || summary);
+      
       // Extract only AI-generated content for copying
       const aiContentToCopy = extractAIContentForTranslation(displayedContent || summary);
       
@@ -105,11 +147,20 @@ export const useTranslationManager = () => {
       }
 
       // Clean up the AI content for copying (remove HTML tags, etc.)
-      const cleanAIContent = aiContentToCopy
+      let cleanAIContent = aiContentToCopy
         .replace(/<[^>]*>/g, '') // Remove HTML tags
         .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
         .replace(/^\s+|\s+$/gm, '') // Trim lines
         .trim();
+
+      // Replace __AYAH_BOX_N__ placeholders with formatted ayah references
+      if (ayahInfo.length > 0) {
+        ayahInfo.forEach((ayah, index) => {
+          const placeholder = `__AYAH_BOX_${index}__`;
+          const formattedAyah = `"${ayah.text}" (${ayah.surahName} ${ayah.ayahNumber})`;
+          cleanAIContent = cleanAIContent.replace(placeholder, formattedAyah);
+        });
+      }
 
       await navigator.clipboard.writeText(cleanAIContent);
       setCopied(true);
@@ -125,10 +176,11 @@ export const useTranslationManager = () => {
         // Failed to copy summary as fallback
       }
     }
-  }, [extractAIContentForTranslation]);
+  }, [extractAIContentForTranslation, extractAyahInfoForCopy]);
 
   return {
     extractAIContentForTranslation,
+    extractAyahInfoForCopy,
     mergeTranslatedContent,
     translateAIContent,
     copyAIContentOnly,
