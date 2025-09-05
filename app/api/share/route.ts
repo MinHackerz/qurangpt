@@ -35,7 +35,9 @@ const storeSharedContent = async (shareId: string, content: SharedContent): Prom
     const kv = getKV();
     if (kv) {
       console.log('Using Netlify KV for storage');
-      await kv.set(`share-${shareId}`, JSON.stringify(content));
+      // Set TTL to 7 days (604800 seconds) to match our expiration logic
+      await kv.set(`share-${shareId}`, JSON.stringify(content), { ttl: 604800 });
+      console.log('Content stored with 7-day TTL');
     } else {
       // Fallback for local development - use in-memory store
       console.log('Using local in-memory store for development');
@@ -176,8 +178,14 @@ export async function GET(request: NextRequest) {
 
     // Check if content is expired (older than 7 days)
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const contentAge = Date.now() - content.timestamp;
+    const contentAgeHours = Math.round(contentAge / (1000 * 60 * 60));
+    
+    console.log('Content age:', contentAgeHours, 'hours');
+    console.log('Content timestamp:', new Date(content.timestamp).toISOString());
+    
     if (content.timestamp < sevenDaysAgo) {
-      console.log('Content expired for shareId:', shareId);
+      console.log('Content expired for shareId:', shareId, 'Age:', contentAgeHours, 'hours');
       // Content is expired, we could delete it here if needed
       return NextResponse.json(
         { error: 'Share not found or expired' },
