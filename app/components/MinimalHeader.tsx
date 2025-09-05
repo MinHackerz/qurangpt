@@ -4,47 +4,74 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import ShareModal from './ShareModal';
 
 interface MinimalHeaderProps {
   isVisible: boolean;
   // New props for the moved buttons
-  onCopyAIContent?: () => void;
-  copied?: boolean;
   userQuestion?: string;
   isTextLarge?: boolean;
   onTextSizeToggle?: () => void;
+  // Share functionality props
+  onShareContent?: () => void;
+  shareUrl?: string;
+  isSharing?: boolean;
+  showShareSuccess?: boolean;
+  // Copy functionality props
+  onCopyContent?: () => void;
+  copied?: boolean;
+  content?: string;
 }
 
 export default function MinimalHeader({ 
   isVisible, 
-  onCopyAIContent, 
-  copied, 
   userQuestion, 
   isTextLarge, 
-  onTextSizeToggle 
+  onTextSizeToggle,
+  onShareContent,
+  shareUrl,
+  isSharing,
+  showShareSuccess,
+  onCopyContent,
+  copied,
+  content
 }: MinimalHeaderProps) {
-  const [showCopySuccess, setShowCopySuccess] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [pendingShareModal, setPendingShareModal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-
-  // Show copy success message
-  useEffect(() => {
-    if (copied && onCopyAIContent) {
-      setShowCopySuccess(true);
-      const timer = setTimeout(() => setShowCopySuccess(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [copied, onCopyAIContent]);
 
   // Prevent hydration mismatch for theme toggle
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Open share modal when share URL is generated
+  useEffect(() => {
+    if (pendingShareModal && shareUrl && !isSharing) {
+      setShowShareModal(true);
+      setPendingShareModal(false);
+    }
+  }, [shareUrl, isSharing, pendingShareModal]);
+
   if (!isVisible) return null;
 
   const handleBackToHome = () => {
     window.location.reload();
+  };
+
+  // Handle share button click - open modal instead of direct copy
+  const handleShareClick = () => {
+    // If we have a share URL, open modal directly
+    if (shareUrl) {
+      setShowShareModal(true);
+    } else {
+      // If no share URL, trigger the share creation first
+      if (onShareContent) {
+        setPendingShareModal(true);
+        onShareContent();
+      }
+    }
   };
 
   return (
@@ -108,53 +135,6 @@ export default function MinimalHeader({
             </motion.button>
           )}
 
-          {/* Copy Button - Only show when there's content */}
-          {userQuestion && onCopyAIContent && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onCopyAIContent}
-              className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
-                showCopySuccess 
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' 
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-              title="Copy question and response"
-            >
-              <AnimatePresence mode="wait">
-                {showCopySuccess ? (
-                  <motion.svg
-                    key="tick"
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: 90 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </motion.svg>
-                ) : (
-                  <motion.svg
-                    key="copy"
-                    initial={{ scale: 0, rotate: 90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: -90 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                  </motion.svg>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          )}
 
           {/* Theme Toggle Button - Minimalist */}
           <motion.button
@@ -181,6 +161,67 @@ export default function MinimalHeader({
               )}
             </motion.div>
           </motion.button>
+
+          {/* Share Button - Only show when there's content */}
+          {userQuestion && onShareContent && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleShareClick}
+              disabled={isSharing}
+              className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
+                showShareSuccess 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                  : isSharing
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              title={showShareSuccess ? "Share link copied!" : "Share this content"}
+            >
+              <AnimatePresence mode="wait">
+                {showShareSuccess ? (
+                  <motion.svg
+                    key="tick"
+                    initial={{ scale: 0, rotate: -90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    exit={{ scale: 0, rotate: 90 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </motion.svg>
+                ) : isSharing ? (
+                  <motion.div
+                    key="loading"
+                    className="w-4 h-4"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </motion.div>
+                ) : (
+                  <motion.svg
+                    key="share"
+                    initial={{ scale: 0, rotate: 90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    exit={{ scale: 0, rotate: -90 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                  </motion.svg>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          )}
         </div>
       </div>
 
@@ -251,21 +292,25 @@ export default function MinimalHeader({
           </motion.button>
         )}
 
-        {/* Copy Button - Only show when there's content AND output is generated */}
-        {userQuestion && onCopyAIContent && (
+
+        {/* Share Button - Only show when there's content AND output is generated */}
+        {userQuestion && onShareContent && (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onCopyAIContent}
+            onClick={handleShareClick}
+            disabled={isSharing}
             className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm ${
-              showCopySuccess 
-                ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200' 
+              showShareSuccess 
+                ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
+                : isSharing
+                ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                 : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
             }`}
-            title="Copy question and response"
+            title={showShareSuccess ? "Share link copied!" : "Share this content"}
           >
             <AnimatePresence mode="wait">
-              {showCopySuccess ? (
+              {showShareSuccess ? (
                 <motion.svg
                   key="tick"
                   initial={{ scale: 0, rotate: -90 }}
@@ -279,9 +324,20 @@ export default function MinimalHeader({
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </motion.svg>
+              ) : isSharing ? (
+                <motion.div
+                  key="loading"
+                  className="w-5 h-5"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </motion.div>
               ) : (
                 <motion.svg
-                  key="copy"
+                  key="share"
                   initial={{ scale: 0, rotate: 90 }}
                   animate={{ scale: 1, rotate: 0 }}
                   exit={{ scale: 0, rotate: -90 }}
@@ -291,14 +347,27 @@ export default function MinimalHeader({
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </motion.svg>
               )}
             </AnimatePresence>
           </motion.button>
         )}
+
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={shareUrl || (typeof window !== 'undefined' ? window.location.href : '')}
+        title={userQuestion ? `QuranGPT: ${userQuestion}` : 'QuranGPT Answer'}
+        question={userQuestion || 'QuranGPT Question'}
+        isCreatingShare={isSharing}
+        onCopyContent={onCopyContent}
+        copied={copied}
+        content={content}
+      />
     </motion.header>
   );
 }

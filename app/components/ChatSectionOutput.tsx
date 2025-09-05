@@ -160,6 +160,7 @@ export default function ChatSectionOutput({
     }
   }, [translationCache, originalText, onTranslationChange, getCachedTranslation]);
 
+
   // Auto-resize function with improved mobile support
   const autoResize = (target: HTMLTextAreaElement) => {
     // Reset height to auto to get accurate scrollHeight
@@ -519,6 +520,7 @@ export default function ChatSectionOutput({
         </div>
       </div>
       
+
       {/* Hidden scrollbar styles for language buttons */}
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {

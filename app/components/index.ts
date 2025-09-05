@@ -10,5 +10,6 @@ export { default as ThemeToggle } from './ThemeToggle';
 export { default as WaveAnimationContainer } from './WaveAnimationContainer';
 export { default as SuggestedQuestions } from './SuggestedQuestions';
 export { default as MinimalHeader } from './MinimalHeader';
+export { default as ShareButton } from './ShareButton';
 export { default as TransparencySection } from './TransparencySection';
 export { QuestionDisplay } from './QuestionDisplay';

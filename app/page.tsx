@@ -15,6 +15,7 @@ import {
   IslamicWidgets,
   SuggestedQuestions,
   MinimalHeader,
+  ShareButton,
   TransparencySection,
   ThemeToggle,
   WaveAnimationContainer
@@ -75,6 +76,11 @@ export default function Home() {
   
   // Text size toggle state
   const [isTextLarge, setIsTextLarge] = useState(false);
+  
+  // Share functionality state
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [showShareSuccess, setShowShareSuccess] = useState(false);
   
   // AI Response hook with text size state
   const { askQuran } = useAIResponse(isTextLarge);
@@ -241,6 +247,57 @@ export default function Home() {
       );
     }
   }, [copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, chatManager]);
+
+  // Handle sharing AI content
+  const handleShareContent = useCallback(async () => {
+    if (!chatManager.submittedQuestion || (!chatManager.displayedContent && !chatManager.summary)) {
+      return;
+    }
+
+    setIsSharing(true);
+    setShowShareSuccess(false);
+
+    try {
+      // Prepare the content for sharing
+      const responseContent = chatManager.displayedContent || chatManager.summary;
+      const title = chatManager.submittedQuestion.length > 50 
+        ? chatManager.submittedQuestion.substring(0, 50) + '...' 
+        : chatManager.submittedQuestion;
+
+      // Call the share API
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: chatManager.submittedQuestion,
+          response: responseContent,
+          title: title
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create share link');
+      }
+
+      const data = await response.json();
+      setShareUrl(data.shareUrl);
+
+      // Copy the share URL to clipboard
+      await navigator.clipboard.writeText(data.shareUrl);
+      
+      // Show success feedback
+      setShowShareSuccess(true);
+      setTimeout(() => setShowShareSuccess(false), 3000);
+
+    } catch (error) {
+      console.error('Error sharing content:', error);
+      // You could add a toast notification here for error feedback
+    } finally {
+      setIsSharing(false);
+    }
+  }, [chatManager.submittedQuestion, chatManager.displayedContent, chatManager.summary]);
 
   // Handle text size toggle
   const handleTextSizeToggle = useCallback(() => {
@@ -662,12 +719,18 @@ export default function Home() {
         {/* Minimal Header - Only visible when chat is active */}
         <MinimalHeader 
           isVisible={chatManager.isChatActive}
-          onCopyAIContent={handleCopyAIContent}
-          copied={chatManager.copied}
-          userQuestion={chatManager.content}
+          userQuestion={chatManager.submittedQuestion}
           isTextLarge={isTextLarge}
           onTextSizeToggle={handleTextSizeToggle}
+          onShareContent={handleShareContent}
+          shareUrl={shareUrl}
+          isSharing={isSharing}
+          showShareSuccess={showShareSuccess}
+          onCopyContent={handleCopyAIContent}
+          copied={chatManager.copied}
+          content={chatManager.displayedContent || chatManager.summary}
         />
+
 
         {/* Hero Section - Hidden when chat is active */}
         {!chatManager.isChatActive && (
@@ -826,6 +889,8 @@ export default function Home() {
                   userQuestion={chatManager.submittedQuestion}
                   onQuestionEdit={handleSuggestedQuestionClick}
                   isTextLarge={isTextLarge}
+                  shareUrl={shareUrl}
+                  onShare={handleShareContent}
                 />
               )}
             </div>

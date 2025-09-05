@@ -4,8 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useQuestionEditing } from '../hooks/useQuestionEditing';
 import { useGlobalEventDelegation } from '../hooks/useGlobalEventDelegation';
+import { useScrollDetection } from '../hooks/useScrollDetection';
 import { processContentLinks } from '../utils/contentUtils';
+import { createShareLink, getShareText } from '../utils/shareUtils';
 import { QuestionDisplay } from './QuestionDisplay';
+import ShareButton from './ShareButton';
+import ShareModal from './ShareModal';
 
 
 
@@ -18,6 +22,9 @@ interface ResponseSectionProps {
   userQuestion?: string; // New prop for the user's question
   onQuestionEdit?: (newQuestion: string) => void; // New prop for editing the user's question
   isTextLarge?: boolean; // Text size state from parent
+  // Share functionality props
+  shareUrl?: string; // URL to share
+  onShare?: () => void; // Callback when share is triggered
 }
 
 export default function ResponseSection({ 
@@ -28,14 +35,29 @@ export default function ResponseSection({
   onCopyAIContent,
   userQuestion,
   onQuestionEdit,
-  isTextLarge
+  isTextLarge,
+  shareUrl,
+  onShare
 }: ResponseSectionProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [showCopySuccess, setShowCopySuccess] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [generatedShareUrl, setGeneratedShareUrl] = useState<string>('');
+  const [isCreatingShare, setIsCreatingShare] = useState(false);
+
+  // Use displayedContent if provided, otherwise use summary
+  const contentToShow = displayedContent || summary;
 
   // Use custom hooks
   const questionEditing = useQuestionEditing(userQuestion, onQuestionEdit);
   useGlobalEventDelegation();
+  
+  // Scroll detection for share button
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { isAtBottom, isScrolled } = useScrollDetection({
+    threshold: 0.8,
+    enabled: showSummary && !!contentToShow,
+    containerRef: containerRef
+  });
 
   // Show copy success message
   useEffect(() => {
@@ -45,14 +67,44 @@ export default function ResponseSection({
       return () => clearTimeout(timer);
     }
   }, [copied, onCopyAIContent]);
-
-
-
-  // Use displayedContent if provided, otherwise use summary
-  const contentToShow = displayedContent || summary;
   
   // Check if we should show welcome message (no content but showSummary is true)
   const shouldShowWelcome = showSummary && !contentToShow && !userQuestion;
+
+  // Handle share functionality
+  const handleShare = () => {
+    if (onShare) {
+      onShare();
+    } else {
+      setShowShareModal(true);
+    }
+  };
+
+  // Generate share URL if not provided
+  const finalShareUrl = shareUrl || generatedShareUrl || (typeof window !== 'undefined' ? window.location.href : '');
+
+  // Generate share title
+  const shareTitle = userQuestion ? `QuranGPT: ${userQuestion}` : 'QuranGPT Answer';
+
+  // Generate share URL when content is available
+  useEffect(() => {
+    if (userQuestion && contentToShow && !generatedShareUrl && !shareUrl) {
+      const generateShareUrl = async () => {
+        try {
+          const generatedUrl = await createShareLink({
+            question: userQuestion,
+            response: contentToShow,
+            title: `QuranGPT: ${userQuestion}`
+          });
+          setGeneratedShareUrl(generatedUrl);
+        } catch (error) {
+          console.error('Failed to create share link:', error);
+          setGeneratedShareUrl(window.location.href);
+        }
+      };
+      generateShareUrl();
+    }
+  }, [userQuestion, contentToShow, generatedShareUrl, shareUrl]);
   
   // Debug: Check if content contains audio buttons and ensure clickability
   useEffect(() => {
@@ -199,6 +251,20 @@ export default function ResponseSection({
           </div>
         </div>
       </motion.div>
+
+      {/* Share Modal */}
+      <ShareModal
+        key="share-modal"
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={finalShareUrl}
+        title={shareTitle}
+        question={userQuestion || 'QuranGPT Answer'}
+        isCreatingShare={isCreatingShare}
+        onCopyContent={onCopyAIContent}
+        copied={copied}
+        content={contentToShow}
+      />
     </AnimatePresence>
   );
 }
