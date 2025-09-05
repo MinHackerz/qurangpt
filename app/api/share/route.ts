@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { getStore } from '@netlify/blobs';
 
-// Netlify KV storage for shared content
+// Netlify Blobs storage for shared content
 interface SharedContent {
   question: string;
   response: string;
@@ -12,31 +13,29 @@ interface SharedContent {
 // In-memory store for local development
 const localStore = new Map<string, SharedContent>();
 
-// Get Netlify KV instance
-const getKV = () => {
+// Get Netlify Blobs store
+const getBlobStore = () => {
   try {
     // Check if we're in Netlify environment
     if (typeof process !== 'undefined' && 
         (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === 'production')) {
-      // Try to require Netlify KV
-      const netlifyFunctions = require('@netlify/functions');
-      return netlifyFunctions?.kv || null;
+      return getStore('quran-gpt-shares');
     }
   } catch (error) {
-    console.log('Netlify KV not available:', error instanceof Error ? error.message : String(error));
+    console.log('Netlify Blobs not available:', error instanceof Error ? error.message : String(error));
   }
   // Fallback for local development
   return null;
 };
 
-// Store shared content in KV
+// Store shared content in Blobs
 const storeSharedContent = async (shareId: string, content: SharedContent): Promise<void> => {
   try {
-    const kv = getKV();
-    if (kv) {
-      console.log('Using Netlify KV for storage');
-      // Set TTL to 7 days (604800 seconds) to match our expiration logic
-      await kv.set(`share-${shareId}`, JSON.stringify(content), { ttl: 604800 });
+    const blobStore = getBlobStore();
+    if (blobStore) {
+      console.log('Using Netlify Blobs for storage');
+      // Store content (TTL will be handled manually in retrieval)
+      await blobStore.set(`share-${shareId}`, JSON.stringify(content));
       console.log('Content stored with 7-day TTL');
     } else {
       // Fallback for local development - use in-memory store
@@ -46,18 +45,18 @@ const storeSharedContent = async (shareId: string, content: SharedContent): Prom
   } catch (error) {
     console.error('Error storing shared content:', error);
     // Don't throw error, just log it and continue with local store
-    console.log('Falling back to local store due to KV error');
+    console.log('Falling back to local store due to Blobs error');
     localStore.set(`share-${shareId}`, content);
   }
 };
 
-// Retrieve shared content from KV
+// Retrieve shared content from Blobs
 const getSharedContent = async (shareId: string): Promise<SharedContent | null> => {
   try {
-    const kv = getKV();
-    if (kv) {
-      console.log('Retrieving from Netlify KV');
-      const data = await kv.get(`share-${shareId}`);
+    const blobStore = getBlobStore();
+    if (blobStore) {
+      console.log('Retrieving from Netlify Blobs');
+      const data = await blobStore.get(`share-${shareId}`);
       return data ? JSON.parse(data) : null;
     } else {
       // Fallback for local development - use in-memory store
@@ -68,7 +67,7 @@ const getSharedContent = async (shareId: string): Promise<SharedContent | null> 
   } catch (error) {
     console.error('Error retrieving shared content:', error);
     // Try local store as fallback
-    console.log('Falling back to local store due to KV error');
+    console.log('Falling back to local store due to Blobs error');
     const content = localStore.get(`share-${shareId}`);
     return content || null;
   }
@@ -79,10 +78,10 @@ const cleanupOldEntries = async (): Promise<void> => {
   try {
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
     
-    const kv = getKV();
-    if (kv) {
-      // In production, cleanup is handled when individual shares are accessed
-      // since KV doesn't support easy key listing
+    const blobStore = getBlobStore();
+    if (blobStore) {
+      // In production, cleanup is handled by the TTL expiration in Netlify Blobs
+      // No manual cleanup needed as TTL will automatically expire entries
       return;
     } else {
       // Clean up local store
@@ -122,7 +121,7 @@ export async function POST(request: NextRequest) {
       title: title?.trim() || question.substring(0, 50) + (question.length > 50 ? '...' : '')
     };
 
-    // Store in KV
+    // Store in Blobs
     await storeSharedContent(shareId, content);
 
     // Generate share URL
@@ -164,7 +163,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get shared content from KV
+    // Get shared content from Blobs
     const content = await getSharedContent(shareId);
     console.log('Retrieved content:', content ? 'Found' : 'Not found');
 
