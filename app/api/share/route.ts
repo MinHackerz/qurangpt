@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     await storeSharedContent(shareId, content);
 
     // Generate share URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://quran-gpt.netlify.app';
     const shareUrl = `${baseUrl}/share/${shareId}`;
 
     return NextResponse.json({
