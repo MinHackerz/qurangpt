@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description: 'QuranGPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. It utilizes advanced language models to offer insightful and accurate responses, supported by relevant verses and interpretations from the Quran.',
     url: 'https://quran-gpt.netlify.app/',
     siteName: 'QuranGPT - Get the Guidance from the Holy Quran',
-    images: ['https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png'],
+    images: ['https://quran-gpt.netlify.app/QuranGPT-Thumbnail.png'],
     type: 'website',
   },
 };

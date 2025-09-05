@@ -23,14 +23,20 @@ export default function SharePage() {
   useEffect(() => {
     const fetchSharedContent = async () => {
       try {
+        console.log('Fetching shared content for shareId:', shareId);
         const response = await fetch(`/api/share?shareId=${encodeURIComponent(shareId)}`);
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
         
         if (!response.ok) {
           const errorData = await response.json();
+          console.error('API Error:', errorData);
           throw new Error(errorData.error || 'Failed to load shared content');
         }
 
         const data = await response.json();
+        console.log('Received data:', data);
         setSharedContent(data);
       } catch (err) {
         console.error('Error fetching shared content:', err);

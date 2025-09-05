@@ -14,11 +14,18 @@ const localStore = new Map<string, SharedContent>();
 
 // Get Netlify KV instance
 const getKV = () => {
-  if (typeof process !== 'undefined' && process.env.NETLIFY) {
-    // In Netlify environment
-    return require('@netlify/functions').kv;
+  try {
+    // Check if we're in Netlify environment
+    if (typeof process !== 'undefined' && 
+        (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === 'production')) {
+      // Try to require Netlify KV
+      const netlifyFunctions = require('@netlify/functions');
+      return netlifyFunctions?.kv || null;
+    }
+  } catch (error) {
+    console.log('Netlify KV not available:', error instanceof Error ? error.message : String(error));
   }
-  // Fallback for local development - you might want to use a different approach
+  // Fallback for local development
   return null;
 };
 
@@ -27,15 +34,18 @@ const storeSharedContent = async (shareId: string, content: SharedContent): Prom
   try {
     const kv = getKV();
     if (kv) {
+      console.log('Using Netlify KV for storage');
       await kv.set(`share-${shareId}`, JSON.stringify(content));
     } else {
       // Fallback for local development - use in-memory store
-      localStore.set(`share-${shareId}`, content);
       console.log('Using local in-memory store for development');
+      localStore.set(`share-${shareId}`, content);
     }
   } catch (error) {
     console.error('Error storing shared content:', error);
-    throw error;
+    // Don't throw error, just log it and continue with local store
+    console.log('Falling back to local store due to KV error');
+    localStore.set(`share-${shareId}`, content);
   }
 };
 
@@ -44,16 +54,21 @@ const getSharedContent = async (shareId: string): Promise<SharedContent | null> 
   try {
     const kv = getKV();
     if (kv) {
+      console.log('Retrieving from Netlify KV');
       const data = await kv.get(`share-${shareId}`);
       return data ? JSON.parse(data) : null;
     } else {
       // Fallback for local development - use in-memory store
+      console.log('Retrieving from local store');
       const content = localStore.get(`share-${shareId}`);
       return content || null;
     }
   } catch (error) {
     console.error('Error retrieving shared content:', error);
-    return null;
+    // Try local store as fallback
+    console.log('Falling back to local store due to KV error');
+    const content = localStore.get(`share-${shareId}`);
+    return content || null;
   }
 };
 
@@ -132,7 +147,15 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const shareId = url.searchParams.get('shareId');
 
+    console.log('GET request for shareId:', shareId);
+    console.log('Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NETLIFY: process.env.NETLIFY,
+      VERCEL: process.env.VERCEL
+    });
+
     if (!shareId) {
+      console.log('No shareId provided');
       return NextResponse.json(
         { error: 'Share ID is required' },
         { status: 400 }
@@ -141,8 +164,10 @@ export async function GET(request: NextRequest) {
 
     // Get shared content from KV
     const content = await getSharedContent(shareId);
+    console.log('Retrieved content:', content ? 'Found' : 'Not found');
 
     if (!content) {
+      console.log('Content not found for shareId:', shareId);
       return NextResponse.json(
         { error: 'Share not found or expired' },
         { status: 404 }
@@ -152,6 +177,7 @@ export async function GET(request: NextRequest) {
     // Check if content is expired (older than 7 days)
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
     if (content.timestamp < sevenDaysAgo) {
+      console.log('Content expired for shareId:', shareId);
       // Content is expired, we could delete it here if needed
       return NextResponse.json(
         { error: 'Share not found or expired' },
@@ -159,6 +185,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Returning content for shareId:', shareId);
     return NextResponse.json({
       shareId,
       question: content.question,
