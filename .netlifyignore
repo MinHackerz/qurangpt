@@ -1,0 +1,17 @@
+# Ignore data folder from Netlify deployment
+/data
+
+# Ignore node_modules
+/node_modules
+
+# Ignore build artifacts
+/.next
+/out
+/build
+
+# Ignore environment files
+.env
+.env*.local
+
+# Ignore OS files
+.DS_Store

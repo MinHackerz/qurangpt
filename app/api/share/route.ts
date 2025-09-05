@@ -1,67 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { promises as fs } from 'fs';
-import path from 'path';
 
-// File-based storage for shared content (persists across server restarts)
-const STORAGE_DIR = path.join(process.cwd(), 'data', 'shares');
-const STORAGE_FILE = path.join(STORAGE_DIR, 'shared-content.json');
-
-// Ensure storage directory exists
-const ensureStorageDir = async () => {
-  try {
-    await fs.mkdir(STORAGE_DIR, { recursive: true });
-  } catch (error) {
-    console.error('Error creating storage directory:', error);
-  }
-};
-
-// Load shared content from file
-const loadSharedContent = async (): Promise<Map<string, {
+// Netlify KV storage for shared content
+interface SharedContent {
   question: string;
   response: string;
   timestamp: number;
   title: string;
-}>> => {
+}
+
+// In-memory store for local development
+const localStore = new Map<string, SharedContent>();
+
+// Get Netlify KV instance
+const getKV = () => {
+  if (typeof process !== 'undefined' && process.env.NETLIFY) {
+    // In Netlify environment
+    return require('@netlify/functions').kv;
+  }
+  // Fallback for local development - you might want to use a different approach
+  return null;
+};
+
+// Store shared content in KV
+const storeSharedContent = async (shareId: string, content: SharedContent): Promise<void> => {
   try {
-    await ensureStorageDir();
-    const data = await fs.readFile(STORAGE_FILE, 'utf-8');
-    const parsed = JSON.parse(data);
-    return new Map(Object.entries(parsed));
+    const kv = getKV();
+    if (kv) {
+      await kv.set(`share-${shareId}`, JSON.stringify(content));
+    } else {
+      // Fallback for local development - use in-memory store
+      localStore.set(`share-${shareId}`, content);
+      console.log('Using local in-memory store for development');
+    }
   } catch (error) {
-    // File doesn't exist or is invalid, return empty map
-    return new Map();
+    console.error('Error storing shared content:', error);
+    throw error;
   }
 };
 
-// Save shared content to file
-const saveSharedContent = async (sharedContent: Map<string, {
-  question: string;
-  response: string;
-  timestamp: number;
-  title: string;
-}>) => {
+// Retrieve shared content from KV
+const getSharedContent = async (shareId: string): Promise<SharedContent | null> => {
   try {
-    await ensureStorageDir();
-    const data = Object.fromEntries(sharedContent);
-    await fs.writeFile(STORAGE_FILE, JSON.stringify(data, null, 2));
+    const kv = getKV();
+    if (kv) {
+      const data = await kv.get(`share-${shareId}`);
+      return data ? JSON.parse(data) : null;
+    } else {
+      // Fallback for local development - use in-memory store
+      const content = localStore.get(`share-${shareId}`);
+      return content || null;
+    }
   } catch (error) {
-    console.error('Error saving shared content:', error);
+    console.error('Error retrieving shared content:', error);
+    return null;
   }
 };
 
 // Clean up old entries (older than 7 days)
-const cleanupOldEntries = (sharedContent: Map<string, {
-  question: string;
-  response: string;
-  timestamp: number;
-  title: string;
-}>) => {
-  const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  for (const [key, value] of Array.from(sharedContent.entries())) {
-    if (value.timestamp < sevenDaysAgo) {
-      sharedContent.delete(key);
+const cleanupOldEntries = async (): Promise<void> => {
+  try {
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    
+    const kv = getKV();
+    if (kv) {
+      // In production, cleanup is handled when individual shares are accessed
+      // since KV doesn't support easy key listing
+      return;
+    } else {
+      // Clean up local store
+      for (const [key, value] of Array.from(localStore.entries())) {
+        if (value.timestamp < sevenDaysAgo) {
+          localStore.delete(key);
+        }
+      }
     }
+  } catch (error) {
+    console.error('Error during cleanup:', error);
   }
 };
 
@@ -76,25 +91,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Load existing shared content
-    const sharedContent = await loadSharedContent();
-
-    // Clean up old entries
-    cleanupOldEntries(sharedContent);
+    // Clean up old entries first
+    await cleanupOldEntries();
 
     // Generate unique share ID
     const shareId = uuidv4();
     
-    // Store the content
-    sharedContent.set(shareId, {
+    // Prepare content
+    const content: SharedContent = {
       question: question.trim(),
       response: response.trim(),
       timestamp: Date.now(),
       title: title?.trim() || question.substring(0, 50) + (question.length > 50 ? '...' : '')
-    });
+    };
 
-    // Save to file
-    await saveSharedContent(sharedContent);
+    // Store in KV
+    await storeSharedContent(shareId, content);
 
     // Generate share URL
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin;
@@ -127,11 +139,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Load existing shared content
-    const sharedContent = await loadSharedContent();
-    const content = sharedContent.get(shareId);
+    // Get shared content from KV
+    const content = await getSharedContent(shareId);
 
     if (!content) {
+      return NextResponse.json(
+        { error: 'Share not found or expired' },
+        { status: 404 }
+      );
+    }
+
+    // Check if content is expired (older than 7 days)
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    if (content.timestamp < sevenDaysAgo) {
+      // Content is expired, we could delete it here if needed
       return NextResponse.json(
         { error: 'Share not found or expired' },
         { status: 404 }
