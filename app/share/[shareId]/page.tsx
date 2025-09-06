@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import Head from 'next/head';
+import Script from 'next/script';
 import { processContentLinks } from '../../utils/contentUtils';
 
 interface SharedContent {
@@ -19,6 +21,47 @@ export default function SharePage() {
   const [sharedContent, setSharedContent] = useState<SharedContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
+
+  // Calculate time remaining until expiry
+  const calculateTimeRemaining = useCallback((timestamp: number) => {
+    const now = Date.now();
+    const expiryTime = timestamp + (7 * 24 * 60 * 60 * 1000); // 7 days from creation
+    const timeLeft = expiryTime - now;
+    
+    if (timeLeft <= 0) {
+      return 'Expired';
+    }
+    
+    const days = Math.floor(timeLeft / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((timeLeft % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+      return `${minutes}m`;
+    }
+  }, []);
+
+  // Update time remaining every minute
+  useEffect(() => {
+    if (!sharedContent) return;
+
+    const updateTimer = () => {
+      setTimeRemaining(calculateTimeRemaining(sharedContent.timestamp));
+    };
+
+    // Update immediately
+    updateTimer();
+
+    // Update every minute
+    const interval = setInterval(updateTimer, 60000);
+
+    return () => clearInterval(interval);
+  }, [sharedContent, calculateTimeRemaining]);
 
   useEffect(() => {
     const fetchSharedContent = async () => {
@@ -30,9 +73,37 @@ export default function SharePage() {
         console.log('Response ok:', response.ok);
         
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('API Error:', errorData);
-          throw new Error(errorData.error || 'Failed to load shared content');
+          // Handle 404 (expired/not found) gracefully without throwing error
+          if (response.status === 404) {
+            setError('Share not found or expired');
+            setLoading(false);
+            return;
+          }
+          
+          // For other errors, handle them normally
+          let errorMessage = 'Failed to load shared content';
+          
+          // Check if response has content before trying to parse JSON
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            try {
+              const errorData = await response.json();
+              if (errorData && typeof errorData === 'object' && errorData.error) {
+                errorMessage = errorData.error;
+              } else {
+                errorMessage = `Request failed with status ${response.status}`;
+              }
+            } catch (parseError) {
+              errorMessage = `Request failed with status ${response.status}`;
+            }
+          } else {
+            errorMessage = `Request failed with status ${response.status}`;
+          }
+          
+          console.error('API Error:', { status: response.status, message: errorMessage });
+          setError(errorMessage);
+          setLoading(false);
+          return;
         }
 
         const data = await response.json();
@@ -41,7 +112,6 @@ export default function SharePage() {
       } catch (err) {
         console.error('Error fetching shared content:', err);
         setError(err instanceof Error ? err.message : 'Failed to load shared content');
-      } finally {
         setLoading(false);
       }
     };
@@ -85,6 +155,29 @@ export default function SharePage() {
       if (twitterDescription) {
         twitterDescription.setAttribute('content', sharedContent.question);
       }
+    }
+  }, [sharedContent]);
+
+  // Track shared content view in Google Analytics
+  useEffect(() => {
+    if (sharedContent && typeof window !== 'undefined' && (window as any).gtag) {
+      // Track shared content view
+      (window as any).gtag('event', 'shared_content_view', {
+        event_category: 'engagement',
+        event_label: sharedContent.shareId,
+        custom_parameter_1: sharedContent.question.substring(0, 100), // First 100 chars of question
+        custom_parameter_2: 'shared_page'
+      });
+
+      // Track page view for shared content
+      (window as any).gtag('config', 'G-NMNGXPDXNK', {
+        page_title: `${sharedContent.title} - QuranGPT`,
+        page_location: window.location.href,
+        custom_map: {
+          'custom_parameter_1': 'question_preview',
+          'custom_parameter_2': 'content_type'
+        }
+      });
     }
   }, [sharedContent]);
 
@@ -164,6 +257,16 @@ export default function SharePage() {
               });
               
               audio.play().catch(console.error);
+              
+              // Track audio play event
+              if (typeof window !== 'undefined' && (window as any).gtag) {
+                (window as any).gtag('event', 'audio_play', {
+                  event_category: 'engagement',
+                  event_label: `surah_${surah}_ayah_${ayah}`,
+                  custom_parameter_1: sharedContent.shareId,
+                  custom_parameter_2: 'shared_page'
+                });
+              }
             } else {
               console.error('No audio URL received:', data);
             }
@@ -179,12 +282,32 @@ export default function SharePage() {
             if (playIcon) {
               playIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>';
             }
+            
+            // Track audio play event
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+              (window as any).gtag('event', 'audio_play', {
+                event_category: 'engagement',
+                event_label: `surah_${surah}_ayah_${ayah}`,
+                custom_parameter_1: sharedContent.shareId,
+                custom_parameter_2: 'shared_page'
+              });
+            }
           } else {
             // Pause audio
             audio.pause();
             const playIcon = button.querySelector('svg');
             if (playIcon) {
               playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            }
+            
+            // Track audio pause event
+            if (typeof window !== 'undefined' && (window as any).gtag) {
+              (window as any).gtag('event', 'audio_pause', {
+                event_category: 'engagement',
+                event_label: `surah_${surah}_ayah_${ayah}`,
+                custom_parameter_1: sharedContent.shareId,
+                custom_parameter_2: 'shared_page'
+              });
             }
           }
         }
@@ -206,6 +329,16 @@ export default function SharePage() {
       // Toggle visibility
       const isVisible = tafsirContent.style.display !== 'none';
       tafsirContent.style.display = isVisible ? 'none' : 'block';
+      
+      // Track tafsir interaction
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'tafsir_interaction', {
+          event_category: 'engagement',
+          event_label: tafsirId,
+          custom_parameter_1: sharedContent.shareId,
+          custom_parameter_2: isVisible ? 'tafsir_close' : 'tafsir_open'
+        });
+      }
     };
 
     // Close tafsir functionality
@@ -220,6 +353,16 @@ export default function SharePage() {
       const tafsirContent = document.getElementById(tafsirId);
       if (tafsirContent) {
         tafsirContent.style.display = 'none';
+        
+        // Track tafsir close event
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'tafsir_interaction', {
+            event_category: 'engagement',
+            event_label: tafsirId,
+            custom_parameter_1: sharedContent.shareId,
+            custom_parameter_2: 'tafsir_close_button'
+          });
+        }
       }
     };
 
@@ -227,6 +370,21 @@ export default function SharePage() {
     document.addEventListener('click', handleAudioPlay);
     document.addEventListener('click', handleTafsirToggle);
     document.addEventListener('click', handleTafsirClose);
+
+    // Track "Ask QuranGPT" button clicks
+    const askQuranGPTButton = document.querySelector('a[href="/"]');
+    if (askQuranGPTButton) {
+      askQuranGPTButton.addEventListener('click', () => {
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'shared_content_cta_click', {
+            event_category: 'engagement',
+            event_label: 'ask_qurangpt_button',
+            custom_parameter_1: sharedContent.shareId,
+            custom_parameter_2: 'shared_page'
+          });
+        }
+      });
+    }
 
     // Cleanup
     return () => {
@@ -249,28 +407,77 @@ export default function SharePage() {
 
   if (error || !sharedContent) {
     return (
-      <div className="min-h-screen bg-transparent flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Content Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {error || 'The shared content could not be found or has expired.'}
-          </p>
-          <a 
-            href="/" 
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:hover:bg-gray-200 text-white dark:text-gray-900 rounded-lg transition-colors duration-200 font-medium"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Back to QuranGPT
-          </a>
+      <>
+        <Head>
+          <title>Content Expired - QuranGPT</title>
+          <meta name="description" content="This shared content has expired or is no longer available." />
+        </Head>
+
+        <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <div className="mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Content Expired
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                This shared content is no longer available. Shared content expires after 7 days.
+              </p>
+            </div>
+            
+            <a 
+              href="/" 
+              className="inline-flex items-center gap-3 px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-full transition-all duration-200 text-base font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Ask QuranGPT
+            </a>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <>
+      <Head>
+        <title>Shared Content - QuranGPT</title>
+        <meta name="description" content="Shared content from QuranGPT - AI-Powered Islamic Knowledge Base" />
+        <meta property="og:title" content="Shared Content - QuranGPT" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={`https://quran-gpt.netlify.app/share/${shareId}`} />
+        <meta property="og:image" content="https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png" />
+        <meta property="og:site_name" content="QuranGPT - Get the Guidance from the Holy Quran" />
+        <meta property="og:description" content="Shared content from QuranGPT - AI-Powered Islamic Knowledge Base" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Shared Content - QuranGPT" />
+        <meta name="twitter:description" content="Shared content from QuranGPT - AI-Powered Islamic Knowledge Base" />
+        <meta name="twitter:image" content="https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png" />
+        <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
+        <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
+      </Head>
+
+      {/* Google Analytics */}
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-NMNGXPDXNK"
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-NMNGXPDXNK');
+        `}
+      </Script>
+
+      <div className="min-h-screen bg-transparent">
         {/* Main Content */}
         <div className="pt-8 px-4 sm:px-6 max-w-4xl mx-auto">
           <div className="space-y-8">
@@ -285,9 +492,19 @@ export default function SharePage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {sharedContent.title}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Shared from QuranGPT
-            </p>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Shared from QuranGPT
+              </p>
+              {timeRemaining && timeRemaining !== 'Expired' && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded text-xs font-medium">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Expires in {timeRemaining}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Question */}
@@ -326,7 +543,7 @@ export default function SharePage() {
           <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
             <a 
               href="/" 
-              className="inline-flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-all duration-200 text-base font-normal"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -337,5 +554,6 @@ export default function SharePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

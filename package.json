@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cleanup": "node scripts/cleanup-shares.js",
+    "cleanup:local": "CLEANUP_URL=http://localhost:3000 node scripts/cleanup-shares.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.1",

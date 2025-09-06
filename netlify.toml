@@ -4,3 +4,8 @@
 
 [functions]
   directory = "app/api"
+
+# Scheduled function for cleaning up expired shared content
+[[functions]]
+  function = "scheduled-cleanup"
+  schedule = "0 2 * * *"  # Run daily at 2 AM UTC

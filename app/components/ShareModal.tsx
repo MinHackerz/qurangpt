@@ -53,6 +53,16 @@ export default function ShareModal({
       await navigator.clipboard.writeText(shareUrl);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
+      
+      // Track copy link event
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'share_link_copied', {
+          event_category: 'engagement',
+          event_label: 'copy_link',
+          custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+          custom_parameter_2: 'share_modal'
+        });
+      }
     } catch (err) {
       console.error('Failed to copy:', err);
     }
@@ -62,6 +72,16 @@ export default function ShareModal({
   const handleCopyContent = () => {
     if (onCopyContent) {
       onCopyContent();
+      
+      // Track copy content event
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'share_content_copied', {
+          event_category: 'engagement',
+          event_label: 'copy_content',
+          custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+          custom_parameter_2: 'share_modal'
+        });
+      }
     }
   };
 
@@ -74,6 +94,17 @@ export default function ShareModal({
           text: question,
           url: shareUrl,
         });
+        
+        // Track native share event
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'native_share', {
+            event_category: 'engagement',
+            event_label: 'native_share',
+            custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+            custom_parameter_2: 'share_modal'
+          });
+        }
+        
         onClose();
       } catch (err) {
         console.error('Error sharing:', err);
@@ -85,6 +116,17 @@ export default function ShareModal({
   const handleWhatsAppShare = () => {
     const text = `QuranGPT Answer:\n\nQuestion: ${question}\n\nRead the full answer: ${shareUrl}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    
+    // Track WhatsApp share event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'social_share', {
+        event_category: 'engagement',
+        event_label: 'whatsapp_share',
+        custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'share_modal'
+      });
+    }
+    
     window.open(url, '_blank');
     onClose();
   };
@@ -92,6 +134,17 @@ export default function ShareModal({
   // Handle Facebook share
   const handleFacebookShare = () => {
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    
+    // Track Facebook share event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'social_share', {
+        event_category: 'engagement',
+        event_label: 'facebook_share',
+        custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'share_modal'
+      });
+    }
+    
     window.open(url, '_blank', 'width=600,height=400');
     onClose();
   };
@@ -100,6 +153,17 @@ export default function ShareModal({
   const handleXShare = () => {
     const text = `QuranGPT Answer: ${question}`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+    
+    // Track X (Twitter) share event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'social_share', {
+        event_category: 'engagement',
+        event_label: 'twitter_share',
+        custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'share_modal'
+      });
+    }
+    
     window.open(url, '_blank', 'width=600,height=400');
     onClose();
   };
@@ -107,6 +171,17 @@ export default function ShareModal({
   // Handle LinkedIn share
   const handleLinkedInShare = () => {
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    
+    // Track LinkedIn share event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'social_share', {
+        event_category: 'engagement',
+        event_label: 'linkedin_share',
+        custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'share_modal'
+      });
+    }
+    
     window.open(url, '_blank', 'width=600,height=400');
     onClose();
   };
@@ -115,6 +190,17 @@ export default function ShareModal({
   const handleTelegramShare = () => {
     const text = `QuranGPT Answer:\n\nQuestion: ${question}\n\nRead the full answer: ${shareUrl}`;
     const url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+    
+    // Track Telegram share event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'social_share', {
+        event_category: 'engagement',
+        event_label: 'telegram_share',
+        custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'share_modal'
+      });
+    }
+    
     window.open(url, '_blank');
     onClose();
   };
@@ -124,6 +210,17 @@ export default function ShareModal({
     const subject = `QuranGPT Answer: ${question}`;
     const body = `I found this interesting answer on QuranGPT:\n\nQuestion: ${question}\n\nRead the full response: ${shareUrl}`;
     const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    // Track email share event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'social_share', {
+        event_category: 'engagement',
+        event_label: 'email_share',
+        custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'share_modal'
+      });
+    }
+    
     window.location.href = url;
     onClose();
   };

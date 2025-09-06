@@ -34,9 +34,9 @@ const storeSharedContent = async (shareId: string, content: SharedContent): Prom
     const blobStore = getBlobStore();
     if (blobStore) {
       console.log('Using Netlify Blobs for storage');
-      // Store content (TTL will be handled manually in retrieval)
+      // Store content (TTL handled by manual cleanup)
       await blobStore.set(`share-${shareId}`, JSON.stringify(content));
-      console.log('Content stored with 7-day TTL');
+      console.log('Content stored (7-day expiration handled by cleanup)');
     } else {
       // Fallback for local development - use in-memory store
       console.log('Using local in-memory store for development');
@@ -80,14 +80,45 @@ const cleanupOldEntries = async (): Promise<void> => {
     
     const blobStore = getBlobStore();
     if (blobStore) {
-      // In production, cleanup is handled by the TTL expiration in Netlify Blobs
-      // No manual cleanup needed as TTL will automatically expire entries
-      return;
+      // In production, TTL will automatically expire entries in Netlify Blobs
+      // But we can still do manual cleanup for any entries that might have slipped through
+      try {
+        // List all blobs and check their timestamps
+        const listResult = await blobStore.list();
+        const blobs = listResult.blobs || [];
+        for (const blob of blobs) {
+          if (blob.key.startsWith('share-')) {
+            try {
+              const data = await blobStore.get(blob.key);
+              if (data) {
+                const content = JSON.parse(data);
+                if (content.timestamp && content.timestamp < sevenDaysAgo) {
+                  await blobStore.delete(blob.key);
+                  console.log('Deleted expired content:', blob.key);
+                }
+              }
+            } catch (err) {
+              // If we can't parse or access the blob, it might already be expired
+              // Try to delete it anyway
+              try {
+                await blobStore.delete(blob.key);
+                console.log('Deleted inaccessible blob:', blob.key);
+              } catch (deleteErr) {
+                // Ignore delete errors for already expired blobs
+              }
+            }
+          }
+        }
+      } catch (listError) {
+        console.log('Could not list blobs for cleanup:', listError);
+        // This is not critical, TTL will handle expiration
+      }
     } else {
       // Clean up local store
       for (const [key, value] of Array.from(localStore.entries())) {
         if (value.timestamp < sevenDaysAgo) {
           localStore.delete(key);
+          console.log('Deleted expired local content:', key);
         }
       }
     }
@@ -143,6 +174,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Cleanup endpoint for manual cleanup calls
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('Manual cleanup requested');
+    await cleanupOldEntries();
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Cleanup completed' 
+    });
+  } catch (error) {
+    console.error('Error during manual cleanup:', error);
+    return NextResponse.json(
+      { error: 'Cleanup failed' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -185,7 +234,21 @@ export async function GET(request: NextRequest) {
     
     if (content.timestamp < sevenDaysAgo) {
       console.log('Content expired for shareId:', shareId, 'Age:', contentAgeHours, 'hours');
-      // Content is expired, we could delete it here if needed
+      
+      // Delete expired content
+      try {
+        const blobStore = getBlobStore();
+        if (blobStore) {
+          await blobStore.delete(`share-${shareId}`);
+          console.log('Deleted expired content from Blobs:', shareId);
+        } else {
+          localStore.delete(`share-${shareId}`);
+          console.log('Deleted expired content from local store:', shareId);
+        }
+      } catch (deleteError) {
+        console.error('Error deleting expired content:', deleteError);
+      }
+      
       return NextResponse.json(
         { error: 'Share not found or expired' },
         { status: 404 }

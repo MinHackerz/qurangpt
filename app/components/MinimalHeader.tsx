@@ -62,6 +62,16 @@ export default function MinimalHeader({
 
   // Handle share button click - open modal instead of direct copy
   const handleShareClick = () => {
+    // Track share button click in Google Analytics
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'share_button_click', {
+        event_category: 'engagement',
+        event_label: 'share_button',
+        custom_parameter_1: userQuestion ? userQuestion.substring(0, 100) : 'unknown_question',
+        custom_parameter_2: 'minimal_header'
+      });
+    }
+
     // If we have a share URL, open modal directly
     if (shareUrl) {
       setShowShareModal(true);

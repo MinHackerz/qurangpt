@@ -284,6 +284,16 @@ export default function Home() {
       const data = await response.json();
       setShareUrl(data.shareUrl);
 
+      // Track share creation in Google Analytics
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'content_shared', {
+          event_category: 'engagement',
+          event_label: 'share_created',
+          custom_parameter_1: chatManager.submittedQuestion.substring(0, 100), // First 100 chars of question
+          custom_parameter_2: 'main_page'
+        });
+      }
+
       // Copy the share URL to clipboard
       await navigator.clipboard.writeText(data.shareUrl);
       
