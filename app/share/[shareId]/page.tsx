@@ -117,8 +117,10 @@ export default function SharePage() {
         
         if (data && data.shareId) {
           setSharedContent(data);
+          setLoading(false);
         } else {
           setError('Invalid data received from server');
+          setLoading(false);
         }
       } catch (err) {
         if (err instanceof Error) {
