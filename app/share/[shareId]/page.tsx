@@ -66,20 +66,18 @@ export default function SharePage() {
   useEffect(() => {
     const fetchSharedContent = async () => {
       try {
-        console.log('Fetching shared content for shareId:', shareId);
-        console.log('Current URL:', window.location.href);
-        console.log('API URL:', `/api/share?shareId=${encodeURIComponent(shareId)}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         
         const response = await fetch(`/api/share?shareId=${encodeURIComponent(shareId)}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: controller.signal,
         });
         
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           // Handle 404 (expired/not found) gracefully without throwing error
@@ -116,11 +114,25 @@ export default function SharePage() {
         }
 
         const data = await response.json();
-        console.log('Received data:', data);
-        setSharedContent(data);
+        
+        if (data && data.shareId) {
+          setSharedContent(data);
+        } else {
+          setError('Invalid data received from server');
+        }
       } catch (err) {
-        console.error('Error fetching shared content:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load shared content');
+        if (err instanceof Error) {
+          if (err.name === 'AbortError') {
+            setError('Request timed out. Please try again.');
+          } else if (err.message.includes('Failed to fetch')) {
+            setError('Network error. Please check your connection and try again.');
+          } else {
+            setError(err.message);
+          }
+        } else {
+          setError('Failed to load shared content');
+        }
+        
         setLoading(false);
       }
     };

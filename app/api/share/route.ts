@@ -220,11 +220,6 @@ export async function GET(request: NextRequest) {
     const shareId = url.searchParams.get('shareId');
 
     console.log('GET request for shareId:', shareId);
-    console.log('Environment:', {
-      NODE_ENV: process.env.NODE_ENV,
-      NETLIFY: process.env.NETLIFY,
-      VERCEL: process.env.VERCEL
-    });
 
     if (!shareId) {
       console.log('No shareId provided');
@@ -236,7 +231,6 @@ export async function GET(request: NextRequest) {
 
     // Get shared content from Blobs
     const content = await getSharedContent(shareId);
-    console.log('Retrieved content:', content ? 'Found' : 'Not found');
 
     if (!content) {
       console.log('Content not found for shareId:', shareId);
@@ -248,24 +242,16 @@ export async function GET(request: NextRequest) {
 
     // Check if content is expired (older than 7 days)
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    const contentAge = Date.now() - content.timestamp;
-    const contentAgeHours = Math.round(contentAge / (1000 * 60 * 60));
-    
-    console.log('Content age:', contentAgeHours, 'hours');
-    console.log('Content timestamp:', new Date(content.timestamp).toISOString());
     
     if (content.timestamp < sevenDaysAgo) {
-      console.log('Content expired for shareId:', shareId, 'Age:', contentAgeHours, 'hours');
       
       // Delete expired content
       try {
         const blobStore = getBlobStore();
         if (blobStore) {
           await blobStore.delete(`share-${shareId}`);
-          console.log('Deleted expired content from Blobs:', shareId);
         } else {
           localStore.delete(`share-${shareId}`);
-          console.log('Deleted expired content from local store:', shareId);
         }
       } catch (deleteError) {
         console.error('Error deleting expired content:', deleteError);
@@ -277,7 +263,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('Returning content for shareId:', shareId);
     return NextResponse.json({
       shareId,
       question: content.question,
