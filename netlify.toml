@@ -5,7 +5,6 @@
 [functions]
   directory = "app/api"
 
-# Scheduled function for cleaning up expired shared content
-[[functions]]
-  function = "scheduled-cleanup"
-  schedule = "0 2 * * *"  # Run daily at 2 AM UTC
+# Note: Scheduled functions need to be configured in Netlify dashboard
+# The scheduled-cleanup.js function is in netlify/functions/ directory
+# To enable scheduling, go to Netlify dashboard > Functions > Scheduled Functions

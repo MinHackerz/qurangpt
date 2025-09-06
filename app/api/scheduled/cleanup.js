@@ -2,10 +2,11 @@
  * Netlify Scheduled Function for cleaning up expired shared content
  * This function runs automatically on a schedule (e.g., daily)
  * 
- * To set up scheduling, add this to your netlify.toml:
- * 
- * [functions."netlify/functions/scheduled-cleanup.js"]
- * schedule = "0 2 * * *"  # Run daily at 2 AM UTC
+ * To set up scheduling in Netlify dashboard:
+ * 1. Go to Functions > Scheduled Functions
+ * 2. Add new scheduled function
+ * 3. Set schedule: "0 2 * * *" (daily at 2 AM UTC)
+ * 4. Function path: /api/scheduled/cleanup
  */
 
 const { getStore } = require('@netlify/blobs');
