@@ -149,15 +149,8 @@ async function getLocationFromIP(clientIP: string): Promise<{
     }
   }
   
-  // Fallback to Kolkata coordinates when geolocation fails
-  return {
-    lat: 22.5726,
-    lng: 88.3639,
-    city: 'Kolkata',
-    country: 'India',
-    timezone: 'Asia/Kolkata',
-    region: 'West Bengal'
-  };
+  // Return null when all geolocation services fail
+  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -165,8 +158,11 @@ export async function GET(request: NextRequest) {
     // Get user's location from IP address
     const clientIP = getClientIP(request);
     
-    // Force Kolkata location for consistent prayer times
-    const locationData = {
+    // Get actual user location from IP
+    const detectedLocation = await getLocationFromIP(clientIP);
+    
+    // Use detected location or fallback to Kolkata
+    const locationData = detectedLocation || {
       lat: 22.5726,
       lng: 88.3639,
       city: 'Kolkata',
@@ -174,6 +170,11 @@ export async function GET(request: NextRequest) {
       timezone: 'Asia/Kolkata',
       region: 'West Bengal'
     };
+    
+    // Debug logging (remove in production)
+    console.log('Client IP:', clientIP);
+    console.log('Detected location:', detectedLocation);
+    console.log('Using location:', locationData);
     
     const lat = locationData.lat.toString();
     const lng = locationData.lng.toString();
