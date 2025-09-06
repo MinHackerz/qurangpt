@@ -67,10 +67,19 @@ export default function SharePage() {
     const fetchSharedContent = async () => {
       try {
         console.log('Fetching shared content for shareId:', shareId);
-        const response = await fetch(`/api/share?shareId=${encodeURIComponent(shareId)}`);
+        console.log('Current URL:', window.location.href);
+        console.log('API URL:', `/api/share?shareId=${encodeURIComponent(shareId)}`);
+        
+        const response = await fetch(`/api/share?shareId=${encodeURIComponent(shareId)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         
         console.log('Response status:', response.status);
         console.log('Response ok:', response.ok);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
           // Handle 404 (expired/not found) gracefully without throwing error

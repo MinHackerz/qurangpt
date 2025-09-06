@@ -16,16 +16,23 @@ const localStore = new Map<string, SharedContent>();
 // Get Netlify Blobs store
 const getBlobStore = () => {
   try {
-    // Check if we're in Netlify environment
-    if (typeof process !== 'undefined' && 
-        (process.env.NETLIFY || process.env.VERCEL || process.env.NODE_ENV === 'production')) {
+    // Check if we're in production environment (Netlify, Vercel, or production)
+    const isProduction = process.env.NODE_ENV === 'production' || 
+                        process.env.NETLIFY || 
+                        process.env.VERCEL ||
+                        process.env.NETLIFY_SITE_ID;
+    
+    if (isProduction) {
+      console.log('Production environment detected, using Netlify Blobs');
       return getStore('quran-gpt-shares');
+    } else {
+      console.log('Development environment detected, using local store');
+      return null;
     }
   } catch (error) {
     console.log('Netlify Blobs not available:', error instanceof Error ? error.message : String(error));
+    return null;
   }
-  // Fallback for local development
-  return null;
 };
 
 // Store shared content in Blobs
@@ -127,6 +134,21 @@ const cleanupOldEntries = async (): Promise<void> => {
   }
 };
 
+// Add CORS headers helper
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle OPTIONS requests for CORS
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { question, response, title } = await request.json();
@@ -134,7 +156,7 @@ export async function POST(request: NextRequest) {
     if (!question || !response) {
       return NextResponse.json(
         { error: 'Question and response are required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -163,13 +185,13 @@ export async function POST(request: NextRequest) {
       shareId,
       shareUrl,
       success: true
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error creating share:', error);
     return NextResponse.json(
       { error: 'Failed to create share link' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -182,12 +204,12 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       message: 'Cleanup completed' 
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error during manual cleanup:', error);
     return NextResponse.json(
       { error: 'Cleanup failed' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -208,7 +230,7 @@ export async function GET(request: NextRequest) {
       console.log('No shareId provided');
       return NextResponse.json(
         { error: 'Share ID is required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -220,7 +242,7 @@ export async function GET(request: NextRequest) {
       console.log('Content not found for shareId:', shareId);
       return NextResponse.json(
         { error: 'Share not found or expired' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -251,7 +273,7 @@ export async function GET(request: NextRequest) {
       
       return NextResponse.json(
         { error: 'Share not found or expired' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -262,13 +284,13 @@ export async function GET(request: NextRequest) {
       response: content.response,
       title: content.title,
       timestamp: content.timestamp
-    });
+    }, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error retrieving share:', error);
     return NextResponse.json(
       { error: 'Failed to retrieve share content' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
