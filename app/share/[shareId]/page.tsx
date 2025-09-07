@@ -6,6 +6,7 @@ import Head from 'next/head';
 import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processContentLinks } from '../../utils/contentUtils';
+import TextSizeToggle from '../../components/TextSizeToggle';
 
 interface SharedContent {
   shareId: string;
@@ -32,6 +33,9 @@ export default function SharePage() {
   const [showInputField, setShowInputField] = useState(false);
   const [inputQuestion, setInputQuestion] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Text size state
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
 
 
   // Handle sharing current page content
@@ -113,6 +117,11 @@ export default function SharePage() {
   const handleCancelInput = () => {
     setShowInputField(false);
     setInputQuestion('');
+  };
+
+  // Handle text size change
+  const handleTextSizeChange = (size: 'small' | 'medium' | 'large') => {
+    setTextSize(size);
   };
 
   // Auto-resize textarea
@@ -663,7 +672,11 @@ export default function SharePage() {
               </svg>
               Question
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
+            <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${
+              textSize === 'small' ? 'text-xs' : 
+              textSize === 'medium' ? 'text-sm' : 
+              'text-base'
+            }`}>
               {sharedContent.question}
             </p>
           </div>
@@ -677,7 +690,11 @@ export default function SharePage() {
               Answer
             </h2>
             <div 
-              className="text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 text-sm"
+              className={`text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${
+                textSize === 'small' ? 'text-xs' : 
+                textSize === 'medium' ? 'text-sm' : 
+                'text-base'
+              }`}
               dangerouslySetInnerHTML={{ 
                 __html: processContentLinks(sharedContent.response) 
               }}
@@ -691,8 +708,14 @@ export default function SharePage() {
           {/* Floating Button/Input Section */}
           <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-4xl px-4">
             {!showInputField ? (
-              /* Ask QuranGPT Button with Share Icon */
+              /* Ask QuranGPT Button with Text Size Toggle and Share Icon */
               <div className="flex items-center gap-3 justify-center">
+                {/* Text Size Toggle Button */}
+                <TextSizeToggle
+                  onSizeChange={handleTextSizeChange}
+                  currentSize={textSize}
+                />
+                
                 <button 
                   onClick={handleAskQuranClick}
                   className="inline-flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-full transition-all duration-200 text-base font-medium shadow-sm hover:shadow-md"
