@@ -706,7 +706,8 @@ export default function SharePage() {
           <div className="h-20"></div>
 
           {/* Floating Button/Input Section */}
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-4xl px-4">
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-4xl px-4 sm:px-6">
+            <div className="w-full">
             {!showInputField ? (
               /* Ask QuranGPT Button with Text Size Toggle and Share Icon */
               <div className="flex items-center gap-3 justify-center">
@@ -787,8 +788,8 @@ export default function SharePage() {
               </div>
             ) : (
               /* Input Field Mode - ChatGPT-style */
-              <div className="relative">
-                <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 shadow-sm">
+              <div className="relative w-full">
+                <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 shadow-sm w-full">
                   <textarea
                     ref={textareaRef}
                     placeholder="Ask me anything about Quran & Islam..."
@@ -841,6 +842,7 @@ export default function SharePage() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
