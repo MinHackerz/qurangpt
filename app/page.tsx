@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Head from 'next/head';
 import Script from 'next/script';
+import { useSearchParams } from 'next/navigation';
 import { detectLanguage } from './utils/languageDetection';
 import {
   HeroSection,
@@ -38,11 +39,52 @@ declare global {
   }
 }
 
-export default function Home() {
+function HomeContent() {
   // Use custom hooks for better organization
   const chatManager = useChatManager();
   const { copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, mergeTranslatedContent, translateAIContent } = useTranslationManager();
+  const searchParams = useSearchParams();
   
+  // Handle question parameter from URL (from shared page)
+  useEffect(() => {
+    const questionParam = searchParams.get('question');
+    if (questionParam) {
+      // Decode the question
+      const decodedQuestion = decodeURIComponent(questionParam);
+      
+      // Set the question in the input field
+      chatManager.setContent(decodedQuestion);
+      
+      // Set the submitted question
+      chatManager.setSubmittedQuestion(decodedQuestion);
+      
+      // Activate chat mode
+      chatManager.setIsChatActive(true);
+      
+      // Clear any previous errors
+      chatManager.setError('');
+      
+      // Process the question directly
+      setTimeout(() => {
+        askQuran(
+          decodedQuestion,
+          chatManager.setIsProcessing,
+          chatManager.setSummary,
+          chatManager.setShowSummary,
+          chatManager.setError,
+          chatManager.setDisplayedContent,
+          chatManager.setCurrentLanguage,
+          chatManager.setShowTranslateSection,
+        );
+      }, 100);
+      
+      // Clear the URL parameter to prevent re-processing on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('question');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, chatManager]);
+
   // Prevent scrolling during wave animation
   useEffect(() => {
     if (chatManager.isProcessing && chatManager.isChatActive) {
@@ -936,5 +978,17 @@ export default function Home() {
 
       {/* Tafsir functionality is now handled in ResponseSection component */}
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

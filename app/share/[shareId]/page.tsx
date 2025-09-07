@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -27,6 +27,11 @@ export default function SharePage() {
   // Share functionality state
   const [isSharing, setIsSharing] = useState(false);
   const [showShareSuccess, setShowShareSuccess] = useState(false);
+  
+  // Input field state
+  const [showInputField, setShowInputField] = useState(false);
+  const [inputQuestion, setInputQuestion] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 
   // Handle sharing current page content
@@ -68,6 +73,79 @@ export default function SharePage() {
   const handleShareClick = () => {
     handleShareContent();
   };
+
+  // Handle Ask QuranGPT button click - show input field
+  const handleAskQuranClick = () => {
+    setShowInputField(true);
+  };
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputQuestion(e.target.value);
+  };
+
+  // Handle Enter key press
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        return; // Allow new line with Shift+Enter
+      } else {
+        e.preventDefault();
+        handleSendQuestion();
+      }
+    }
+  };
+
+  // Handle send question - redirect to home page with pre-filled question
+  const handleSendQuestion = () => {
+    if (!inputQuestion.trim()) {
+      return;
+    }
+    
+    // Encode the question for URL parameter
+    const encodedQuestion = encodeURIComponent(inputQuestion.trim());
+    
+    // Redirect to home page with question parameter
+    window.location.href = `/?question=${encodedQuestion}`;
+  };
+
+  // Handle cancel input
+  const handleCancelInput = () => {
+    setShowInputField(false);
+    setInputQuestion('');
+  };
+
+  // Auto-resize textarea
+  const autoResize = (target: HTMLTextAreaElement) => {
+    target.style.height = 'auto';
+    const scrollHeight = target.scrollHeight;
+    const isMobile = window.innerWidth < 640;
+    const minHeight = isMobile ? 56 : 60;
+    const maxHeight = isMobile ? 300 : 240;
+    
+    let newHeight = Math.max(scrollHeight, minHeight);
+    
+    if (isMobile && scrollHeight > minHeight) {
+      newHeight = Math.min(scrollHeight + 20, maxHeight);
+    } else {
+      newHeight = Math.min(newHeight, maxHeight);
+    }
+    
+    target.style.height = newHeight + 'px';
+    
+    if (isMobile && newHeight >= maxHeight) {
+      target.style.overflowY = 'auto';
+    } else {
+      target.style.overflowY = 'hidden';
+    }
+  };
+
+  // Effect to handle textarea resize
+  useEffect(() => {
+    if (textareaRef.current) {
+      autoResize(textareaRef.current);
+    }
+  }, [inputQuestion]);
 
 
   // Calculate time remaining until expiry
@@ -610,78 +688,136 @@ export default function SharePage() {
           {/* Bottom Spacing */}
           <div className="h-20"></div>
 
-          {/* Floating Button Section */}
-          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-            <div className="flex items-center gap-3 justify-center">
-              <a 
-                href="/"
-                className="inline-flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-full transition-all duration-200 text-base font-medium shadow-sm hover:shadow-md"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                Ask QuranGPT
-              </a>
-              
-              {/* Share Button - Minimalist Design matching MinimalHeader */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleShareClick}
-                disabled={isSharing}
-                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
-                  showShareSuccess 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-                    : isSharing
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                    : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-                title={showShareSuccess ? "Share link copied!" : "Share this content"}
-              >
-                <AnimatePresence mode="wait">
-                  {showShareSuccess ? (
-                    <motion.svg
-                      key="tick"
-                      initial={{ scale: 0, rotate: -90 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      exit={{ scale: 0, rotate: 90 }}
-                      transition={{ duration: 0.2 }}
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+          {/* Floating Button/Input Section */}
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-4xl px-4">
+            {!showInputField ? (
+              /* Ask QuranGPT Button with Share Icon */
+              <div className="flex items-center gap-3 justify-center">
+                <button 
+                  onClick={handleAskQuranClick}
+                  className="inline-flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 rounded-full transition-all duration-200 text-base font-medium shadow-sm hover:shadow-md"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Ask QuranGPT
+                </button>
+                
+                {/* Share Button - Minimalist Design matching MinimalHeader */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleShareClick}
+                  disabled={isSharing}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
+                    showShareSuccess 
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                      : isSharing
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                      : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                  title={showShareSuccess ? "Share link copied!" : "Share this content"}
+                >
+                  <AnimatePresence mode="wait">
+                    {showShareSuccess ? (
+                      <motion.svg
+                        key="tick"
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: 90 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </motion.svg>
+                    ) : isSharing ? (
+                      <motion.div
+                        key="loading"
+                        className="w-5 h-5"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </motion.div>
+                    ) : (
+                      <motion.svg
+                        key="share"
+                        initial={{ scale: 0, rotate: 90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: -90 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </motion.svg>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
+            ) : (
+              /* Input Field Mode - ChatGPT-style */
+              <div className="relative">
+                <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 shadow-sm">
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Ask me anything about Quran & Islam..."
+                    value={inputQuestion}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    className={`w-full p-3 sm:p-4 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 placeholder:font-light placeholder:tracking-wide border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed min-h-[48px] sm:min-h-[52px] max-h-[200px] sm:max-h-[180px] transition-all duration-200 ${
+                      inputQuestion.trim() ? 'pr-24 sm:pr-28' : 'pr-14 sm:pr-16'
+                    }`}
+                    style={{ 
+                      height: 'auto',
+                      overflow: 'hidden'
+                    }}
+                  />
+                  
+                  {/* Action buttons container */}
+                  <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
+                    {/* Send Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSendQuestion}
+                      disabled={!inputQuestion.trim()}
+                      className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                        inputQuestion.trim()
+                          ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      }`}
+                      title="Send message"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </motion.svg>
-                  ) : isSharing ? (
-                    <motion.div
-                      key="loading"
-                      className="w-5 h-5"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                       </svg>
-                    </motion.div>
-                  ) : (
-                    <motion.svg
-                      key="share"
-                      initial={{ scale: 0, rotate: 90 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      exit={{ scale: 0, rotate: -90 }}
-                      transition={{ duration: 0.2 }}
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    </motion.button>
+
+                    {/* Cancel Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCancelInput}
+                      className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                      title="Cancel"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </motion.svg>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
