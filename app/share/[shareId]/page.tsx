@@ -38,6 +38,10 @@ export default function SharePage() {
   
   // Text size state
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
+  
+  // Formatted response state
+  const [formattedResponse, setFormattedResponse] = useState<string>('');
+  const [isFormatting, setIsFormatting] = useState<boolean>(false);
 
   // Use the same AI response formatting as the main page
   const { formatResponse } = useAIResponse(textSize === 'large');
@@ -45,6 +49,15 @@ export default function SharePage() {
   // Use global event delegation for audio progress bars
   useGlobalEventDelegation();
 
+  // Format response when shared content changes
+  useEffect(() => {
+    if (sharedContent?.response) {
+      setIsFormatting(true);
+      formatResponse(sharedContent.response)
+        .then(setFormattedResponse)
+        .finally(() => setIsFormatting(false));
+    }
+  }, [sharedContent?.response, formatResponse]);
 
   // Handle sharing current page content
   const handleShareContent = useCallback(async () => {
@@ -697,16 +710,23 @@ export default function SharePage() {
               </svg>
               Answer
             </h2>
-            <div 
-              className={`text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${
-                textSize === 'small' ? 'text-xs' : 
-                textSize === 'medium' ? 'text-sm' : 
-                'text-base'
-              }`}
-              dangerouslySetInnerHTML={{ 
-                __html: formatResponse(sharedContent.response) 
-              }}
-            />
+            {isFormatting ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Formatting response...</span>
+              </div>
+            ) : (
+              <div 
+                className={`text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${
+                  textSize === 'small' ? 'text-xs' : 
+                  textSize === 'medium' ? 'text-sm' : 
+                  'text-base'
+                }`}
+                dangerouslySetInnerHTML={{ 
+                  __html: formattedResponse || sharedContent.response 
+                }}
+              />
+            )}
           </div>
 
 
