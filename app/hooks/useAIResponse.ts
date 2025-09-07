@@ -485,11 +485,11 @@ Question: ${content}`;
       // Format specific Islamic terms with minimalistic underlines
       .replace(/Allah\s*\(SWT\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah (SWT)</span>')
       .replace(/Allah\s*SWT/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah SWT</span>')
-      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Prophet Muhammad (PBUH)</span>')
-      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Prophet Muhammad PBUH</span>')
+      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Prophet Muhammad (PBUH)</span>')
+      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Prophet Muhammad PBUH</span>')
       .replace(/\(peace be upon him\)/g, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
-      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Muhammad (PBUH)</span>')
-      .replace(/Muhammad\s*PBUH/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Muhammad PBUH</span>')
+      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Muhammad (PBUH)</span>')
+      .replace(/Muhammad\s*PBUH/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Muhammad PBUH</span>')
       .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah (Subhanahu wa Ta\'ala)</span>')
       .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah Subhanahu wa Ta\'ala</span>')
       

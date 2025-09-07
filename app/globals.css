@@ -573,37 +573,133 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   background-color: #e5e7eb; /* Default light grey */
+  border-radius: 2px;
+  cursor: pointer;
 }
 
 .dark .wave-bar {
   background-color: #374151; /* Default dark grey for dark mode */
 }
 
-/* Dynamic color progress bars - uses CSS custom properties */
+/* Enhanced hover effects for progress bars */
+.wave-bar:hover {
+  transform: scaleY(1.1);
+  transition: all 0.2s ease-out;
+}
+
+.wave-bar.progress-active:hover {
+  transform: scaleY(1.15);
+  box-shadow: 
+    0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), 0.6),
+    0 0 20px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.wave-bar.progress-current:hover {
+  transform: scaleY(1.1);
+  box-shadow: 
+    0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.7)),
+    0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.4)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Dynamic color progress bars - Professional emerald theme with enhanced effects */
 .wave-bar.progress-active {
-  background-color: var(--progress-color, #3b82f6) !important;
-  box-shadow: 0 0 12px rgba(var(--progress-color-rgb, 59, 130, 246), 0.6) !important;
+  background: linear-gradient(135deg, var(--progress-color, #10b981), var(--progress-color, #10b981)) !important;
+  box-shadow: 
+    0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
+    0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   animation: waveProgress 1.5s ease-in-out infinite !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
 }
 
 /* Current bar with partial progress and dynamic color */
 .wave-bar.progress-current {
-  background-color: rgba(var(--progress-color-rgb, 59, 130, 246), var(--progress-opacity, 0.7)) !important;
-  box-shadow: 0 0 8px rgba(var(--progress-color-rgb, 59, 130, 246), calc(var(--progress-opacity, 0.7) * 0.6)) !important;
+  background: linear-gradient(135deg, 
+    rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.8)),
+    rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.6))
+  ) !important;
+  box-shadow: 
+    0 0 6px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.5)),
+    0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.3)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
   transition: all 0.1s ease-out !important;
+  position: relative !important;
 }
 
-/* Wave progress animation */
+/* Enhanced wave progress animation with emerald theme */
 @keyframes waveProgress {
   0%, 100% { 
-    opacity: 0.8; 
+    opacity: 0.9; 
     transform: scaleY(1); 
+    box-shadow: 
+      0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
+      0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), 0.2);
   }
   50% { 
     opacity: 1; 
-    transform: scaleY(1.1); 
+    transform: scaleY(1.05); 
+    box-shadow: 
+      0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), 0.6),
+      0 0 20px rgba(var(--progress-color-rgb, 16, 185, 129), 0.3);
   }
 }
+
+/* Fallback for when CSS custom properties don't work - Emerald theme */
+.wave-bar.progress-active:not([style*="background-color"]) {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  box-shadow: 
+    0 0 8px rgba(16, 185, 129, 0.4),
+    0 0 16px rgba(16, 185, 129, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.wave-bar.progress-current:not([style*="background-color"]) {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 0.6)) !important;
+  box-shadow: 
+    0 0 6px rgba(16, 185, 129, 0.4),
+    0 0 12px rgba(16, 185, 129, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Duration display styling - Inside Play Recitation box */
+.duration-display {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1;
+  letter-spacing: 0.025em;
+  font-weight: 500;
+  opacity: 0.95;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+  pointer-events: none;
+  z-index: 20;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(4px);
+}
+
+.duration-display:hover {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+/* Dark mode duration display */
+.dark .duration-display {
+  color: #9ca3af;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark .duration-display:hover {
+  color: #d1d5db;
+}
+
+/* Ensure the audio player container has relative positioning for absolute duration display */
+.audio-player-container {
+  position: relative;
+}
+
 
 .dark .shadow-2xl {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
