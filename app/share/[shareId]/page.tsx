@@ -7,6 +7,8 @@ import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processContentLinks } from '../../utils/contentUtils';
 import TextSizeToggle from '../../components/TextSizeToggle';
+import { useAIResponse } from '../../hooks/useAIResponse';
+import { useGlobalEventDelegation } from '../../hooks/useGlobalEventDelegation';
 
 interface SharedContent {
   shareId: string;
@@ -36,6 +38,12 @@ export default function SharePage() {
   
   // Text size state
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
+
+  // Use the same AI response formatting as the main page
+  const { formatResponse } = useAIResponse(textSize === 'large');
+  
+  // Use global event delegation for audio progress bars
+  useGlobalEventDelegation();
 
 
   // Handle sharing current page content
@@ -696,7 +704,7 @@ export default function SharePage() {
                 'text-base'
               }`}
               dangerouslySetInnerHTML={{ 
-                __html: processContentLinks(sharedContent.response) 
+                __html: formatResponse(sharedContent.response) 
               }}
             />
           </div>
