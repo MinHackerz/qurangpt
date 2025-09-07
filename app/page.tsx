@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useEffect, Suspense } from 'react';
+import { useCallback, useState, useEffect, Suspense, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Head from 'next/head';
 import Script from 'next/script';
@@ -44,46 +44,8 @@ function HomeContent() {
   const chatManager = useChatManager();
   const { copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, mergeTranslatedContent, translateAIContent } = useTranslationManager();
   const searchParams = useSearchParams();
+  const hasProcessedUrlQuestion = useRef(false);
   
-  // Handle question parameter from URL (from shared page)
-  useEffect(() => {
-    const questionParam = searchParams.get('question');
-    if (questionParam) {
-      // Decode the question
-      const decodedQuestion = decodeURIComponent(questionParam);
-      
-      // Set the question in the input field
-      chatManager.setContent(decodedQuestion);
-      
-      // Set the submitted question
-      chatManager.setSubmittedQuestion(decodedQuestion);
-      
-      // Activate chat mode
-      chatManager.setIsChatActive(true);
-      
-      // Clear any previous errors
-      chatManager.setError('');
-      
-      // Process the question directly
-      setTimeout(() => {
-        askQuran(
-          decodedQuestion,
-          chatManager.setIsProcessing,
-          chatManager.setSummary,
-          chatManager.setShowSummary,
-          chatManager.setError,
-          chatManager.setDisplayedContent,
-          chatManager.setCurrentLanguage,
-          chatManager.setShowTranslateSection,
-        );
-      }, 100);
-      
-      // Clear the URL parameter to prevent re-processing on refresh
-      const url = new URL(window.location.href);
-      url.searchParams.delete('question');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [searchParams, chatManager]);
 
   // Prevent scrolling during wave animation
   useEffect(() => {
@@ -127,6 +89,48 @@ function HomeContent() {
   // AI Response hook with text size state
   const { askQuran } = useAIResponse(isTextLarge);
   
+  // Handle question parameter from URL (from shared page)
+  useEffect(() => {
+    const questionParam = searchParams.get('question');
+    if (questionParam && !hasProcessedUrlQuestion.current) {
+      // Mark as processed to prevent duplicate processing
+      hasProcessedUrlQuestion.current = true;
+      
+      // Decode the question
+      const decodedQuestion = decodeURIComponent(questionParam);
+      
+      // Set the question in the input field
+      chatManager.setContent(decodedQuestion);
+      
+      // Set the submitted question
+      chatManager.setSubmittedQuestion(decodedQuestion);
+      
+      // Activate chat mode
+      chatManager.setIsChatActive(true);
+      
+      // Clear any previous errors
+      chatManager.setError('');
+      
+      // Process the question directly
+      setTimeout(() => {
+        askQuran(
+          decodedQuestion,
+          chatManager.setIsProcessing,
+          chatManager.setSummary,
+          chatManager.setShowSummary,
+          chatManager.setError,
+          chatManager.setDisplayedContent,
+          chatManager.setCurrentLanguage,
+          chatManager.setShowTranslateSection,
+        );
+      }, 100);
+      
+      // Clear the URL parameter to prevent re-processing on refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete('question');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams, askQuran, chatManager]); // Include all dependencies to fix warning
 
   
   // Audio management

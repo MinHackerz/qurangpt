@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
 
 export interface ChatState {
@@ -128,7 +128,7 @@ export const useChatManager = () => {
     updateState({ isChatActive });
   }, [updateState]);
 
-  return {
+  return useMemo(() => ({
     ...state,
     insertQuestion,
     resetForm,
@@ -146,5 +146,23 @@ export const useChatManager = () => {
     setTranslationProgress,
     setTranslatedQuestions,
     setIsChatActive,
-  };
+  }), [
+    state,
+    insertQuestion,
+    resetForm,
+    setContent,
+    setSubmittedQuestion,
+    setError,
+    setCopied,
+    setIsProcessing,
+    setSummary,
+    setShowSummary,
+    setShowTranslateSection,
+    setDisplayedContent,
+    setCurrentLanguage,
+    setIsTranslating,
+    setTranslationProgress,
+    setTranslatedQuestions,
+    setIsChatActive,
+  ]);
 };
