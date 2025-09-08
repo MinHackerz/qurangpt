@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir, fetchTafsirRange } from '../utils/tafsirUtils';
 import { detectLanguage } from '../utils/languageDetection';
 import { detectAyahReferences, AyahMatch } from '../utils/simpleAyahDetection';
-import { fetchAyahText, fetchAyahRangeText, fetchArabicAyahText, fetchArabicAyahRangeText } from '../utils/ayahTextFetcher';
+import { fetchArabicAyahText, fetchArabicAyahRangeText } from '../utils/ayahTextFetcher';
 
 
 
@@ -229,13 +229,23 @@ Question: ${content}`;
           } else {
             // Normal mode: fetch range from API
             console.log(`🔍 Fetching ayah range text from API for ${finalSurahNumber}:${startAyah}-${endAyah}`);
-            const apiRangeText = await fetchAyahRangeText(finalSurahNumber, startAyah, endAyah);
-            if (apiRangeText) {
-              finalVerseText = apiRangeText;
-              console.log(`✅ Successfully fetched ayah range text from API`);
-            } else {
-              console.log(`❌ Failed to fetch ayah range text from API, will show reference only`);
-              // Fallback: use a placeholder text
+            try {
+              const response = await fetch(`/api/ayah-range?surah=${finalSurahNumber}&startAyah=${startAyah}&endAyah=${endAyah}`);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.text) {
+                  finalVerseText = data.text;
+                  console.log(`✅ Successfully fetched ayah range text from API`);
+                } else {
+                  console.log(`❌ Failed to fetch ayah range text from API, will show reference only`);
+                  finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+                }
+              } else {
+                console.log(`❌ API request failed, will show reference only`);
+                finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+              }
+            } catch (error) {
+              console.error('Error fetching ayah range text:', error);
               finalVerseText = `[${surahName} ${ayahNumberStr}]`;
             }
           }
@@ -261,13 +271,23 @@ Question: ${content}`;
           } else {
             // Normal mode: fetch from API
             console.log(`🔍 Fetching ayah text from API for global ayah ${globalAyahNumber}`);
-            const apiVerseText = await fetchAyahText(globalAyahNumber);
-            if (apiVerseText) {
-              finalVerseText = apiVerseText;
-              console.log(`✅ Successfully fetched ayah text from API`);
-            } else {
-              console.log(`❌ Failed to fetch ayah text from API, will show reference only`);
-              // Fallback: use a placeholder text
+            try {
+              const response = await fetch(`/api/ayah-text?globalAyah=${globalAyahNumber}`);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.text) {
+                  finalVerseText = data.text;
+                  console.log(`✅ Successfully fetched ayah text from API`);
+                } else {
+                  console.log(`❌ Failed to fetch ayah text from API, will show reference only`);
+                  finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+                }
+              } else {
+                console.log(`❌ API request failed, will show reference only`);
+                finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+              }
+            } catch (error) {
+              console.error('Error fetching ayah text:', error);
               finalVerseText = `[${surahName} ${ayahNumberStr}]`;
             }
           }
