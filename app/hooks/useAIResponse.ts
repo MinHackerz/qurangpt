@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
+import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir, fetchTafsirRange } from '../utils/tafsirUtils';
 import { detectLanguage } from '../utils/languageDetection';
 import { detectAyahReferences, AyahMatch } from '../utils/simpleAyahDetection';
+import { fetchAyahText, fetchAyahRangeText, fetchArabicAyahText, fetchArabicAyahRangeText } from '../utils/ayahTextFetcher';
 
 
 
@@ -129,9 +130,9 @@ VIOLATION OF THESE RULES WILL RESULT IN RESPONSE REJECTION.`;
 Begin with a brief introduction to the topic in a flowing, narrative style. Keep your introduction concise but complete - avoid using bullet points, numbered lists, or any point-based formatting.
 
 Include at least 2-3 relevant Quranic verses in this EXACT format:
-"Complete verse text here" [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
+[Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
 
-After each verse, provide your AI-generated explanation and interpretation in a natural, flowing paragraph format. Make sure each explanation is complete and properly ends before moving to the next verse. The authentic tafsir will be automatically fetched and displayed.
+After each verse reference, provide your AI-generated explanation and interpretation in a natural, flowing paragraph format. Make sure each explanation is complete and properly ends before moving to the next verse. The authentic tafsir will be automatically fetched and displayed.
 
 End with practical guidance or conclusion in a narrative style.
 
@@ -139,7 +140,7 @@ CRITICAL FORMAT REQUIREMENTS:
 - Use EXACTLY this format for ayah references: [Surah Name: Ayah Number](https://alquran.cloud/ayah?reference={Surah No.}:{Ayah No.})
 - Replace {Surah No.} and {Ayah No.} with actual numbers
 - Use proper surah names like: Al-Fatiha, Al-Baqarah, Aal-Imran, An-Nisa, Al-Ma'idah, etc.
-- Include the full verse text in quotes before each reference
+- DO NOT include the verse text in quotes - only provide the reference format above
 - After each verse reference, provide your AI-generated explanation and interpretation in paragraph form
 - The authentic tafsir from Islamic scholars will be automatically displayed
 - Write in a natural, flowing narrative style without bullet points or numbered lists
@@ -166,7 +167,7 @@ CRITICAL RESPONSE QUALITY REQUIREMENTS:
 ${languageInstructions}
 
 Example format:
-"Indeed, Allah is with those who are patient." [Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
+[Al-Baqarah: 153](https://alquran.cloud/ayah?reference=2:153)
 
 This verse directly addresses your question about patience by teaching us that Allah's divine support is guaranteed for those who remain steadfast. When you asked about how to handle difficult situations, this verse provides the answer: maintain patience and trust that Allah will be with you. This is not just about waiting passively, but about actively maintaining faith and trust in Allah's plan while facing your challenges.
 
@@ -191,25 +192,101 @@ Question: ${content}`;
         }
         const finalSurahNumber = surahNumber || 1;
         
-        // Handle verse ranges (e.g., "45-46" -> use "45" for tafsir)
+        // Handle verse ranges (e.g., "1-11" -> fetch ayahs 1 through 11)
         const ayahNumberStr = ayahNumber.toString();
         const isRange = ayahNumberStr.includes('-');
-        const ayahNum = isRange ? parseInt(ayahNumberStr.split('-')[0]) : parseInt(ayahNumberStr);
-        const globalAyahNumber = calculateGlobalAyahNumber(finalSurahNumber, ayahNum);
-        const ayahId = `ayah-${finalSurahNumber}-${ayahNum}-${Date.now()}`;
         
-        console.log(`📋 Final ayah data:`, { 
-          finalSurahNumber, 
-          ayahNum, 
-          ayahNumber: ayahNumberStr,
-          isRange,
-          surahName: surahName.trim() 
-        });
+        let finalVerseText;
+        let audioRange = '';
+        let ayahNum: number;
+        let globalAyahNumber: number;
+        let ayahId: string;
+        
+        if (isRange) {
+          // Handle range: e.g., "1-11" -> fetch ayahs 1 through 11
+          const [startAyah, endAyah] = ayahNumberStr.split('-').map(num => parseInt(num.trim()));
+          ayahNum = startAyah; // Use start ayah for tafsir
+          globalAyahNumber = calculateGlobalAyahNumber(finalSurahNumber, ayahNum);
+          ayahId = `ayah-${finalSurahNumber}-${startAyah}-${endAyah}-${Date.now()}`;
+          
+          // Set audio range for the player
+          audioRange = `${startAyah}-${endAyah}`;
+          
+          console.log(`📋 Range ayah data:`, { 
+            finalSurahNumber, 
+            startAyah, 
+            endAyah,
+            ayahNumber: ayahNumberStr,
+            isRange,
+            surahName: surahName.trim() 
+          });
+          
+          // Fetch range text from API
+          if (verseText) {
+            // Legacy support: if AI somehow still provides text, use it
+            console.log(`⚠️ AI provided verse text (legacy mode) - using AI text`);
+            finalVerseText = verseText;
+          } else {
+            // Normal mode: fetch range from API
+            console.log(`🔍 Fetching ayah range text from API for ${finalSurahNumber}:${startAyah}-${endAyah}`);
+            const apiRangeText = await fetchAyahRangeText(finalSurahNumber, startAyah, endAyah);
+            if (apiRangeText) {
+              finalVerseText = apiRangeText;
+              console.log(`✅ Successfully fetched ayah range text from API`);
+            } else {
+              console.log(`❌ Failed to fetch ayah range text from API, will show reference only`);
+              // Fallback: use a placeholder text
+              finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+            }
+          }
+        } else {
+          // Handle single ayah
+          ayahNum = parseInt(ayahNumberStr);
+          globalAyahNumber = calculateGlobalAyahNumber(finalSurahNumber, ayahNum);
+          ayahId = `ayah-${finalSurahNumber}-${ayahNum}-${Date.now()}`;
+          
+          console.log(`📋 Single ayah data:`, { 
+            finalSurahNumber, 
+            ayahNum, 
+            ayahNumber: ayahNumberStr,
+            isRange,
+            surahName: surahName.trim() 
+          });
+          
+          // Fetch single ayah text from API
+          if (verseText) {
+            // Legacy support: if AI somehow still provides text, use it
+            console.log(`⚠️ AI provided verse text (legacy mode) - using AI text`);
+            finalVerseText = verseText;
+          } else {
+            // Normal mode: fetch from API
+            console.log(`🔍 Fetching ayah text from API for global ayah ${globalAyahNumber}`);
+            const apiVerseText = await fetchAyahText(globalAyahNumber);
+            if (apiVerseText) {
+              finalVerseText = apiVerseText;
+              console.log(`✅ Successfully fetched ayah text from API`);
+            } else {
+              console.log(`❌ Failed to fetch ayah text from API, will show reference only`);
+              // Fallback: use a placeholder text
+              finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+            }
+          }
+        }
         
         // Fetch tafsir data
-        console.log(`🔍 Fetching tafsir for Surah ${finalSurahNumber}, Ayah ${ayahNum}`);
-        const tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
-        console.log(`📚 Tafsir data received:`, tafsirData);
+        let tafsirData;
+        if (isRange) {
+          // Fetch combined tafsir for range
+          const [startAyah, endAyah] = ayahNumberStr.split('-').map(num => parseInt(num.trim()));
+          console.log(`🔍 Fetching combined tafsir for Surah ${finalSurahNumber}, Range ${startAyah}-${endAyah}`);
+          tafsirData = await fetchTafsirRange(finalSurahNumber, startAyah, endAyah);
+          console.log(`📚 Combined tafsir data received:`, tafsirData);
+        } else {
+          // Fetch single ayah tafsir
+          console.log(`🔍 Fetching tafsir for Surah ${finalSurahNumber}, Ayah ${ayahNum}`);
+          tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
+          console.log(`📚 Tafsir data received:`, tafsirData);
+        }
         
         // Generate tafsir buttons and content
         let tafsirButtonsHTML = '';
@@ -290,9 +367,9 @@ Question: ${content}`;
         
         return {
           match: match.originalMatch,
-          replacement: `<div class="stylish-ayah-reference mb-8 max-w-none w-full pt-5 pb-5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${surahNumber}">
+          replacement: `<div class="stylish-ayah-reference mb-8 max-w-none w-full pt-5 pb-5" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${finalSurahNumber}" data-is-range="${isRange}" data-audio-range="${audioRange}">
             <div class="bg-gray-50 dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden w-full relative">
-              <!-- CORRECTED HEADER: Top left = Surah name + verse number, Top right = surah:verse format -->
+              <!-- CORRECTED HEADER: Top left = Surah name + verse number, Top right = surah:verse format + language toggle -->
               <div class="bg-gray-100 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                   <!-- Top Left: Surah name and verse number -->
@@ -307,8 +384,24 @@ Question: ${content}`;
                       <p class="text-xs text-gray-500 dark:text-gray-400">Verse ${ayahNumberStr}</p>
                     </div>
                   </div>
-                  <!-- Top Right: Surah:Verse format -->
-                  <span class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-mono rounded-lg">${finalSurahNumber}:${ayahNumberStr}</span>
+                  <!-- Top Right: Language toggle + Surah:Verse format -->
+                  <div class="flex items-center space-x-3">
+                    <!-- Language Toggle Button -->
+                    <button class="ayah-language-toggle-btn w-8 h-8 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-200 flex items-center justify-center" 
+                            data-ayah-id="${ayahId}" 
+                            data-is-range="${isRange}" 
+                            data-surah="${finalSurahNumber}" 
+                            data-ayah="${isRange ? audioRange : ayahNumberStr}" 
+                            data-global-ayah="${globalAyahNumber}"
+                            type="button"
+                            title="Toggle Arabic/Translation">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                      </svg>
+                    </button>
+                    <!-- Surah:Verse format -->
+                    <span class="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-mono rounded-lg">${finalSurahNumber}:${ayahNumberStr}</span>
+                  </div>
                 </div>
               </div>
               
@@ -319,7 +412,7 @@ Question: ${content}`;
                     <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -left-4">"</div>
                     <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -right-4">"</div>
                     <blockquote class="text-lg md:text-xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed font-medium tracking-wide px-6 py-2">
-                      ${verseText}
+                      ${finalVerseText}
                     </blockquote>
                   </div>
                 </div>
@@ -330,14 +423,14 @@ Question: ${content}`;
                   <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 border border-gray-200 dark:border-gray-700 min-h-[120px] md:min-h-[140px] flex flex-col justify-between shadow-sm">
                     <!-- Audio Controls -->
                     <div class="flex items-center space-x-3 mb-3">
-                      <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}" type="button">
+                      <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${isRange ? audioRange : ayahNumberStr}" data-range="${isRange ? 'true' : 'false'}" type="button">
                         <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
                       </button>
                       <div class="flex-1">
                         <div class="text-sm font-medium text-gray-800 dark:text-gray-200">Play recitation</div>
-                        <div class="text-xs text-gray-600 dark:text-gray-400">Alafasy</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Alafasy${isRange ? ` (${ayahNumberStr})` : ''}</div>
                       </div>
                     </div>
                     
@@ -357,7 +450,7 @@ Question: ${content}`;
                           50% { box-shadow: 0 0 8px rgba(209, 213, 219, 0.5); }
                         }
                       </style>
-                      <div class="relative w-full h-8 flex items-end justify-between space-x-0.5 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${ayahNumber}">
+                      <div class="relative w-full h-8 flex items-end justify-between space-x-0.5 cursor-pointer" data-surah="${finalSurahNumber}" data-ayah="${isRange ? audioRange : ayahNumberStr}" data-range="${isRange ? 'true' : 'false'}">
                         <div class="wave-bar flex-1 h-2 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="0"></div>
                         <div class="wave-bar flex-1 h-3 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="1"></div>
                         <div class="wave-bar flex-1 h-1 rounded-sm transition-all duration-200 cursor-pointer hover:opacity-80 hover:scale-105" data-bar="2"></div>

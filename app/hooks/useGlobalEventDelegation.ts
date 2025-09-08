@@ -367,6 +367,108 @@ export const useGlobalEventDelegation = () => {
       }
     };
 
+    // Language toggle handler - TRULY INSTANT switching both ways
+    const handleLanguageToggle = (ayahId: string, isRange: boolean, surah: string, ayah: string, globalAyah: string, button: HTMLButtonElement) => {
+      // Find the ayah text element
+      const ayahBox = document.querySelector(`[data-ayah-id="${ayahId}"]`);
+      if (!ayahBox) return;
+      
+      const ayahTextElement = ayahBox.querySelector('blockquote') as HTMLElement;
+      if (!ayahTextElement) return;
+      
+      // Check current language state - more robust detection
+      const isCurrentlyArabic = button.classList.contains('arabic-active') || 
+                                button.className.includes('bg-gray-300') || 
+                                button.className.includes('bg-gray-600') ||
+                                button.getAttribute('data-language-state') === 'arabic';
+      
+      console.log('Language toggle clicked:', { 
+        ayahId, 
+        isCurrentlyArabic, 
+        buttonClasses: button.className,
+        hasArabicActiveClass: button.classList.contains('arabic-active'),
+        hasDarkBackground: button.className.includes('bg-gray-300') || button.className.includes('bg-gray-600')
+      });
+      
+      if (isCurrentlyArabic) {
+        // Switch back to translation - INSTANT (no async, no delays)
+        console.log('Switching back to English translation');
+        const translationText = ayahTextElement.getAttribute('data-translation-text');
+        if (translationText) {
+          ayahTextElement.textContent = translationText;
+          button.classList.remove('arabic-active');
+          button.setAttribute('data-language-state', 'english');
+          // Default styling - lighter background
+          button.className = 'ayah-language-toggle-btn w-8 h-8 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-200 flex items-center justify-center';
+          console.log('Switched back to English successfully');
+        } else {
+          console.log('No translation text found, cannot switch back');
+        }
+      } else {
+        // Switch to Arabic - INSTANT visual feedback, background fetch
+        console.log('Switching to Arabic');
+        // Store current translation text first
+        ayahTextElement.setAttribute('data-translation-text', ayahTextElement.textContent || '');
+        
+        // INSTANTLY update button to show active state (darker background)
+        button.classList.add('arabic-active');
+        button.setAttribute('data-language-state', 'arabic');
+        button.className = 'ayah-language-toggle-btn w-8 h-8 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 rounded-lg border border-gray-400 dark:border-gray-500 transition-all duration-200 flex items-center justify-center';
+        
+        // Fetch Arabic text in background (completely non-blocking)
+        // Check if already fetching to prevent multiple simultaneous requests
+        if (button.getAttribute('data-fetching') === 'true') {
+          console.log('Arabic text already being fetched, skipping duplicate request');
+          return;
+        }
+        
+        button.setAttribute('data-fetching', 'true');
+        
+        const fetchArabicText = async () => {
+          try {
+            let arabicText: string | null = null;
+            
+            if (isRange) {
+              // Handle range
+              const [startAyah, endAyah] = ayah.split('-').map(num => parseInt(num.trim()));
+              const response = await fetch(`/api/arabic-range?surah=${surah}&startAyah=${startAyah}&endAyah=${endAyah}`);
+              if (response.ok) {
+                const data = await response.json();
+                arabicText = data.text;
+              }
+            } else {
+              // Handle single ayah
+              const response = await fetch(`/api/arabic-ayah?globalAyah=${globalAyah}`);
+              if (response.ok) {
+                const data = await response.json();
+                arabicText = data.text;
+              }
+            }
+            
+            if (arabicText) {
+              // Update text when Arabic is fetched
+              ayahTextElement.textContent = arabicText;
+              console.log('Arabic text loaded successfully');
+            } else {
+              // If fetch fails, keep current state but show error
+              console.log('Arabic fetch failed, keeping current state');
+              // Don't revert automatically - let user decide
+            }
+          } catch (fetchError) {
+            console.error('Error fetching Arabic text:', fetchError);
+            // Don't revert automatically - let user decide
+            console.log('Arabic fetch error, keeping current state');
+          } finally {
+            // Clear fetching flag
+            button.removeAttribute('data-fetching');
+          }
+        };
+        
+        // Start background fetch (non-blocking)
+        fetchArabicText();
+      }
+    };
+
     const setupGlobalEventDelegation = () => {
       // Remove any existing global listeners
       if (window.globalTafsirClickHandler) {
@@ -381,17 +483,18 @@ export const useGlobalEventDelegation = () => {
         // Handle clicks for any button with our classes, regardless of container
         const isAudioButton = target.closest('.ayah-audio-play-btn');
         const isTafsirButton = target.closest('.tafsir-toggle-btn, .tafsir-close-btn');
+        const isLanguageToggleButton = target.closest('.ayah-language-toggle-btn');
         const isWaveBar = target.classList.contains('wave-bar');
         const waveformElement = target.closest('[data-surah][data-ayah]');
         const isWaveformContainer = waveformElement && waveformElement.classList.contains('cursor-pointer');
         
-        if (!isAudioButton && !isTafsirButton && !isWaveBar && !isWaveformContainer) {
+        if (!isAudioButton && !isTafsirButton && !isLanguageToggleButton && !isWaveBar && !isWaveformContainer) {
           return;
         }
 
         // Ensure the target element is properly configured for interaction
-        if (isAudioButton || isTafsirButton) {
-          const button = (isAudioButton || isTafsirButton) as HTMLElement;
+        if (isAudioButton || isTafsirButton || isLanguageToggleButton) {
+          const button = (isAudioButton || isTafsirButton || isLanguageToggleButton) as HTMLElement;
           button.style.pointerEvents = 'auto';
           button.style.cursor = 'pointer';
           button.style.position = 'relative';
@@ -418,6 +521,29 @@ export const useGlobalEventDelegation = () => {
               const isHidden = content.style.display === 'none' || content.style.display === '';
               content.style.display = isHidden ? 'block' : 'none';
             }
+          }
+          return;
+        }
+
+        // Handle language toggle button clicks
+        const languageToggleButton = target.closest('.ayah-language-toggle-btn') as HTMLButtonElement;
+        if (languageToggleButton) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Ensure button is always clickable
+          languageToggleButton.disabled = false;
+          languageToggleButton.style.pointerEvents = 'auto';
+          languageToggleButton.style.cursor = 'pointer';
+          
+          const ayahId = languageToggleButton.getAttribute('data-ayah-id');
+          const isRange = languageToggleButton.getAttribute('data-is-range') === 'true';
+          const surah = languageToggleButton.getAttribute('data-surah');
+          const ayah = languageToggleButton.getAttribute('data-ayah');
+          const globalAyah = languageToggleButton.getAttribute('data-global-ayah');
+          
+          if (ayahId && surah && ayah && globalAyah) {
+            handleLanguageToggle(ayahId, isRange, surah, ayah, globalAyah, languageToggleButton);
           }
           return;
         }
@@ -547,7 +673,7 @@ export const useGlobalEventDelegation = () => {
 
     // Observe all buttons in the document
     const observeButtons = () => {
-      const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn');
+      const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn, .ayah-language-toggle-btn');
       buttons.forEach(button => observer.observe(button));
     };
 
@@ -568,18 +694,21 @@ export const useGlobalEventDelegation = () => {
                 element.querySelector('.ayah-audio-play-btn') ||
                 element.querySelector('.tafsir-toggle-btn') ||
                 element.querySelector('.tafsir-close-btn') ||
+                element.querySelector('.ayah-language-toggle-btn') ||
                 element.classList.contains('ayah-audio-play-btn') ||
                 element.classList.contains('tafsir-toggle-btn') ||
-                element.classList.contains('tafsir-close-btn')
+                element.classList.contains('tafsir-close-btn') ||
+                element.classList.contains('ayah-language-toggle-btn')
               )) {
                 shouldReobserve = true;
                 
                 // Immediately ensure new buttons are clickable
                 const buttons = element.querySelectorAll ? 
-                  element.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn') :
+                  element.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn, .ayah-language-toggle-btn') :
                   (element.classList.contains('ayah-audio-play-btn') || 
                    element.classList.contains('tafsir-toggle-btn') || 
-                   element.classList.contains('tafsir-close-btn')) ? [element] : [];
+                   element.classList.contains('tafsir-close-btn') ||
+                   element.classList.contains('ayah-language-toggle-btn')) ? [element] : [];
                 
                 buttons.forEach((button) => {
                   const btn = button as HTMLElement;
@@ -625,7 +754,7 @@ export const useGlobalEventDelegation = () => {
 
     // Periodic check to ensure all buttons remain clickable and in correct state
     const ensureButtonsClickable = () => {
-      const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn');
+      const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn, .ayah-language-toggle-btn');
       if (buttons.length > 0) {
         buttons.forEach(button => {
           const btn = button as HTMLButtonElement;

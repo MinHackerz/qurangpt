@@ -2,7 +2,7 @@
 // Detects any quoted text followed by a link and treats it as a potential ayah reference
 
 export interface AyahMatch {
-  verseText: string;
+  verseText: string | null; // Can be null if no quoted text provided
   surahName: string;
   ayahNumber: string;
   url: string;
@@ -17,12 +17,12 @@ export const detectAyahReferences = (text: string): AyahMatch[] => {
   const matches: AyahMatch[] = [];
   const processedTextSet = new Set<string>();
 
-  // Simple pattern: "any text" [anything: numbers](url)
-  // This catches all quoted text followed by surah:ayah references
-  const ayahPattern = /"([^"]+)"\s*\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
+  // First check for quoted references: "any text" [anything: numbers](url)
+  // This catches quoted text followed by surah:ayah references
+  const quotedPattern = /"([^"]+)"\s*\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
   
   let match;
-  while ((match = ayahPattern.exec(text)) !== null) {
+  while ((match = quotedPattern.exec(text)) !== null) {
     // Skip if this text has already been processed
     if (processedTextSet.has(match[0])) continue;
 
@@ -45,9 +45,10 @@ export const detectAyahReferences = (text: string): AyahMatch[] => {
   }
 
   // Reset regex lastIndex
-  ayahPattern.lastIndex = 0;
+  quotedPattern.lastIndex = 0;
 
-  // Also check for unquoted references: [anything: numbers](url)
+  // Then check for unquoted references: [anything: numbers](url)
+  // This catches references without quoted text (new format)
   const unquotedPattern = /\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
   
   while ((match = unquotedPattern.exec(text)) !== null) {
@@ -58,9 +59,9 @@ export const detectAyahReferences = (text: string): AyahMatch[] => {
     const ayahNumber = match[2];
     const url = match[3];
 
-    // Create normalized match with surah name as verse text
+    // Create normalized match with null verseText (will be fetched from API)
     const normalizedMatch: AyahMatch = {
-      verseText: `${surahName} ${ayahNumber}:${ayahNumber}`,
+      verseText: null, // Will be fetched from API
       surahName: surahName,
       ayahNumber: ayahNumber,
       url: url,

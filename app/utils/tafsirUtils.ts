@@ -37,6 +37,78 @@ export const formatTafsirContent = (content: string): string => {
     .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>');
 };
 
+// Fetch combined tafsir for ayah ranges (e.g., 23:1-11)
+export const fetchTafsirRange = async (surahNumber: number, startAyah: number, endAyah: number): Promise<TafsirData | null> => {
+  try {
+    console.log(`🔍 Fetching tafsir range for ${surahNumber}:${startAyah}-${endAyah}`);
+    
+    const tafsirData: TafsirData = {
+      surahName: '', // Will be set from first successful fetch
+      surahNo: surahNumber,
+      ayahNo: startAyah, // Use start ayah as reference
+      tafsirs: []
+    };
+    
+    // Track unique authors to avoid duplicates
+    const authorMap = new Map<string, { content: string; groupVerse: string }>();
+    
+    // Fetch tafsir for each ayah in the range
+    for (let ayahNum = startAyah; ayahNum <= endAyah; ayahNum++) {
+      console.log(`   Fetching tafsir for ${surahNumber}:${ayahNum}...`);
+      
+      const singleTafsir = await fetchTafsir(surahNumber, ayahNum);
+      if (singleTafsir && singleTafsir.tafsirs && singleTafsir.tafsirs.length > 0) {
+        // Set surah name from first successful fetch
+        if (!tafsirData.surahName) {
+          tafsirData.surahName = singleTafsir.surahName;
+        }
+        
+        // Combine tafsirs by author
+        singleTafsir.tafsirs.forEach(tafsir => {
+          const author = tafsir.author;
+          const groupVerse = tafsir.groupVerse || `${surahNumber}:${ayahNum}`;
+          
+          if (authorMap.has(author)) {
+            // Append to existing author's content
+            const existing = authorMap.get(author)!;
+            existing.content += `\n\n**Ayah ${ayahNum}:**\n${tafsir.content}`;
+            existing.groupVerse += `, ${groupVerse}`;
+          } else {
+            // Create new author entry
+            authorMap.set(author, {
+              content: `**Ayah ${ayahNum}:**\n${tafsir.content}`,
+              groupVerse: groupVerse
+            });
+          }
+        });
+        
+        console.log(`   ✅ Fetched tafsir for ${surahNumber}:${ayahNum} (${singleTafsir.tafsirs.length} authors)`);
+      } else {
+        console.log(`   ⚠️ No tafsir found for ${surahNumber}:${ayahNum}`);
+      }
+    }
+    
+    // Convert map to array format
+    tafsirData.tafsirs = Array.from(authorMap.entries()).map(([author, data]) => ({
+      author,
+      groupVerse: data.groupVerse,
+      content: data.content
+    }));
+    
+    if (tafsirData.tafsirs.length > 0) {
+      console.log(`✅ Successfully fetched combined tafsir for range ${surahNumber}:${startAyah}-${endAyah} (${tafsirData.tafsirs.length} authors)`);
+      return tafsirData;
+    } else {
+      console.log(`❌ No tafsir found for range ${surahNumber}:${startAyah}-${endAyah}`);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error(`🚨 Error fetching tafsir range ${surahNumber}:${startAyah}-${endAyah}:`, error);
+    return null;
+  }
+};
+
 // Surah name to number mapping
 export const surahNameToNumber: { [key: string]: number } = {
   'Al-Fatiha': 1, 'Al-Fatihah': 1, 'Al-Baqarah': 2, 'Aal-Imran': 3, 'An-Nisa': 4, 'Al-Ma\'idah': 5,
