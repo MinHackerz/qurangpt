@@ -559,14 +559,7 @@ body {
   @apply border-gray-500;
 }
 
-/* Dark mode shadow improvements */
-.dark .shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-}
-
-.dark .shadow-xl {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-}
+/* Dark mode shadow improvements - removed redundant rules that cause circular dependencies */
 
 /* Audio progress bar with dynamic colors */
 .wave-bar {
@@ -1377,3 +1370,93 @@ body {
   .pwa-safe-area-right {
     padding-right: env(safe-area-inset-right, 0px);
   }
+
+/* Hadith Box Styling - Clean minimal design matching app patterns */
+.stylish-hadith-reference {
+  @apply w-full relative;
+}
+
+/* Hadith box header styling - removed redundant rules that cause circular dependencies */
+
+/* Hadith translate button styling */
+.hadith-translate-btn {
+  @apply w-6 h-6 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 rounded transition-all duration-200 flex items-center justify-center;
+}
+
+.hadith-translate-btn:hover {
+  @apply bg-gray-200 dark:bg-gray-600;
+}
+
+/* Hadith text content styling */
+.hadith-text-english,
+.hadith-text-arabic,
+.hadith-text-urdu {
+  @apply text-gray-800 dark:text-gray-200 leading-relaxed;
+}
+
+.hadith-text-english {
+  @apply text-base font-[var(--font-inter)];
+}
+
+.hadith-text-arabic {
+  @apply text-lg font-[var(--font-amiri)] text-right;
+}
+
+.hadith-text-urdu {
+  @apply text-base font-[var(--font-inter)];
+}
+
+/* Hadith narrator styling */
+.hadith-text-english .italic,
+.hadith-text-arabic .italic,
+.hadith-text-urdu .italic {
+  @apply text-sm text-gray-600 dark:text-gray-400;
+}
+
+/* Hadith status badge styling */
+.hadith-status-sahih {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.hadith-status-hasan {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+}
+
+.hadith-status-daif {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+}
+
+
+/* Hadith box footer styling - removed redundant rules that cause circular dependencies */
+
+/* Responsive hadith box styling */
+@media (max-width: 640px) {
+  .stylish-hadith-reference {
+    @apply mx-2;
+  }
+  
+  .hadith-text-arabic {
+    @apply text-base;
+  }
+}
+
+/* Hadith box animation for smooth transitions */
+.stylish-hadith-reference {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hadith box focus states for accessibility */
+.stylish-hadith-reference:focus-within {
+  @apply ring-2 ring-emerald-500 ring-opacity-50;
+}
+
+/* Hadith box loading state */
+.hadith-loading {
+  @apply animate-pulse;
+}
+
+.hadith-loading .hadith-text-english,
+.hadith-loading .hadith-text-arabic,
+.hadith-loading .hadith-text-urdu {
+  @apply bg-gray-200 dark:bg-gray-700 rounded;
+}

@@ -53,11 +53,12 @@ export default function SharePage() {
   useEffect(() => {
     if (sharedContent?.response) {
       setIsFormatting(true);
-      formatResponse(sharedContent.response)
+      // Pass the original question for hadith search context
+      formatResponse(sharedContent.response, sharedContent.question, false)
         .then(setFormattedResponse)
         .finally(() => setIsFormatting(false));
     }
-  }, [sharedContent?.response, formatResponse]);
+  }, [sharedContent?.response, sharedContent?.question, formatResponse]);
 
   // Handle sharing current page content
   const handleShareContent = useCallback(async () => {

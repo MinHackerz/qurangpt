@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
+import { useHadithManager } from '../hooks/useHadithManager';
 
 interface ChatSectionProps {
   content: string;
@@ -48,6 +49,9 @@ export default function ChatSection({
   const { getSupportedLanguages, getCachedTranslation } = useTranslation({ context: 'islamic', preserveFormatting: true });
   const [supportedLanguages, setSupportedLanguages] = useState<{ [key: string]: any }>({});
   const [isLoadingLanguages, setIsLoadingLanguages] = useState(true);
+  
+  // Hadith management
+  useHadithManager();
   
   // Translation cache for instant access
   const [translationCache, setTranslationCache] = useState<{ [key: string]: string }>({});

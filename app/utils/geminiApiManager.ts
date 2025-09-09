@@ -93,7 +93,7 @@ export class GeminiApiManager {
     // API key marked as failed
   }
 
-  async generateContent(prompt: string, model: string = 'gemini-2.0-flash'): Promise<ApiKeyResult> {
+  async generateContent(prompt: string, model: string = 'gemini-2.0-flash', temperature: number = 0.7): Promise<ApiKeyResult> {
     const body = {
       contents: [
         {
@@ -104,6 +104,12 @@ export class GeminiApiManager {
           ],
         },
       ],
+      generationConfig: {
+        temperature: temperature,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      },
     };
 
     // Try each available key

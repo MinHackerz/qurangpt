@@ -42,7 +42,7 @@ declare global {
 function HomeContent() {
   // Use custom hooks for better organization
   const chatManager = useChatManager();
-  const { copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, mergeTranslatedContent, translateAIContent } = useTranslationManager();
+  const { copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, extractHadithInfoForCopy, mergeTranslatedContent, translateAIContent, translateHadithSummaries } = useTranslationManager();
   const searchParams = useSearchParams();
   const hasProcessedUrlQuestion = useRef(false);
   
@@ -78,8 +78,9 @@ function HomeContent() {
   // Store the original AI-generated questions for translation
   const [originalAIQuestions, setOriginalAIQuestions] = useState<string[]>([]);
   
-  // Text size toggle state
-  const [isTextLarge, setIsTextLarge] = useState(false);
+  // Text size toggle state - using three-state system for consistency
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const isTextLarge = textSize === 'large';
   
   // Share functionality state
   const [isSharing, setIsSharing] = useState(false);
@@ -253,38 +254,131 @@ function HomeContent() {
     }
   }, [chatManager]);
 
-  // Handle copying AI content (both question and response)
+  // Handle copying AI content (both question and response) with proper structure
   const handleCopyAIContent = useCallback(async () => {
     try {
-      // Extract ayah info before processing
+      // Extract ayah and hadith info before processing
       const ayahInfo = extractAyahInfoForCopy(chatManager.displayedContent || chatManager.summary);
+      const hadithInfo = extractHadithInfoForCopy(chatManager.displayedContent || chatManager.summary);
       
-      // Extract AI content for copying
-      const aiContentToCopy = extractAIContentForTranslation(chatManager.displayedContent || chatManager.summary);
+      console.log('Copy content - Ayah info:', ayahInfo);
+      console.log('Copy content - Hadith info:', hadithInfo);
       
-      // Clean up the AI content (remove HTML tags, etc.)
-      let cleanAIContent = aiContentToCopy
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
-        .replace(/^\s+|\s+$/gm, '') // Trim lines
-        .trim();
-
-      // Replace __AYAH_BOX_N__ placeholders with formatted ayah references
-      if (ayahInfo.length > 0) {
-        ayahInfo.forEach((ayah, index) => {
-          const placeholder = `__AYAH_BOX_${index}__`;
-          const formattedAyah = `"${ayah.text}" (${ayah.surahName} ${ayah.ayahNumber})`;
-          cleanAIContent = cleanAIContent.replace(placeholder, formattedAyah);
+      // Create a structured copy that places ayah boxes directly above their AI explanations
+      let structuredContent = `Question: ${chatManager.submittedQuestion}\n\nAnswer:\n\n`;
+      
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = chatManager.displayedContent || chatManager.summary;
+        
+        // Remove suggested questions section
+        const suggestedQuestionsSection = tempDiv.querySelector('.suggested-questions-section, .related-questions-section');
+        if (suggestedQuestionsSection) {
+          suggestedQuestionsSection.remove();
+        }
+        
+        // Remove hadith sections from the main content to avoid duplication
+        const hadithSections = tempDiv.querySelectorAll('.stylish-hadith-reference, .related-hadiths-section');
+        hadithSections.forEach(section => section.remove());
+        
+        // Use DOM parsing to extract ayah boxes and their corresponding AI explanations
+        const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
+        let previousPosition = 0;
+        
+        // Process the content sequentially, extracting text between ayah boxes
+        ayahBoxes.forEach((ayahBox, index) => {
+          // Find the position of this ayah box in the original content
+          const ayahBoxHTML = ayahBox.outerHTML;
+          const currentPosition = tempDiv.innerHTML.indexOf(ayahBoxHTML, previousPosition);
+          
+          if (currentPosition > previousPosition) {
+            // Extract the text content before this ayah box (AI explanation)
+            const beforeAyahDiv = document.createElement('div');
+            beforeAyahDiv.innerHTML = tempDiv.innerHTML.substring(previousPosition, currentPosition);
+            
+            const textContent = beforeAyahDiv.textContent?.trim() || '';
+            if (textContent) {
+              structuredContent += textContent.replace(/\s+/g, ' ').trim() + '\n\n';
+            }
+          }
+          
+          // Extract only the essential ayah information (no tafsirs, audio, etc.)
+          const surahName = ayahBox.getAttribute('data-surah-name') || 'Unknown';
+          const ayahNumber = ayahBox.getAttribute('data-ayah-number') || 'Unknown';
+          const surahNumber = ayahBox.getAttribute('data-surah-number') || 'Unknown';
+          
+          // Extract only the pure ayah text from the blockquote
+          const blockquote = ayahBox.querySelector('blockquote');
+          let ayahText = '';
+          if (blockquote) {
+            // Get all text content from the blockquote, including nested elements
+            ayahText = blockquote.textContent?.trim() || '';
+            
+            // Clean up any extra whitespace and normalize
+            ayahText = ayahText.replace(/\s+/g, ' ').trim();
+          }
+          
+          if (ayahText) {
+            structuredContent += `"${ayahText}"\n\n---Surah ${surahNumber}: ${surahName}, Ayah ${ayahNumber}\n\n`;
+          }
+          
+          // Update position for next iteration
+          previousPosition = currentPosition + ayahBoxHTML.length;
         });
+        
+        // Add any remaining content after the last ayah box (excluding hadith sections)
+        if (previousPosition < tempDiv.innerHTML.length) {
+          const remainingDiv = document.createElement('div');
+          remainingDiv.innerHTML = tempDiv.innerHTML.substring(previousPosition);
+          
+          // Remove any remaining hadith content from the remaining text
+          const remainingHadithSections = remainingDiv.querySelectorAll('.stylish-hadith-reference, .related-hadiths-section');
+          remainingHadithSections.forEach(section => section.remove());
+          
+          const remainingText = remainingDiv.textContent?.trim() || '';
+          if (remainingText) {
+            structuredContent += remainingText.replace(/\s+/g, ' ').trim() + '\n\n';
+          }
+        }
+        
+        // Add hadith references if available (with reduced spacing)
+        if (hadithInfo.length > 0) {
+          structuredContent += '---Related Hadiths\n\n';
+          
+          hadithInfo.forEach((hadith, index) => {
+            if (hadith.text) {
+              structuredContent += `"${hadith.text}"\n\n`;
+            }
+            
+            if (hadith.aiSummary) {
+              structuredContent += `${hadith.aiSummary}\n\n`;
+            }
+            
+            structuredContent += `---${hadith.bookName}, Hadith #${hadith.hadithNumber}`;
+            if (hadith.status && hadith.status !== 'Unknown') {
+              structuredContent += ` (${hadith.status})`;
+            }
+            structuredContent += '\n\n';
+          });
+        }
+        
+      } catch (error) {
+        console.error('Error processing content for copy:', error);
+        // Fallback to simple text extraction
+        const fallbackContent = (chatManager.displayedContent || chatManager.summary)
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
+          .replace(/^\s+|\s+$/gm, '') // Trim lines
+          .trim();
+        
+        structuredContent += fallbackContent;
       }
-
-      // Combine question and response
-      const combinedContent = `Question: ${chatManager.submittedQuestion}\n\nAnswer: ${cleanAIContent}`;
       
-      await navigator.clipboard.writeText(combinedContent);
+      await navigator.clipboard.writeText(structuredContent);
       chatManager.setCopied(true);
       setTimeout(() => chatManager.setCopied(false), 2000);
     } catch (error) {
+      console.error('Error copying content:', error);
       // Fallback to copying just the AI content
       await copyAIContentOnly(
         chatManager.displayedContent,
@@ -292,7 +386,7 @@ function HomeContent() {
         chatManager.setCopied
       );
     }
-  }, [copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, chatManager]);
+  }, [copyAIContentOnly, extractAyahInfoForCopy, extractHadithInfoForCopy, chatManager]);
 
   // Handle sharing AI content
   const handleShareContent = useCallback(async () => {
@@ -355,10 +449,13 @@ function HomeContent() {
     }
   }, [chatManager.submittedQuestion, chatManager.displayedContent, chatManager.summary]);
 
-  // Handle text size toggle
+  // Handle text size toggle - cycle through three states
   const handleTextSizeToggle = useCallback(() => {
-    setIsTextLarge(!isTextLarge);
-  }, [isTextLarge]);
+    const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+    const currentIndex = sizes.indexOf(textSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    setTextSize(sizes[nextIndex]);
+  }, [textSize]);
 
   // Update existing tafsir content when text size changes
   useEffect(() => {
@@ -367,14 +464,14 @@ function HomeContent() {
       const tafsirHeaders = document.querySelectorAll('.tafsir-content h5');
       tafsirHeaders.forEach(header => {
         header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        header.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+        header.classList.add(textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs');
       });
 
       // Update tafsir author names
       const tafsirAuthors = document.querySelectorAll('.tafsir-content h5 span');
       tafsirAuthors.forEach(author => {
         author.className = author.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        author.classList.add(isTextLarge ? 'text-sm' : 'text-xs');
+        author.classList.add(textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs');
         author.classList.add('md:text-base', 'md:text-sm');
       });
 
@@ -382,7 +479,7 @@ function HomeContent() {
       const tafsirContentDivs = document.querySelectorAll('.tafsir-content .text-gray-700');
       tafsirContentDivs.forEach(contentDiv => {
         contentDiv.className = contentDiv.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        contentDiv.classList.add(isTextLarge ? 'text-sm' : 'text-xs');
+        contentDiv.classList.add(textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs');
         contentDiv.classList.add('md:text-base', 'md:text-sm');
       });
 
@@ -425,11 +522,87 @@ function HomeContent() {
         desc.className = desc.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
         desc.classList.add(isTextLarge ? 'text-base' : 'text-sm');
       });
+
+      // Update hadith text sizes
+      const hadithBoxes = document.querySelectorAll('.stylish-hadith-reference');
+      hadithBoxes.forEach(hadithBox => {
+        // Update book name and hadith number - match ayah header sizing
+        const bookName = hadithBox.querySelector('span.font-medium');
+        if (bookName) {
+          bookName.className = bookName.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
+          if (isTextLarge) {
+            bookName.classList.add('text-sm', 'md:text-base');
+          } else {
+            bookName.classList.add('text-xs', 'md:text-sm');
+          }
+        }
+
+        // Update hadith number - match ayah header sizing
+        const hadithNumber = hadithBox.querySelector('span.text-xs');
+        if (hadithNumber) {
+          hadithNumber.className = hadithNumber.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
+          if (isTextLarge) {
+            hadithNumber.classList.add('text-sm', 'md:text-base');
+          } else {
+            hadithNumber.classList.add('text-xs', 'md:text-sm');
+          }
+        }
+
+        // Update status badge - use a more reliable selector
+        const statusBadge = hadithBox.querySelector('span[class*="px-2"][class*="py-0"]');
+        if (statusBadge) {
+          statusBadge.className = statusBadge.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
+          if (isTextLarge) {
+            statusBadge.classList.add('text-sm', 'md:text-base');
+          } else {
+            statusBadge.classList.add('text-xs', 'md:text-sm');
+          }
+        }
+
+        // Update hadith text - professional sizing
+        const hadithText = hadithBox.querySelector('.hadith-text-english, .hadith-text-arabic');
+        if (hadithText) {
+          hadithText.className = hadithText.className.replace(/text-(xs|sm|base|lg|xl|2xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl|md:text-2xl)/g, '');
+          if (isTextLarge) {
+            hadithText.classList.add('text-base', 'md:text-lg');
+          } else {
+            hadithText.classList.add('text-sm', 'md:text-base');
+          }
+        }
+
+        // Update narrator text - match ayah header sizing
+        const narrator = hadithBox.querySelector('.hadith-narrator');
+        if (narrator) {
+          narrator.className = narrator.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
+          if (isTextLarge) {
+            narrator.classList.add('text-sm', 'md:text-base');
+          } else {
+            narrator.classList.add('text-xs', 'md:text-sm');
+          }
+        }
+
+        // Update AI summary - match AI content sizing exactly
+        const aiSummary = hadithBox.querySelector('.hadith-ai-summary');
+        if (aiSummary) {
+          // Remove all text size classes more thoroughly
+          aiSummary.className = aiSummary.className.replace(/\btext-(xs|sm|base|lg|xl|2xl)\b/g, '');
+          aiSummary.className = aiSummary.className.replace(/\bmd:text-(xs|sm|base|lg|xl|2xl)\b/g, '');
+          // Clean up extra spaces
+          aiSummary.className = aiSummary.className.replace(/\s+/g, ' ').trim();
+          // Add the new class
+          aiSummary.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+        }
+      });
     };
 
-    // Run the update function
+    // Run the update function immediately and with a delay to handle re-renders
     updateExistingTafsirTextSize();
-  }, [isTextLarge]);
+    
+    // Also run with delays to handle any async re-renders
+    setTimeout(() => updateExistingTafsirTextSize(), 100);
+    setTimeout(() => updateExistingTafsirTextSize(), 500);
+    setTimeout(() => updateExistingTafsirTextSize(), 1000);
+  }, [textSize, isTextLarge]);
 
   // Handle translation changes
   const handleTranslationChange = useCallback(async (translatedText: string, language: string) => {
@@ -524,7 +697,10 @@ function HomeContent() {
         // Merge translated AI content with preserved API components
         const mergedContent = await mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation);
         
-        chatManager.setDisplayedContent(mergedContent);
+        // Also translate hadith summaries to English
+        const contentWithTranslatedHadithSummaries = await translateHadithSummaries(mergedContent, 'en', sourceLanguage);
+        
+        chatManager.setDisplayedContent(contentWithTranslatedHadithSummaries);
         chatManager.setCurrentLanguage('en');
         
         // Also translate suggested questions to English
@@ -616,9 +792,10 @@ function HomeContent() {
             // Merge translated AI content with preserved API components
       const mergedContent = await mergeTranslatedContent(contentToExtract, translation);
       
-      // Merged content
+      // Also translate hadith summaries to target language
+      const contentWithTranslatedHadithSummaries = await translateHadithSummaries(mergedContent, language, 'en');
       
-      chatManager.setDisplayedContent(mergedContent);
+      chatManager.setDisplayedContent(contentWithTranslatedHadithSummaries);
       chatManager.setCurrentLanguage(language);
       
       // Also translate suggested questions for the new language
@@ -666,7 +843,7 @@ function HomeContent() {
       chatManager.setIsTranslating(false);
       chatManager.setTranslationProgress(0);
     }
-  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, originalLanguageCache, originalAIQuestions]);
+  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, translateHadithSummaries, originalLanguageCache, originalAIQuestions]);
 
   // Audio management functions are now handled directly in ResponseSection component
 
@@ -776,8 +953,8 @@ function HomeContent() {
         <MinimalHeader 
           isVisible={chatManager.isChatActive}
           userQuestion={chatManager.submittedQuestion}
-          isTextLarge={isTextLarge}
-          onTextSizeToggle={handleTextSizeToggle}
+          textSize={textSize}
+          onTextSizeChange={setTextSize}
           onShareContent={handleShareContent}
           shareUrl={shareUrl}
           isSharing={isSharing}

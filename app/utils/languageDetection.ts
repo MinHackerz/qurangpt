@@ -28,10 +28,19 @@ export const detectLanguage = (text: string): string => {
   }
   
   // CRITICAL: Force English for any text containing Islamic terms in English
+  // But only if the text is primarily in English (not just containing one Islamic term)
   const islamicEnglishTerms = /(islam|quran|allah|prophet|muhammad|purpose|life|according|says|about|question|answer|explain|tell|me|please|thank|thanks|islamic|muslim|faith|belief|prayer|fasting|charity|pilgrimage|hajj|umrah|mosque|imam|sheikh|scholar|tafsir|hadith|sunnah|sharia|fiqh|aqeedah|tawheed|salah|zakat|sawm|hajj|umrah)/i;
   if (islamicEnglishTerms.test(text)) {
-    console.log('🔒 PRODUCTION: Islamic English terms detected - forcing English');
-    return 'en';
+    // Check if the text is primarily in English by looking for common English words
+    const englishWords = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must', 'shall', 'this', 'that', 'these', 'those', 'a', 'an', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'what', 'who', 'when', 'where', 'why', 'how', 'which', 'whose', 'whom'];
+    const words = text.toLowerCase().split(/\s+/);
+    const englishWordCount = words.filter(word => englishWords.includes(word)).length;
+    const englishRatio = englishWordCount / words.length;
+    
+    if (englishRatio > 0.3) { // More than 30% English words
+      console.log('🔒 PRODUCTION: Islamic English terms with English context detected - forcing English');
+      return 'en';
+    }
   }
 
   // Check if text contains non-Latin characters first (skip English check if so)

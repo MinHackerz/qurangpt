@@ -3,8 +3,52 @@ import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir, fetchTafsirRang
 import { detectLanguage } from '../utils/languageDetection';
 import { detectAyahReferences, AyahMatch } from '../utils/simpleAyahDetection';
 import { fetchArabicAyahText, fetchArabicAyahRangeText } from '../utils/ayahTextFetcher';
+import { extractHadithReferences, searchHadiths, generateHadithBoxHTML, HadithData } from '../utils/hadithUtils';
 
 
+
+// Function to extract key terms for hadith search
+const extractKeyTermsForHadithSearch = (text: string): string[] => {
+  // Remove HTML tags and clean text
+  const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  // Islamic and religious keywords that are good for hadith search
+  const islamicKeywords = [
+    'prayer', 'salah', 'namaz', 'fasting', 'ramadan', 'charity', 'zakat', 'hajj', 'pilgrimage',
+    'patience', 'sabr', 'gratitude', 'shukr', 'forgiveness', 'mercy', 'compassion',
+    'knowledge', 'ilm', 'wisdom', 'hikmah', 'guidance', 'hidayah',
+    'faith', 'iman', 'belief', 'trust', 'tawakkul', 'reliance',
+    'good deeds', 'amal', 'righteousness', 'taqwa', 'piety',
+    'family', 'parents', 'children', 'marriage', 'husband', 'wife',
+    'neighbors', 'community', 'ummah', 'brotherhood', 'sisterhood',
+    'honesty', 'truth', 'lying', 'backbiting', 'gossip',
+    'anger', 'patience', 'forgiveness', 'reconciliation',
+    'wealth', 'money', 'poverty', 'rich', 'poor',
+    'health', 'sickness', 'medicine', 'healing',
+    'death', 'funeral', 'burial', 'afterlife',
+    'paradise', 'hell', 'judgment', 'accountability',
+    'prophet', 'messenger', 'companion', 'sahabah',
+    'quran', 'recitation', 'memorization', 'study',
+    'mosque', 'masjid', 'congregation', 'jamaah',
+    'friday', 'jummah', 'eid', 'celebration',
+    'food', 'eating', 'drinking', 'halal', 'haram',
+    'clothing', 'dress', 'modesty', 'hijab',
+    'business', 'trade', 'commerce', 'work',
+    'education', 'learning', 'teaching', 'student'
+  ];
+  
+  // Extract words that match Islamic keywords
+  const words = cleanText.toLowerCase().split(/\s+/);
+  const matchedKeywords = words.filter(word => 
+    islamicKeywords.some(keyword => 
+      word.includes(keyword) || keyword.includes(word)
+    )
+  );
+  
+  // Remove duplicates and return top 5 most relevant terms
+  const uniqueKeywords = Array.from(new Set(matchedKeywords));
+  return uniqueKeywords.slice(0, 5);
+};
 
 // Function to validate and clean AI responses
 const validateAndCleanResponse = (response: string): string => {
@@ -174,7 +218,7 @@ This verse directly addresses your question about patience by teaching us that A
 Question: ${content}`;
   }, []);
 
-  const formatResponse = useCallback(async (response: string) => {
+  const formatResponse = useCallback(async (response: string, userQuery?: string, currentIsTextLarge?: boolean) => {
     // First, validate that the response is complete and properly formatted
     const validatedResponse = validateAndCleanResponse(response);
     
@@ -550,11 +594,108 @@ Question: ${content}`;
       })
     );
     
-    // Apply all replacements
+    // Apply all ayah replacements
     let processedText = response;
     ayahReplacements.forEach(({ match, replacement }) => {
       processedText = processedText.replace(match, replacement);
     });
+
+    // Process hadith references
+    const hadithReferences = extractHadithReferences(processedText);
+    console.log(`🔍 Found ${hadithReferences.length} hadith references:`, hadithReferences);
+
+    // Intelligent hadith search based on user query
+    let intelligentHadiths: HadithData[] = [];
+    try {
+      if (userQuery && userQuery.trim()) {
+        console.log(`🔍 Searching for hadiths with user query:`, userQuery);
+        intelligentHadiths = await searchHadiths(userQuery.trim(), 3);
+        console.log(`✅ Found ${intelligentHadiths.length} intelligent hadiths:`, intelligentHadiths);
+      } else {
+        console.log(`⚠️ No user query provided for hadith search`);
+      }
+    } catch (error) {
+      console.error('Error in intelligent hadith search:', error);
+    }
+
+    // Process each hadith reference
+    const hadithReplacements = await Promise.all(
+      hadithReferences.map(async (ref, index) => {
+        try {
+          // Try to fetch specific hadith first
+          const bookSlug = ref.bookName.toLowerCase().replace(/\s+/g, '-');
+          const hadith = await searchHadiths(`${ref.bookName} ${ref.hadithNumber}`, 1);
+          
+          if (hadith && hadith.length > 0) {
+            const hadithBoxHTML = generateHadithBoxHTML(hadith[0], index, currentIsTextLarge ?? isTextLarge);
+            return {
+              match: ref.originalMatch,
+              replacement: hadithBoxHTML
+            };
+          } else {
+            // Fallback: create a simple reference link
+            return {
+              match: ref.originalMatch,
+              replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors duration-200 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 17L12 22L22 17"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12L12 17L22 12"/>
+                </svg>
+                ${ref.bookName} ${ref.hadithNumber}
+              </span>`
+            };
+          }
+        } catch (error) {
+          console.error('Error processing hadith reference:', error);
+          return {
+            match: ref.originalMatch,
+            replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors duration-200 font-medium text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 17L12 22L22 17"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12L12 17L22 12"/>
+              </svg>
+              ${ref.bookName} ${ref.hadithNumber}
+            </span>`
+          };
+        }
+      })
+    );
+
+    // Apply hadith replacements
+    hadithReplacements.forEach(({ match, replacement }) => {
+      processedText = processedText.replace(match, replacement);
+    });
+
+    // Add intelligent hadiths at the end of the response
+    if (intelligentHadiths.length > 0) {
+      console.log(`🎯 Adding ${intelligentHadiths.length} intelligent hadiths to response`);
+      const intelligentHadithsHTML = intelligentHadiths.map((hadith, index) => 
+        generateHadithBoxHTML(hadith, index + 1000, currentIsTextLarge ?? isTextLarge) // Use high index to avoid conflicts
+      ).join('');
+      
+      processedText += `
+        <div class="mt-8 mb-6">
+          <div class="flex items-center space-x-3 mb-4">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7L12 12L22 7L12 2Z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 17L12 22L22 17"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12L12 17L22 12"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Related Hadiths
+            </h3>
+          </div>
+          <div class="space-y-4">
+            ${intelligentHadithsHTML}
+          </div>
+        </div>
+      `;
+      console.log(`✅ Added hadiths HTML to response`);
+    } else {
+      console.log(`⚠️ No intelligent hadiths to add to response`);
+    }
     
     // FALLBACK: Convert any remaining ayah references to simple inline links
     // This ensures ALL ayah references are displayed as clickable links
@@ -679,7 +820,7 @@ Question: ${content}`;
       
       console.log(`✅ PRODUCTION: Response generated successfully`);
       
-      const formattedResponse = await formatResponse(response);
+      const formattedResponse = await formatResponse(response, trimmedContent, isTextLarge);
       
       setSummary(formattedResponse);
       setDisplayedContent(formattedResponse);
@@ -699,7 +840,7 @@ Question: ${content}`;
     } finally {
       setIsProcessing(false);
     }
-  }, [getPrompt, generate_response_with_gemini, formatResponse]);
+  }, [getPrompt, generate_response_with_gemini, formatResponse, isTextLarge]);
 
   return {
     askQuran,

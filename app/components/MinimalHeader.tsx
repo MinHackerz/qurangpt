@@ -5,13 +5,14 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import ShareModal from './ShareModal';
+import TextSizeToggle from './TextSizeToggle';
 
 interface MinimalHeaderProps {
   isVisible: boolean;
   // New props for the moved buttons
   userQuestion?: string;
-  isTextLarge?: boolean;
-  onTextSizeToggle?: () => void;
+  textSize?: 'small' | 'medium' | 'large';
+  onTextSizeChange?: (size: 'small' | 'medium' | 'large') => void;
   // Share functionality props
   onShareContent?: () => void;
   shareUrl?: string;
@@ -26,8 +27,8 @@ interface MinimalHeaderProps {
 export default function MinimalHeader({ 
   isVisible, 
   userQuestion, 
-  isTextLarge, 
-  onTextSizeToggle,
+  textSize = 'medium', 
+  onTextSizeChange,
   onShareContent,
   shareUrl,
   isSharing,
@@ -120,29 +121,12 @@ export default function MinimalHeader({
         {/* Right side: Action buttons */}
         <div className="flex items-center gap-1.5">
           {/* Text Size Toggle Button - Only show when there's content */}
-          {userQuestion && onTextSizeToggle && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onTextSizeToggle}
-              className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
-                isTextLarge 
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' 
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-              title={isTextLarge ? "Reduce text size" : "Increase text size"}
-            >
-              <motion.svg
-                animate={{ scale: isTextLarge ? 1.1 : 1 }}
-                transition={{ duration: 0.2 }}
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-              </motion.svg>
-            </motion.button>
+          {userQuestion && onTextSizeChange && (
+            <TextSizeToggle
+              onSizeChange={onTextSizeChange}
+              currentSize={textSize}
+              className="w-9 h-9"
+            />
           )}
 
 
@@ -242,7 +226,7 @@ export default function MinimalHeader({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleBackToHome}
-          className="flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+          className="flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
           title="Back to home"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +239,7 @@ export default function MinimalHeader({
           onClick={toggleTheme}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 group"
+          className="flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 group"
           title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
         >
           <motion.div
@@ -277,29 +261,12 @@ export default function MinimalHeader({
         </motion.button>
 
         {/* Text Size Toggle Button - Only show when there's content AND output is generated */}
-        {userQuestion && onTextSizeToggle && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onTextSizeToggle}
-            className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm ${
-              isTextLarge 
-                ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' 
-                : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-            }`}
-            title={isTextLarge ? "Reduce text size" : "Increase text size"}
-          >
-            <motion.svg
-              animate={{ scale: isTextLarge ? 1.1 : 1 }}
-              transition={{ duration: 0.2 }}
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-            </motion.svg>
-          </motion.button>
+        {userQuestion && onTextSizeChange && (
+          <TextSizeToggle
+            onSizeChange={onTextSizeChange}
+            currentSize={textSize}
+            className="w-10 h-10"
+          />
         )}
 
 
@@ -310,7 +277,7 @@ export default function MinimalHeader({
             whileTap={{ scale: 0.95 }}
             onClick={handleShareClick}
             disabled={isSharing}
-            className={`flex items-center justify-center w-10 h-10 rounded-lg border transition-all duration-200 backdrop-blur-sm ${
+            className={`flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm ${
               showShareSuccess 
                 ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
                 : isSharing

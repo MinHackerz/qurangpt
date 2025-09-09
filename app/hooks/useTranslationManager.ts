@@ -12,18 +12,29 @@ export const useTranslationManager = () => {
       
       // Find all ayah boxes and replace them with placeholders
       const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
-      const placeholders: string[] = [];
+      const ayahPlaceholders: string[] = [];
       
       ayahBoxes.forEach((ayahBox, index) => {
         const placeholder = `__AYAH_BOX_${index}__`;
-        placeholders.push(ayahBox.outerHTML);
+        ayahPlaceholders.push(ayahBox.outerHTML);
         ayahBox.outerHTML = placeholder;
       });
       
-      // Store placeholders for later restoration
-      (tempDiv as any).ayahPlaceholders = placeholders;
+      // Find all hadith boxes and replace them with placeholders
+      const hadithBoxes = tempDiv.querySelectorAll('.stylish-hadith-reference');
+      const hadithPlaceholders: string[] = [];
       
-      // Return the HTML with ayah boxes replaced by placeholders
+      hadithBoxes.forEach((hadithBox, index) => {
+        const placeholder = `__HADITH_BOX_${index}__`;
+        hadithPlaceholders.push(hadithBox.outerHTML);
+        hadithBox.outerHTML = placeholder;
+      });
+      
+      // Store placeholders for later restoration
+      (tempDiv as any).ayahPlaceholders = ayahPlaceholders;
+      (tempDiv as any).hadithPlaceholders = hadithPlaceholders;
+      
+      // Return the HTML with ayah and hadith boxes replaced by placeholders
       return tempDiv.innerHTML;
     } catch (error) {
       // Error extracting AI content
@@ -41,11 +52,23 @@ export const useTranslationManager = () => {
       const ayahBoxes = originalDiv.querySelectorAll('.stylish-ayah-reference');
       const ayahBoxesArray = Array.from(ayahBoxes).map(box => box.outerHTML);
       
-      // Replace placeholders in translated content with original ayah boxes
+      // Extract hadith boxes from original response
+      const hadithBoxes = originalDiv.querySelectorAll('.stylish-hadith-reference');
+      const hadithBoxesArray = Array.from(hadithBoxes).map(box => box.outerHTML);
+      
+      // Replace placeholders in translated content with original boxes
       let mergedContent = translatedAIContent;
+      
+      // Replace ayah placeholders
       ayahBoxesArray.forEach((ayahBox, index) => {
         const placeholder = `__AYAH_BOX_${index}__`;
         mergedContent = mergedContent.replace(placeholder, ayahBox);
+      });
+      
+      // Replace hadith placeholders
+      hadithBoxesArray.forEach((hadithBox, index) => {
+        const placeholder = `__HADITH_BOX_${index}__`;
+        mergedContent = mergedContent.replace(placeholder, hadithBox);
       });
       
       // Process any new ayah references that might have been created in the translated text
@@ -102,26 +125,24 @@ export const useTranslationManager = () => {
       const ayahInfo: Array<{text: string, surahName: string, ayahNumber: string, surahNumber: string}> = [];
       
       ayahBoxes.forEach((ayahBox) => {
-        // Find the blockquote containing the ayah text
-        const blockquote = ayahBox.querySelector('blockquote');
-        if (blockquote) {
-          const ayahText = blockquote.textContent?.trim();
-          if (ayahText) {
-            // Extract surah name and ayah number from data attributes
-            const surahName = ayahBox.getAttribute('data-surah-name') || '';
-            const ayahNumber = ayahBox.getAttribute('data-ayah-number') || '';
-            const surahNumber = ayahBox.getAttribute('data-surah-number') || '';
-            
-            ayahInfo.push({
-              text: ayahText,
-              surahName: surahName,
-              ayahNumber: ayahNumber,
-              surahNumber: surahNumber
-            });
-          }
+        // Find the ayah text - it's in a blockquote element
+        const ayahTextElement = ayahBox.querySelector('blockquote');
+        const ayahText = ayahTextElement ? ayahTextElement.textContent?.trim() : '';
+        
+        if (ayahText) {
+          // Extract surah name and ayah number from data attributes
+          const surahName = ayahBox.getAttribute('data-surah-name') || '';
+          const ayahNumber = ayahBox.getAttribute('data-ayah-number') || '';
+          const surahNumber = ayahBox.getAttribute('data-surah-number') || '';
+          
+          ayahInfo.push({
+            text: ayahText,
+            surahName: surahName,
+            ayahNumber: ayahNumber,
+            surahNumber: surahNumber
+          });
         }
       });
-      
       return ayahInfo;
     } catch (error) {
       console.error('Error extracting ayah info:', error);
@@ -129,14 +150,94 @@ export const useTranslationManager = () => {
     }
   }, []);
 
+  // Function to extract hadith information for copying
+  const extractHadithInfoForCopy = useCallback((formattedResponse: string) => {
+    try {
+      // Create a temporary DOM element to parse the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = formattedResponse;
+      
+      // Find all hadith boxes and extract their information
+      const hadithBoxes = tempDiv.querySelectorAll('.stylish-hadith-reference');
+      const hadithInfo: Array<{
+        text: string;
+        bookName: string;
+        hadithNumber: string;
+        narrator: string;
+        aiSummary: string;
+        status: string;
+      }> = [];
+      
+      hadithBoxes.forEach((hadithBox) => {
+        const bookName = hadithBox.getAttribute('data-book-name');
+        const hadithNumber = hadithBox.getAttribute('data-hadith-number');
+        
+        if (bookName && hadithNumber) {
+          // Try to find the hadith text within the hadith box
+          const hadithTextElement = hadithBox.querySelector('.hadith-text-english, .hadith-text-arabic');
+          const hadithText = hadithTextElement ? hadithTextElement.textContent?.trim() || '' : '';
+          
+          // Try to find the narrator
+          const narratorElement = hadithTextElement?.parentElement?.querySelector('.mt-2');
+          const narrator = narratorElement ? narratorElement.textContent?.replace('—', '').trim() || '' : '';
+          
+          // Try to find the AI summary
+          const summaryElement = hadithBox.querySelector('.mt-3');
+          const aiSummary = summaryElement ? summaryElement.textContent?.trim() || '' : '';
+          
+          // Try to find the status (Sahih, Hasan, etc.)
+          const statusElement = hadithBox.querySelector('span[class*="px-2"][class*="py-0"]');
+          const status = statusElement ? statusElement.textContent?.trim() || 'Unknown' : 'Unknown';
+          
+          hadithInfo.push({
+            text: hadithText,
+            bookName: bookName,
+            hadithNumber: hadithNumber,
+            narrator: narrator,
+            aiSummary: aiSummary,
+            status: status
+          });
+        }
+      });
+      
+      return hadithInfo;
+    } catch (error) {
+      console.error('Error extracting hadith info:', error);
+      return [];
+    }
+  }, []);
+
   // Function to copy only AI-generated content (excluding API components)
   const copyAIContentOnly = useCallback(async (displayedContent: string, summary: string, setCopied: (copied: boolean) => void) => {
     try {
-      // Extract ayah info before processing
+      // Extract ayah and hadith info before processing
       const ayahInfo = extractAyahInfoForCopy(displayedContent || summary);
+      const hadithInfo = extractHadithInfoForCopy(displayedContent || summary);
       
-      // Extract only AI-generated content for copying
-      const aiContentToCopy = extractAIContentForTranslation(displayedContent || summary);
+      // Extract AI content without placeholders - get the text content directly
+      let aiContentToCopy = '';
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = displayedContent || summary;
+        
+        // Remove ayah and hadith boxes to get only AI content
+        const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
+        ayahBoxes.forEach(box => box.remove());
+        
+        const hadithBoxes = tempDiv.querySelectorAll('.stylish-hadith-reference');
+        hadithBoxes.forEach(box => box.remove());
+        
+        // Also remove suggested questions section
+        const suggestedQuestionsSection = tempDiv.querySelector('.suggested-questions-section, .related-questions-section');
+        if (suggestedQuestionsSection) {
+          suggestedQuestionsSection.remove();
+        }
+        
+        aiContentToCopy = tempDiv.innerHTML;
+      } catch (error) {
+        // Fallback to simple text extraction
+        aiContentToCopy = (displayedContent || summary).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      }
       
       if (!aiContentToCopy.trim()) {
         // Fallback to summary if no AI content extracted
@@ -153,16 +254,41 @@ export const useTranslationManager = () => {
         .replace(/^\s+|\s+$/gm, '') // Trim lines
         .trim();
 
-      // Replace __AYAH_BOX_N__ placeholders with formatted ayah references
+      // Start building the structured content
+      let structuredContent = cleanAIContent;
+
+      // Add ayah references if available
       if (ayahInfo.length > 0) {
+        structuredContent += '\n\n---Related Ayahs\n\n';
+        
         ayahInfo.forEach((ayah, index) => {
-          const placeholder = `__AYAH_BOX_${index}__`;
-          const formattedAyah = `"${ayah.text}" (${ayah.surahName} ${ayah.ayahNumber})`;
-          cleanAIContent = cleanAIContent.replace(placeholder, formattedAyah);
+          const surahRef = ayah.surahNumber ? `Surah ${ayah.surahNumber}: ${ayah.surahName}` : ayah.surahName;
+          structuredContent += `---${surahRef}, Ayah ${ayah.ayahNumber}\n\n"${ayah.text}"\n\n`;
         });
       }
 
-      await navigator.clipboard.writeText(cleanAIContent);
+      // Add hadith references if available
+      if (hadithInfo.length > 0) {
+        structuredContent += '\n---Related Hadiths\n\n';
+        
+        hadithInfo.forEach((hadith, index) => {
+          structuredContent += `---${hadith.bookName}, Hadith #${hadith.hadithNumber}`;
+          if (hadith.status && hadith.status !== 'Unknown') {
+            structuredContent += ` (${hadith.status})`;
+          }
+          structuredContent += '\n\n';
+          
+          if (hadith.text) {
+            structuredContent += `"${hadith.text}"\n\n`;
+          }
+          
+          if (hadith.aiSummary) {
+            structuredContent += `${hadith.aiSummary}\n\n`;
+          }
+        });
+      }
+
+      await navigator.clipboard.writeText(structuredContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -176,13 +302,53 @@ export const useTranslationManager = () => {
         // Failed to copy summary as fallback
       }
     }
-  }, [extractAIContentForTranslation, extractAyahInfoForCopy]);
+  }, [extractAyahInfoForCopy, extractHadithInfoForCopy]);
+
+  // Function to translate only hadith summaries while preserving hadith boxes
+  const translateHadithSummaries = useCallback(async (formattedResponse: string, targetLanguage: string, sourceLanguage?: string): Promise<string> => {
+    try {
+      // Create a temporary DOM element to parse the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = formattedResponse;
+      
+      // Find all hadith boxes
+      const hadithBoxes = tempDiv.querySelectorAll('.stylish-hadith-reference');
+      
+      // Translate each hadith summary
+      for (let i = 0; i < hadithBoxes.length; i++) {
+        const hadithBox = hadithBoxes[i];
+        const summaryElement = hadithBox.querySelector('.mt-3');
+        
+        if (summaryElement && summaryElement.textContent?.trim()) {
+          const originalSummary = summaryElement.textContent.trim();
+          
+          try {
+            // Translate the summary
+            const translatedSummary = await translateAIContent(originalSummary, targetLanguage, sourceLanguage);
+            
+            // Update the summary element with translated text
+            summaryElement.textContent = translatedSummary;
+          } catch (error) {
+            console.error('Error translating hadith summary:', error);
+            // Keep original summary if translation fails
+          }
+        }
+      }
+      
+      return tempDiv.innerHTML;
+    } catch (error) {
+      console.error('Error translating hadith summaries:', error);
+      return formattedResponse; // Return original if translation fails
+    }
+  }, [translateAIContent]);
 
   return {
     extractAIContentForTranslation,
     extractAyahInfoForCopy,
+    extractHadithInfoForCopy,
     mergeTranslatedContent,
     translateAIContent,
+    translateHadithSummaries,
     copyAIContentOnly,
   };
 };
