@@ -12,4 +12,5 @@ export { default as SuggestedQuestions } from './SuggestedQuestions';
 export { default as MinimalHeader } from './MinimalHeader';
 export { default as ShareButton } from './ShareButton';
 export { default as TransparencySection } from './TransparencySection';
+export { default as SourcesSection } from './SourcesSection';
 export { QuestionDisplay } from './QuestionDisplay';

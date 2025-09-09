@@ -10,6 +10,7 @@ import { createShareLink, getShareText } from '../utils/shareUtils';
 import { QuestionDisplay } from './QuestionDisplay';
 import ShareButton from './ShareButton';
 import ShareModal from './ShareModal';
+import SourcesSection from './SourcesSection';
 
 
 
@@ -251,6 +252,7 @@ export default function ResponseSection({
           </div>
         </div>
       </motion.div>
+
 
       {/* Share Modal */}
       <ShareModal

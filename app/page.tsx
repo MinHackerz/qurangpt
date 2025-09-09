@@ -18,6 +18,7 @@ import {
   MinimalHeader,
   ShareButton,
   TransparencySection,
+  SourcesSection,
   ThemeToggle,
   WaveAnimationContainer
 } from './components';
@@ -1127,6 +1128,14 @@ function HomeContent() {
                 />
               )}
             </div>
+
+            {/* Sources Section - Above Suggested Questions */}
+            {chatManager.showSummary && !chatManager.isProcessing && chatManager.displayedContent && (
+              <SourcesSection 
+                content={chatManager.displayedContent} 
+                isTextLarge={isTextLarge}
+              />
+            )}
 
             {/* Suggested Questions - Below Response */}
             {chatManager.showSummary && !chatManager.isProcessing && (
