@@ -181,8 +181,17 @@ export default function SharePage() {
     // Encode the question for URL parameter
     const encodedQuestion = encodeURIComponent(inputQuestion.trim());
     
-    // Redirect to home page with question parameter
-    window.location.href = `/?question=${encodedQuestion}`;
+    // Build URL parameters including selected content types
+    const params = new URLSearchParams();
+    params.set('question', inputQuestion.trim());
+    
+    // Add content type selections
+    if (selectedContentTypes.tafsir) params.set('tafsir', 'true');
+    if (selectedContentTypes.hadith) params.set('hadith', 'true');
+    if (selectedContentTypes.suggestedQuestions) params.set('suggestedQuestions', 'true');
+    
+    // Redirect to home page with all parameters
+    window.location.href = `/?${params.toString()}`;
   };
 
   // Handle cancel input

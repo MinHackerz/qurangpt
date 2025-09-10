@@ -120,6 +120,18 @@ function HomeContent() {
       // Clear any previous errors
       chatManager.setError('');
       
+      // Handle content type parameters from URL
+      const tafsirParam = searchParams.get('tafsir');
+      const hadithParam = searchParams.get('hadith');
+      const suggestedQuestionsParam = searchParams.get('suggestedQuestions');
+      
+      // Update content type selections based on URL parameters
+      setSelectedContentTypes({
+        tafsir: tafsirParam === 'true',
+        hadith: hadithParam === 'true',
+        suggestedQuestions: suggestedQuestionsParam === 'true'
+      });
+      
       // Process the question directly
       setTimeout(() => {
         askQuran(
