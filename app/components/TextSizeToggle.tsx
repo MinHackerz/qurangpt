@@ -7,12 +7,14 @@ interface TextSizeToggleProps {
   onSizeChange: (size: 'small' | 'medium' | 'large') => void;
   currentSize: 'small' | 'medium' | 'large';
   className?: string;
+  variant?: 'header' | 'default';
 }
 
 export default function TextSizeToggle({ 
   onSizeChange, 
   currentSize,
-  className = ''
+  className = '',
+  variant = 'default'
 }: TextSizeToggleProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -62,8 +64,11 @@ export default function TextSizeToggle({
       onMouseLeave={() => setIsHovered(false)}
       onClick={cycleSize}
       className={`
-        flex items-center justify-center w-10 h-10 rounded-md border transition-all duration-200 backdrop-blur-sm
-        bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800
+        flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200
+        ${variant === 'header' 
+          ? 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 backdrop-blur-sm' 
+          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm hover:shadow-md'
+        }
         text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600
         ${className}
       `}
