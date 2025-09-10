@@ -475,12 +475,12 @@ export default function ChatSectionOutput({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute -top-16 left-0 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 min-w-[200px] content-type-dropdown"
+                  className="absolute -top-12 left-0 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-1.5 min-w-[200px] content-type-dropdown"
                 >
                   <div className="space-y-1">
                     <button
                       onClick={() => handleContentTypeToggle('tafsir')}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
                         selectedContentTypes.tafsir
                           ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -501,7 +501,7 @@ export default function ChatSectionOutput({
                     </button>
                     <button
                       onClick={() => handleContentTypeToggle('hadith')}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
                         selectedContentTypes.hadith
                           ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -522,7 +522,7 @@ export default function ChatSectionOutput({
                     </button>
                     <button
                       onClick={() => handleContentTypeToggle('suggestedQuestions')}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                      className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
                         selectedContentTypes.suggestedQuestions
                           ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

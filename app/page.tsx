@@ -1074,7 +1074,7 @@ function HomeContent() {
 
             {/* Chat Section - Positioned above IslamicWidgets when not in chat mode */}
             {!chatManager.isChatActive && (
-              <div className="mb-8">
+              <div className="mb-8 -mx-6 sm:mx-0">
                 <ChatSection 
                   content={chatManager.content}
                   setContent={chatManager.setContent}
