@@ -125,14 +125,17 @@ function HomeContent() {
       const hadithParam = searchParams.get('hadith');
       const suggestedQuestionsParam = searchParams.get('suggestedQuestions');
       
-      // Update content type selections based on URL parameters
-      setSelectedContentTypes({
+      // Create content types object from URL parameters
+      const urlContentTypes = {
         tafsir: tafsirParam === 'true',
         hadith: hadithParam === 'true',
         suggestedQuestions: suggestedQuestionsParam === 'true'
-      });
+      };
       
-      // Process the question directly
+      // Update content type selections based on URL parameters
+      setSelectedContentTypes(urlContentTypes);
+      
+      // Process the question directly with the URL content types
       setTimeout(() => {
         askQuran(
           decodedQuestion,
@@ -143,7 +146,7 @@ function HomeContent() {
           chatManager.setDisplayedContent,
           chatManager.setCurrentLanguage,
           chatManager.setShowTranslateSection,
-          selectedContentTypes
+          urlContentTypes
         );
       }, 100);
       
