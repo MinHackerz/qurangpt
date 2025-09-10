@@ -26,6 +26,12 @@ interface ResponseSectionProps {
   // Share functionality props
   shareUrl?: string; // URL to share
   onShare?: () => void; // Callback when share is triggered
+  // Content type selection props
+  selectedContentTypes?: {
+    tafsir: boolean;
+    hadith: boolean;
+    suggestedQuestions: boolean;
+  };
 }
 
 export default function ResponseSection({ 
@@ -38,15 +44,42 @@ export default function ResponseSection({
   onQuestionEdit,
   isTextLarge,
   shareUrl,
-  onShare
+  onShare,
+  selectedContentTypes = { tafsir: false, hadith: false, suggestedQuestions: false }
 }: ResponseSectionProps) {
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedShareUrl, setGeneratedShareUrl] = useState<string>('');
   const [isCreatingShare, setIsCreatingShare] = useState(false);
 
-  // Use displayedContent if provided, otherwise use summary
-  const contentToShow = displayedContent || summary;
+  // Process content based on selected content types
+  const processContentBasedOnSelection = (content: string) => {
+    if (!content) return content;
+    
+    // Create a temporary DOM element to parse the content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    // Remove sections based on selection
+    if (!selectedContentTypes.tafsir) {
+      // Remove tafsir sections
+      const tafsirSections = tempDiv.querySelectorAll('.tafsir-content, .tafsir-section');
+      tafsirSections.forEach(section => section.remove());
+    }
+    
+    // Note: Hadith content is preserved when option is unselected
+    // Only new hadith content generation is controlled by the option
+    // Existing hadith content remains visible regardless of option state
+    
+    // Note: Suggested questions content is preserved when option is unselected
+    // Only new suggested questions content generation is controlled by the option
+    // Existing suggested questions content remains visible regardless of option state
+    
+    return tempDiv.innerHTML;
+  };
+
+  // Use displayedContent if provided, otherwise use summary, and process based on selection
+  const contentToShow = processContentBasedOnSelection(displayedContent || summary);
 
   // Use custom hooks
   const questionEditing = useQuestionEditing(userQuestion, onQuestionEdit);
@@ -99,7 +132,6 @@ export default function ResponseSection({
           });
           setGeneratedShareUrl(generatedUrl);
         } catch (error) {
-          console.error('Failed to create share link:', error);
           setGeneratedShareUrl(window.location.href);
         }
       };
@@ -107,27 +139,15 @@ export default function ResponseSection({
     }
   }, [userQuestion, contentToShow, generatedShareUrl, shareUrl]);
   
-  // Debug: Check if content contains audio buttons and ensure clickability
   useEffect(() => {
     if (contentToShow && contentToShow.includes('ayah-audio-play-btn')) {
-      console.log('Content contains audio buttons:', contentToShow.includes('ayah-audio-play-btn'));
-      console.log('Content preview:', contentToShow.substring(0, 500));
       
       // Check for buttons after a short delay to allow DOM to update
       setTimeout(() => {
         const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn');
-        console.log('Interactive buttons found in DOM after render:', buttons.length);
         if (buttons.length > 0) {
           buttons.forEach((button, index) => {
             const btn = button as HTMLElement;
-            console.log(`Button ${index}:`, {
-              tagName: btn.tagName,
-              className: btn.className,
-              dataSurah: btn.getAttribute('data-surah'),
-              dataAyah: btn.getAttribute('data-ayah'),
-              pointerEvents: btn.style.pointerEvents,
-              zIndex: btn.style.zIndex
-            });
             
             // Ensure button is clickable
             btn.style.pointerEvents = 'auto';

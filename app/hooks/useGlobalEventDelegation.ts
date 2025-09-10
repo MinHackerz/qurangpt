@@ -10,7 +10,7 @@ declare global {
 export const useGlobalEventDelegation = () => {
   useEffect(() => {
     // Audio state management
-    const audioStates = new Map<string, { audio: HTMLAudioElement | null; isPlaying: boolean; progressInterval?: NodeJS.Timeout }>();
+    const audioStates = new Map<string, { audio: HTMLAudioElement | null; isPlaying: boolean; progressInterval?: NodeJS.Timeout; audioUrls?: string[]; currentAudioIndex?: number }>();
     let currentPlayingKey: string | null = null;
 
     const getAudioKey = (surah: string, ayah: string): string => `${surah}-${ayah}`;
@@ -183,7 +183,7 @@ export const useGlobalEventDelegation = () => {
       let state = audioStates.get(key);
 
       if (!state) {
-        state = { audio: null, isPlaying: false };
+        state = { audio: null, isPlaying: false, audioUrls: [], currentAudioIndex: 0 };
         audioStates.set(key, state);
       }
 
@@ -236,13 +236,30 @@ export const useGlobalEventDelegation = () => {
 
           // Load and play new audio
           if (!state.audio) {
-            const response = await fetch(`/api/audio?surah=${surah}&ayah=${ayah}`, {
-              headers: {
-                'Accept': 'application/json',
-                'Cache-Control': 'no-cache',
-              },
-              signal: AbortSignal.timeout(10000),
-            });
+            // Check if this is a range (e.g., "1-8")
+            const isRange = ayah.includes('-');
+            let response;
+            
+            if (isRange) {
+              // Handle range: fetch all audio URLs for the range
+              const [startAyah, endAyah] = ayah.split('-').map(num => parseInt(num.trim()));
+              response = await fetch(`/api/audio-range?surah=${surah}&startAyah=${startAyah}&endAyah=${endAyah}`, {
+                headers: {
+                  'Accept': 'application/json',
+                  'Cache-Control': 'no-cache',
+                },
+                signal: AbortSignal.timeout(15000), // Longer timeout for ranges
+              });
+            } else {
+              // Handle single ayah
+              response = await fetch(`/api/audio?surah=${surah}&ayah=${ayah}`, {
+                headers: {
+                  'Accept': 'application/json',
+                  'Cache-Control': 'no-cache',
+                },
+                signal: AbortSignal.timeout(10000),
+              });
+            }
 
             if (!response.ok) {
               throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -250,24 +267,42 @@ export const useGlobalEventDelegation = () => {
 
             const data = await response.json();
             
-            if (!data.success || !data.audioUrl) {
-              throw new Error(data.error || 'No audio URL received');
+            if (!data.success) {
+              throw new Error(data.error || 'No audio data received');
             }
 
-            const audio = new Audio();
-            audio.src = data.audioUrl;
+            // Handle range vs single ayah
+            if (isRange && data.audioUrls && data.audioUrls.length > 0) {
+              // Store all audio URLs for the range
+              state.audioUrls = data.audioUrls;
+              state.currentAudioIndex = 0;
+              
+              // Create audio element for the first ayah
+              const audio = new Audio();
+              audio.src = data.audioUrls[0];
+              state.audio = audio;
+            } else if (!isRange && data.audioUrl) {
+              // Single ayah
+              const audio = new Audio();
+              audio.src = data.audioUrl;
+              state.audio = audio;
+            } else {
+              throw new Error('No audio URL received');
+            }
             
             // Progress tracking - smooth updates with better error handling
             const updateProgress = () => {
               try {
-                if (audio && audio.duration && !isNaN(audio.duration) && audio.duration > 0 && 
-                    audio.currentTime >= 0 && !isNaN(audio.currentTime)) {
-                  const progress = Math.min(100, Math.max(0, (audio.currentTime / audio.duration) * 100));
+                if (state && state.audio && state.audio.duration && !isNaN(state.audio.duration) && state.audio.duration > 0 && 
+                    state.audio.currentTime >= 0 && !isNaN(state.audio.currentTime)) {
+                  const progress = Math.min(100, Math.max(0, (state.audio.currentTime / state.audio.duration) * 100));
                   
                   // Update progress immediately with requestAnimationFrame for smooth updates
                   requestAnimationFrame(() => {
                     updateWaveformProgress(surah, ayah, progress);
-                    updateDurationDisplay(surah, ayah, audio.currentTime, audio.duration);
+                    if (state && state.audio) {
+                      updateDurationDisplay(surah, ayah, state.audio.currentTime, state.audio.duration);
+                    }
                   });
                 }
               } catch (error) {
@@ -276,17 +311,17 @@ export const useGlobalEventDelegation = () => {
             };
             
             // Wait for metadata to be loaded before tracking progress
-            audio.addEventListener('loadedmetadata', () => {
+            state.audio.addEventListener('loadedmetadata', () => {
               // Initial progress update after metadata is loaded
-              if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
-                const initialProgress = (audio.currentTime / audio.duration) * 100;
+              if (state && state.audio && state.audio.duration && !isNaN(state.audio.duration) && state.audio.duration > 0) {
+                const initialProgress = (state.audio.currentTime / state.audio.duration) * 100;
                 updateWaveformProgress(surah, ayah, initialProgress);
-                updateDurationDisplay(surah, ayah, audio.currentTime, audio.duration);
+                updateDurationDisplay(surah, ayah, state.audio.currentTime, state.audio.duration);
               }
             });
             
             // Use timeupdate event for progress tracking (fires every 250ms by default)
-            audio.addEventListener('timeupdate', updateProgress);
+            state.audio.addEventListener('timeupdate', updateProgress);
             
             // Add a higher frequency interval for smoother progress updates (every 100ms)
             const progressInterval = setInterval(() => {
@@ -310,24 +345,50 @@ export const useGlobalEventDelegation = () => {
             // Store interval ID for cleanup
             state.progressInterval = progressInterval;
             
-            audio.addEventListener('ended', () => {
-              if (state) {
-                state.isPlaying = false;
-                // Clear progress interval
-                if (state.progressInterval) {
-                  clearInterval(state.progressInterval);
-                  state.progressInterval = undefined;
+            // Handle audio end - for ranges, play next ayah
+            state.audio.addEventListener('ended', () => {
+              if (isRange && state && state.audioUrls && state.audioUrls.length > 1) {
+                // Move to next ayah in the range
+                state.currentAudioIndex = (state.currentAudioIndex || 0) + 1;
+                if (state.currentAudioIndex < state.audioUrls.length && state.audio) {
+                  // Play next ayah
+                  state.audio.src = state.audioUrls[state.currentAudioIndex];
+                  state.audio.load();
+                  state.audio.play().catch((error: any) => {
+                    console.error('Error playing next ayah:', error);
+                    // If next ayah fails, end the sequence
+                    handleAudioEnd();
+                  });
+                } else {
+                  // All ayahs in range have been played
+                  handleAudioEnd();
                 }
+              } else {
+                // Single ayah or last ayah in range
+                handleAudioEnd();
               }
-              currentPlayingKey = null;
-              updateWaveformProgress(surah, ayah, 0); // Reset progress
-              clearDurationDisplay(surah, ayah); // Clear duration display
-              resetButtonToPlayState(audioButton);
+              
+              function handleAudioEnd() {
+                if (state) {
+                  state.isPlaying = false;
+                  state.currentAudioIndex = 0; // Reset for next time
+                  // Clear progress interval
+                  if (state.progressInterval) {
+                    clearInterval(state.progressInterval);
+                    state.progressInterval = undefined;
+                  }
+                }
+                currentPlayingKey = null;
+                updateWaveformProgress(surah, ayah, 0); // Reset progress
+                clearDurationDisplay(surah, ayah); // Clear duration display
+                resetButtonToPlayState(audioButton);
+              }
             });
 
-            audio.addEventListener('error', () => {
+            state.audio.addEventListener('error', () => {
               if (state) {
                 state.isPlaying = false;
+                state.currentAudioIndex = 0; // Reset for next time
                 // Clear progress interval
                 if (state.progressInterval) {
                   clearInterval(state.progressInterval);
@@ -344,13 +405,13 @@ export const useGlobalEventDelegation = () => {
                 audioButton.style.cursor = 'not-allowed';
               }
             });
-
-            state.audio = audio;
           }
 
           // Play audio
-          await state.audio.play();
-          state.isPlaying = true;
+          if (state.audio) {
+            await state.audio.play();
+            state.isPlaying = true;
+          }
           currentPlayingKey = key;
           
           setButtonToPauseState(audioButton);
@@ -382,17 +443,8 @@ export const useGlobalEventDelegation = () => {
                                 button.className.includes('bg-gray-600') ||
                                 button.getAttribute('data-language-state') === 'arabic';
       
-      console.log('Language toggle clicked:', { 
-        ayahId, 
-        isCurrentlyArabic, 
-        buttonClasses: button.className,
-        hasArabicActiveClass: button.classList.contains('arabic-active'),
-        hasDarkBackground: button.className.includes('bg-gray-300') || button.className.includes('bg-gray-600')
-      });
-      
       if (isCurrentlyArabic) {
         // Switch back to translation - INSTANT (no async, no delays)
-        console.log('Switching back to English translation');
         const translationText = ayahTextElement.getAttribute('data-translation-text');
         if (translationText) {
           ayahTextElement.textContent = translationText;
@@ -400,13 +452,9 @@ export const useGlobalEventDelegation = () => {
           button.setAttribute('data-language-state', 'english');
           // Default styling - lighter background
           button.className = 'ayah-language-toggle-btn w-8 h-8 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700 transition-all duration-200 flex items-center justify-center';
-          console.log('Switched back to English successfully');
-        } else {
-          console.log('No translation text found, cannot switch back');
         }
       } else {
         // Switch to Arabic - INSTANT visual feedback, background fetch
-        console.log('Switching to Arabic');
         // Store current translation text first
         ayahTextElement.setAttribute('data-translation-text', ayahTextElement.textContent || '');
         
@@ -418,7 +466,6 @@ export const useGlobalEventDelegation = () => {
         // Fetch Arabic text in background (completely non-blocking)
         // Check if already fetching to prevent multiple simultaneous requests
         if (button.getAttribute('data-fetching') === 'true') {
-          console.log('Arabic text already being fetched, skipping duplicate request');
           return;
         }
         
@@ -448,16 +495,12 @@ export const useGlobalEventDelegation = () => {
             if (arabicText) {
               // Update text when Arabic is fetched
               ayahTextElement.textContent = arabicText;
-              console.log('Arabic text loaded successfully');
             } else {
               // If fetch fails, keep current state but show error
-              console.log('Arabic fetch failed, keeping current state');
               // Don't revert automatically - let user decide
             }
           } catch (fetchError) {
-            console.error('Error fetching Arabic text:', fetchError);
             // Don't revert automatically - let user decide
-            console.log('Arabic fetch error, keeping current state');
           } finally {
             // Clear fetching flag
             button.removeAttribute('data-fetching');
@@ -487,8 +530,9 @@ export const useGlobalEventDelegation = () => {
         const isWaveBar = target.classList.contains('wave-bar');
         const waveformElement = target.closest('[data-surah][data-ayah]');
         const isWaveformContainer = waveformElement && waveformElement.classList.contains('cursor-pointer');
+        const isSuggestedQuestion = target.closest('[data-suggested-question="true"]');
         
-        if (!isAudioButton && !isTafsirButton && !isLanguageToggleButton && !isWaveBar && !isWaveformContainer) {
+        if (!isAudioButton && !isTafsirButton && !isLanguageToggleButton && !isWaveBar && !isWaveformContainer && !isSuggestedQuestion) {
           return;
         }
 
@@ -568,6 +612,24 @@ export const useGlobalEventDelegation = () => {
           return;
         }
 
+        // Handle suggested question clicks
+        if (isSuggestedQuestion) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const suggestedQuestionElement = target.closest('[data-suggested-question="true"]') as HTMLElement;
+          if (suggestedQuestionElement) {
+            const questionText = suggestedQuestionElement.querySelector('p')?.textContent;
+            if (questionText) {
+              // Dispatch custom event that can be handled by the parent component
+              window.dispatchEvent(new CustomEvent('suggestedQuestionClick', { 
+                detail: { question: questionText } 
+              }));
+            }
+          }
+          return;
+        }
+
         // Handle waveform container clicks for seeking
         if (isWaveformContainer) {
           e.preventDefault();
@@ -589,7 +651,6 @@ export const useGlobalEventDelegation = () => {
               
               if (!isNaN(newTime) && newTime >= 0 && newTime <= state.audio.duration) {
                 state.audio.currentTime = newTime;
-                console.log('Seeked to:', newTime, 'seconds');
               }
             }
           }
@@ -605,21 +666,6 @@ export const useGlobalEventDelegation = () => {
     // Setup immediately
     setupGlobalEventDelegation();
 
-    // Add a simple debugging function to check waveform visibility
-    (window as any).debugWaveforms = () => {
-      const containers = document.querySelectorAll('div[data-surah][data-ayah].cursor-pointer');
-      const bars = document.querySelectorAll('.wave-bar');
-      console.log('Waveform Debug:', {
-        containers: containers.length,
-        bars: bars.length,
-        containerDetails: Array.from(containers).map(c => ({
-          surah: c.getAttribute('data-surah'),
-          ayah: c.getAttribute('data-ayah'),
-          visible: (c as HTMLElement).offsetParent !== null,
-          classes: c.className
-        }))
-      });
-    };
 
     // Function to update progress colors when theme changes
     const updateProgressColorsForThemeChange = () => {

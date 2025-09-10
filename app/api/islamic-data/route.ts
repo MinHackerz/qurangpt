@@ -171,10 +171,6 @@ export async function GET(request: NextRequest) {
       region: 'West Bengal'
     };
     
-    // Debug logging (remove in production)
-    console.log('Client IP:', clientIP);
-    console.log('Detected location:', detectedLocation);
-    console.log('Using location:', locationData);
     
     const lat = locationData.lat.toString();
     const lng = locationData.lng.toString();

@@ -79,7 +79,11 @@ const validateAndCleanResponse = (response: string): string => {
   return cleanedResponse;
 };
 
-export const useAIResponse = (isTextLarge: boolean = false) => {
+export const useAIResponse = (isTextLarge: boolean = false, selectedContentTypes?: {
+  tafsir: boolean;
+  hadith: boolean;
+  suggestedQuestions: boolean;
+}) => {
   const generate_response_with_gemini = useCallback(async (prompt: string): Promise<string> => {
     try {
       const response = await fetch('/api/gemini', {
@@ -121,18 +125,7 @@ export const useAIResponse = (isTextLarge: boolean = false) => {
     // FORCE ENGLISH for any content that looks like English
     if (isDefinitelyEnglish(content)) {
       detectedLanguage = 'en';
-      console.log('🔒 PRODUCTION: Forcing English detection for content that is definitely English');
     }
-    
-    // PRODUCTION LOGGING
-    console.log('🔍 PRODUCTION Language Detection:', {
-      content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-      detectedLanguage,
-      isQuickQuestion: content.includes('What is the purpose of life according to Islam?') || 
-                     content.includes('Who is Prophet Muhammad (PBUH)?') || 
-                     content.includes('What does the Quran say about Allah?'),
-      timestamp: new Date().toISOString()
-    });
     
     // PRODUCTION-GRADE LANGUAGE INSTRUCTIONS
     let languageInstructions = '';
@@ -218,7 +211,11 @@ This verse directly addresses your question about patience by teaching us that A
 Question: ${content}`;
   }, []);
 
-  const formatResponse = useCallback(async (response: string, userQuery?: string, currentIsTextLarge?: boolean) => {
+  const formatResponse = useCallback(async (response: string, userQuery?: string, currentIsTextLarge?: boolean, contentTypes?: {
+    tafsir: boolean;
+    hadith: boolean;
+    suggestedQuestions: boolean;
+  }) => {
     // First, validate that the response is complete and properly formatted
     const validatedResponse = validateAndCleanResponse(response);
     
@@ -232,7 +229,6 @@ Question: ${content}`;
         
         const surahNumber = getSurahNumber(surahName.trim());
         if (!surahNumber) {
-          console.log(`⚠️ Could not find surah number for: "${surahName}" - using fallback value 1`);
         }
         const finalSurahNumber = surahNumber || 1;
         
@@ -256,40 +252,26 @@ Question: ${content}`;
           // Set audio range for the player
           audioRange = `${startAyah}-${endAyah}`;
           
-          console.log(`📋 Range ayah data:`, { 
-            finalSurahNumber, 
-            startAyah, 
-            endAyah,
-            ayahNumber: ayahNumberStr,
-            isRange,
-            surahName: surahName.trim() 
-          });
           
           // Fetch range text from API
           if (verseText) {
             // Legacy support: if AI somehow still provides text, use it
-            console.log(`⚠️ AI provided verse text (legacy mode) - using AI text`);
             finalVerseText = verseText;
           } else {
             // Normal mode: fetch range from API
-            console.log(`🔍 Fetching ayah range text from API for ${finalSurahNumber}:${startAyah}-${endAyah}`);
             try {
               const response = await fetch(`/api/ayah-range?surah=${finalSurahNumber}&startAyah=${startAyah}&endAyah=${endAyah}`);
               if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.text) {
                   finalVerseText = data.text;
-                  console.log(`✅ Successfully fetched ayah range text from API`);
                 } else {
-                  console.log(`❌ Failed to fetch ayah range text from API, will show reference only`);
                   finalVerseText = `[${surahName} ${ayahNumberStr}]`;
                 }
               } else {
-                console.log(`❌ API request failed, will show reference only`);
                 finalVerseText = `[${surahName} ${ayahNumberStr}]`;
               }
             } catch (error) {
-              console.error('Error fetching ayah range text:', error);
               finalVerseText = `[${surahName} ${ayahNumberStr}]`;
             }
           }
@@ -299,57 +281,42 @@ Question: ${content}`;
           globalAyahNumber = calculateGlobalAyahNumber(finalSurahNumber, ayahNum);
           ayahId = `ayah-${finalSurahNumber}-${ayahNum}-${Date.now()}`;
           
-          console.log(`📋 Single ayah data:`, { 
-            finalSurahNumber, 
-            ayahNum, 
-            ayahNumber: ayahNumberStr,
-            isRange,
-            surahName: surahName.trim() 
-          });
-          
           // Fetch single ayah text from API
           if (verseText) {
             // Legacy support: if AI somehow still provides text, use it
-            console.log(`⚠️ AI provided verse text (legacy mode) - using AI text`);
             finalVerseText = verseText;
           } else {
             // Normal mode: fetch from API
-            console.log(`🔍 Fetching ayah text from API for global ayah ${globalAyahNumber}`);
             try {
               const response = await fetch(`/api/ayah-text?globalAyah=${globalAyahNumber}`);
               if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.text) {
                   finalVerseText = data.text;
-                  console.log(`✅ Successfully fetched ayah text from API`);
                 } else {
-                  console.log(`❌ Failed to fetch ayah text from API, will show reference only`);
                   finalVerseText = `[${surahName} ${ayahNumberStr}]`;
                 }
               } else {
-                console.log(`❌ API request failed, will show reference only`);
                 finalVerseText = `[${surahName} ${ayahNumberStr}]`;
               }
             } catch (error) {
-              console.error('Error fetching ayah text:', error);
               finalVerseText = `[${surahName} ${ayahNumberStr}]`;
             }
           }
         }
         
-        // Fetch tafsir data
+        // Fetch tafsir data only if tafsir is selected
         let tafsirData;
-        if (isRange) {
-          // Fetch combined tafsir for range
-          const [startAyah, endAyah] = ayahNumberStr.split('-').map(num => parseInt(num.trim()));
-          console.log(`🔍 Fetching combined tafsir for Surah ${finalSurahNumber}, Range ${startAyah}-${endAyah}`);
-          tafsirData = await fetchTafsirRange(finalSurahNumber, startAyah, endAyah);
-          console.log(`📚 Combined tafsir data received:`, tafsirData);
+        if (contentTypes?.tafsir !== false) {
+          if (isRange) {
+            // Fetch combined tafsir for range
+            const [startAyah, endAyah] = ayahNumberStr.split('-').map(num => parseInt(num.trim()));
+            tafsirData = await fetchTafsirRange(finalSurahNumber, startAyah, endAyah);
+          } else {
+            // Fetch single ayah tafsir
+            tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
+          }
         } else {
-          // Fetch single ayah tafsir
-          console.log(`🔍 Fetching tafsir for Surah ${finalSurahNumber}, Ayah ${ayahNum}`);
-          tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
-          console.log(`📚 Tafsir data received:`, tafsirData);
         }
         
         // Generate tafsir buttons and content
@@ -357,7 +324,6 @@ Question: ${content}`;
         let tafsirContentHTML = '';
         
         if (tafsirData && tafsirData.tafsirs && tafsirData.tafsirs.length > 0) {
-          console.log(`✅ Tafsir found: ${tafsirData.tafsirs.length} tafsirs available`);
           tafsirButtonsHTML = `
             <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center">
               <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,7 +384,6 @@ Question: ${content}`;
           tafsirButtonsHTML += `
               </div>`;
         } else {
-          console.log(`❌ No tafsir found for Surah ${finalSurahNumber}, Ayah ${ayahNum}`);
           tafsirButtonsHTML = `
             <div class="text-center text-gray-500 dark:text-gray-400 flex-1 flex flex-col justify-center">
               <svg class="w-8 h-8 mx-auto mb-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -600,22 +565,22 @@ Question: ${content}`;
       processedText = processedText.replace(match, replacement);
     });
 
-    // Process hadith references
-    const hadithReferences = extractHadithReferences(processedText);
-    console.log(`🔍 Found ${hadithReferences.length} hadith references:`, hadithReferences);
-
-    // Intelligent hadith search based on user query
+    // Process hadith references only if hadith is selected
+    let hadithReferences: any[] = [];
     let intelligentHadiths: HadithData[] = [];
-    try {
-      if (userQuery && userQuery.trim()) {
-        console.log(`🔍 Searching for hadiths with user query:`, userQuery);
-        intelligentHadiths = await searchHadiths(userQuery.trim(), 3);
-        console.log(`✅ Found ${intelligentHadiths.length} intelligent hadiths:`, intelligentHadiths);
-      } else {
-        console.log(`⚠️ No user query provided for hadith search`);
+    
+    if (contentTypes?.hadith !== false) {
+      hadithReferences = extractHadithReferences(processedText);
+
+      // Intelligent hadith search based on user query
+      try {
+        if (userQuery && userQuery.trim()) {
+          intelligentHadiths = await searchHadiths(userQuery.trim(), 3);
+        } else {
+        }
+      } catch (error) {
       }
-    } catch (error) {
-      console.error('Error in intelligent hadith search:', error);
+    } else {
     }
 
     // Process each hadith reference
@@ -647,7 +612,6 @@ Question: ${content}`;
             };
           }
         } catch (error) {
-          console.error('Error processing hadith reference:', error);
           return {
             match: ref.originalMatch,
             replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors duration-200 font-medium text-sm">
@@ -668,9 +632,8 @@ Question: ${content}`;
       processedText = processedText.replace(match, replacement);
     });
 
-    // Add intelligent hadiths at the end of the response
-    if (intelligentHadiths.length > 0) {
-      console.log(`🎯 Adding ${intelligentHadiths.length} intelligent hadiths to response`);
+    // Add intelligent hadiths at the end of the response only if hadith is selected
+    if (contentTypes?.hadith !== false && intelligentHadiths.length > 0) {
       const intelligentHadithsHTML = intelligentHadiths.map((hadith, index) => 
         generateHadithBoxHTML(hadith, index + 1000, currentIsTextLarge ?? isTextLarge) // Use high index to avoid conflicts
       ).join('');
@@ -692,9 +655,7 @@ Question: ${content}`;
           </div>
         </div>
       `;
-      console.log(`✅ Added hadiths HTML to response`);
     } else {
-      console.log(`⚠️ No intelligent hadiths to add to response`);
     }
     
     // FALLBACK: Convert any remaining ayah references to simple inline links
@@ -776,8 +737,59 @@ Question: ${content}`;
       .replace(/^\s*[\r\n]+/gm, '') // Remove empty lines
       .replace(/\n{3,}/g, '\n\n'); // Limit consecutive line breaks
     
+    // Generate suggested questions if the option is enabled
+    if (contentTypes?.suggestedQuestions || selectedContentTypes?.suggestedQuestions) {
+      try {
+        
+        // Detect language from user query
+        const detectedLanguage = userQuery ? detectLanguage(userQuery) : 'en';
+        
+        const suggestedQuestionsResponse = await fetch('/api/suggested-questions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            userQuestion: userQuery || '',
+            language: detectedLanguage
+          }),
+        });
+        
+        if (suggestedQuestionsResponse.ok) {
+          const suggestedData = await suggestedQuestionsResponse.json();
+          if (suggestedData.success && suggestedData.questions && suggestedData.questions.length > 0) {
+            
+            // Add suggested questions to the response
+            const suggestedQuestionsHTML = suggestedData.questions.map((question: string, index: number) => 
+              `<div class="suggested-question-item mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer" data-suggested-question="true">
+                <p class="text-gray-700 dark:text-gray-300 ${isTextLarge ? 'text-base' : 'text-sm'}">${question}</p>
+              </div>`
+            ).join('');
+            
+            processedText += `
+              <div class="suggested-questions-section mt-8 mb-6">
+                <div class="flex items-center space-x-3 mb-4">
+                  <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    Suggested Questions
+                  </h3>
+                </div>
+                <div class="space-y-2">
+                  ${suggestedQuestionsHTML}
+                </div>
+              </div>
+            `;
+          }
+        }
+      } catch (error) {
+        // Don't fail the main response if suggested questions fail
+      }
+    }
+    
     return processedText;
-  }, [isTextLarge]);
+  }, [isTextLarge, selectedContentTypes]);
 
   const askQuran = useCallback(async (
     content: string,
@@ -787,7 +799,12 @@ Question: ${content}`;
     setError: (error: string) => void,
     setDisplayedContent: (content: string) => void,
     setCurrentLanguage: (lang: string) => void,
-    setShowTranslateSection?: (show: boolean) => void
+    setShowTranslateSection?: (show: boolean) => void,
+    contentTypes?: {
+      tafsir: boolean;
+      hadith: boolean;
+      suggestedQuestions: boolean;
+    }
   ) => {
     const trimmedContent = content.trim();
     
@@ -798,7 +815,6 @@ Question: ${content}`;
 
     // PRODUCTION: Force English detection for any content that could be English
     const detectedLanguage = detectLanguage(trimmedContent);
-    console.log('🔍 PRODUCTION: Final language detection result:', detectedLanguage);
 
     // Audio cleanup is now handled in ResponseSection component
 
@@ -814,13 +830,11 @@ Question: ${content}`;
     const prompt = getPrompt(trimmedContent);
 
     try {
-      console.log(`🔄 PRODUCTION: Generating response for question: ${trimmedContent.substring(0, 50)}...`);
       
       const response = await generate_response_with_gemini(prompt);
       
-      console.log(`✅ PRODUCTION: Response generated successfully`);
       
-      const formattedResponse = await formatResponse(response, trimmedContent, isTextLarge);
+      const formattedResponse = await formatResponse(response, trimmedContent, isTextLarge, contentTypes || selectedContentTypes);
       
       setSummary(formattedResponse);
       setDisplayedContent(formattedResponse);
@@ -828,10 +842,8 @@ Question: ${content}`;
       setShowSummary(true);
       setShowTranslateSection?.(true);
       
-      console.log('✅ PRODUCTION: Response displayed successfully');
       
     } catch (error) {
-      console.error('🚨 PRODUCTION: Error generating response:', error);
       if (error instanceof Error) {
         setError(`Failed to generate response: ${error.message}. Please try again.`);
       } else {
@@ -840,7 +852,7 @@ Question: ${content}`;
     } finally {
       setIsProcessing(false);
     }
-  }, [getPrompt, generate_response_with_gemini, formatResponse, isTextLarge]);
+  }, [getPrompt, generate_response_with_gemini, formatResponse, isTextLarge, selectedContentTypes]);
 
   return {
     askQuran,

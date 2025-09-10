@@ -16,14 +16,12 @@ export const detectLanguage = (text: string): string => {
   ];
   
   if (quickQuestionPatterns.some(pattern => text.includes(pattern) || pattern.includes(text))) {
-    console.log('🔒 PRODUCTION: QuickQuestion detected - forcing English');
     return 'en';
   }
   
   // CRITICAL: Force English for any question that starts with English question words
   const englishQuestionStarters = /^(what|who|when|where|why|how|which|whose|whom|is|are|was|were|do|does|did|will|would|could|should|may|might|can|must|shall)\s/i;
   if (englishQuestionStarters.test(text.trim())) {
-    console.log('🔒 PRODUCTION: English question starter detected - forcing English');
     return 'en';
   }
   
@@ -38,7 +36,6 @@ export const detectLanguage = (text: string): string => {
     const englishRatio = englishWordCount / words.length;
     
     if (englishRatio > 0.3) { // More than 30% English words
-      console.log('🔒 PRODUCTION: Islamic English terms with English context detected - forcing English');
       return 'en';
     }
   }

@@ -15,6 +15,7 @@ interface SuggestedQuestionsProps {
   translatedQuestions?: string[];
   onQuestionsGenerated?: (questions: string[]) => void; // Callback to notify parent of new questions
   isTextLarge?: boolean; // Text size state from parent
+  autoGenerate?: boolean; // Whether to auto-generate questions when component becomes visible
 }
 
 interface AIQuestionResponse {
@@ -30,7 +31,8 @@ export default function SuggestedQuestions({
   currentLanguage = 'en',
   translatedQuestions,
   onQuestionsGenerated,
-  isTextLarge = false
+  isTextLarge = false,
+  autoGenerate = true
 }: SuggestedQuestionsProps) {
   const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState<string[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
@@ -296,25 +298,33 @@ export default function SuggestedQuestions({
     }
   }, [questionCache, onQuestionsGenerated]);
 
-  // Generate questions when user question changes
+  // Generate questions when user question changes (only if autoGenerate is enabled)
   useEffect(() => {
-    if (isVisible && userQuestion && userQuestion.trim().length > 0) {
+    if (isVisible && userQuestion && userQuestion.trim().length > 0 && autoGenerate) {
       generateAISuggestedQuestions(userQuestion);
     }
-  }, [isVisible, userQuestion, generateAISuggestedQuestions]);
+  }, [isVisible, userQuestion, generateAISuggestedQuestions, autoGenerate]);
 
 
 
   // Determine which questions to show based on current language and available translations
   const relevantQuestions = (() => {
+    // If autoGenerate is false, don't show any existing questions
+    if (!autoGenerate) {
+      return [];
+    }
+    
+    // For non-English languages, show translated questions if available
     if (currentLanguage !== 'en' && translatedQuestions && translatedQuestions.length > 0) {
       return translatedQuestions;
     }
     
+    // For English, show translated questions if available, otherwise show AI-generated questions
     if (currentLanguage === 'en' && translatedQuestions && translatedQuestions.length > 0) {
       return translatedQuestions;
     }
     
+    // Fallback to AI-generated questions if no translations available
     if (aiGeneratedQuestions && aiGeneratedQuestions.length > 0) {
       return aiGeneratedQuestions;
     }
@@ -371,13 +381,13 @@ export default function SuggestedQuestions({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-4xl mx-auto px-3 sm:px-4 lg:px-0 mb-12 sm:mb-0"
-        style={{ zIndex: 1 }}
+        className="w-full max-w-4xl mx-auto px-3 sm:px-4 lg:px-0 mb-8 sm:mb-0"
+        style={{ zIndex: 60 }}
       >
         {/* Suggested Questions Container */}
-        <div className="rounded-xl overflow-hidden" style={{ zIndex: 2, position: 'relative' }}>
+        <div className="bg-transparent border-0" style={{ zIndex: 2, position: 'relative' }}>
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-0 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-0 py-0 mb-4">
             <div className="flex items-center space-x-3">
               <Bars3Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -394,10 +404,10 @@ export default function SuggestedQuestions({
           </div>
           
           {/* Questions List */}
-          <div className="divide-y divide-gray-200 dark:divide-gray-700 pb-16 sm:pb-8 lg:pb-8">
+          <div className="space-y-0 pb-8 sm:pb-6 lg:pb-6">
             {isGeneratingQuestions ? (
               // Loading state
-              <div className="px-4 sm:px-6 py-6 sm:py-8 text-center">
+              <div className="px-0 py-4 text-center">
                 <div className="flex items-center justify-center space-x-3">
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -411,7 +421,7 @@ export default function SuggestedQuestions({
               </div>
             ) : generationError ? (
               // Error state
-              <div className="px-4 sm:px-6 py-6 sm:py-8 text-center">
+              <div className="px-0 py-4 text-center">
                 <div className="text-red-500 dark:text-red-400 text-sm">
                   <p>Failed to generate questions</p>
                   <button 
@@ -430,7 +440,7 @@ export default function SuggestedQuestions({
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer group select-none"
+                  className="px-0 py-3 border-b border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors duration-200 cursor-pointer group select-none bg-transparent rounded-none"
                   data-suggested-question="true"
                   onClick={(e) => {
                     e.preventDefault();
@@ -505,17 +515,34 @@ export default function SuggestedQuestions({
               ))
             ) : (
               // No questions state
-              <div className="px-4 sm:px-6 py-6 sm:py-8 text-center">
-                <span className="text-gray-500 dark:text-gray-400 text-sm">
-                  {currentLanguage === 'en' 
-                    ? 'No suggested questions available yet. Questions will appear after you ask a question.'
-                    : 'No suggested questions available yet. Questions will appear after you ask a question.'
-                  }
-                </span>
+              <div className="px-0 py-4 text-center">
+                {!autoGenerate ? (
+                  // Manual generation mode - show generate button
+                  <div className="space-y-3">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm block">
+                      Suggested questions will be generated for new questions only.
+                    </span>
+                    <button 
+                      onClick={() => generateAISuggestedQuestions(userQuestion)}
+                      disabled={isGeneratingQuestions}
+                      className="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-medium hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingQuestions ? 'Generating...' : 'Generate Questions for This Content'}
+                    </button>
+                  </div>
+                ) : (
+                  // Auto-generation mode - show waiting message
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">
+                    {currentLanguage === 'en' 
+                      ? 'No suggested questions available yet. Questions will appear after you ask a question.'
+                      : 'No suggested questions available yet. Questions will appear after you ask a question.'
+                    }
+                  </span>
+                )}
               </div>
             )}
             {/* Extra bottom spacing for mobile to prevent last question cutoff */}
-            <div className="h-16 sm:h-8 lg:h-8"></div>
+            <div className="h-8 sm:h-6 lg:h-6"></div>
           </div>
         </div>
       </motion.div>

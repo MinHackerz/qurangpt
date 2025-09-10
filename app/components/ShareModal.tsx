@@ -64,7 +64,6 @@ export default function ShareModal({
         });
       }
     } catch (err) {
-      console.error('Failed to copy:', err);
     }
   };
 
@@ -268,7 +267,6 @@ export default function ShareModal({
           });
         }
       } catch (error) {
-        console.error('Error copying content:', error);
         // Fallback to simple copy
         await navigator.clipboard.writeText(`Question: ${question}\n\nAnswer:\n\n${content.replace(/<[^>]*>/g, '').trim()}`);
       }
@@ -297,7 +295,6 @@ export default function ShareModal({
         
         onClose();
       } catch (err) {
-        console.error('Error sharing:', err);
       }
     }
   };

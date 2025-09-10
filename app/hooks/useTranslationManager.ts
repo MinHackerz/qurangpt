@@ -30,11 +30,22 @@ export const useTranslationManager = () => {
         hadithBox.outerHTML = placeholder;
       });
       
+      // Find all suggested questions sections and replace them with placeholders
+      const suggestedQuestionsSections = tempDiv.querySelectorAll('.suggested-questions-section');
+      const suggestedQuestionsPlaceholders: string[] = [];
+      
+      suggestedQuestionsSections.forEach((suggestedSection, index) => {
+        const placeholder = `__SUGGESTED_QUESTIONS_${index}__`;
+        suggestedQuestionsPlaceholders.push(suggestedSection.outerHTML);
+        suggestedSection.outerHTML = placeholder;
+      });
+      
       // Store placeholders for later restoration
       (tempDiv as any).ayahPlaceholders = ayahPlaceholders;
       (tempDiv as any).hadithPlaceholders = hadithPlaceholders;
+      (tempDiv as any).suggestedQuestionsPlaceholders = suggestedQuestionsPlaceholders;
       
-      // Return the HTML with ayah and hadith boxes replaced by placeholders
+      // Return the HTML with ayah, hadith, and suggested questions sections replaced by placeholders
       return tempDiv.innerHTML;
     } catch (error) {
       // Error extracting AI content
@@ -42,46 +53,6 @@ export const useTranslationManager = () => {
       return formattedResponse.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
     }
   }, []);
-
-  // Function to merge translated AI content with preserved API content
-  const mergeTranslatedContent = useCallback(async (originalFormattedResponse: string, translatedAIContent: string) => {
-    try {
-      // Extract ayah boxes from original response
-      const originalDiv = document.createElement('div');
-      originalDiv.innerHTML = originalFormattedResponse;
-      const ayahBoxes = originalDiv.querySelectorAll('.stylish-ayah-reference');
-      const ayahBoxesArray = Array.from(ayahBoxes).map(box => box.outerHTML);
-      
-      // Extract hadith boxes from original response
-      const hadithBoxes = originalDiv.querySelectorAll('.stylish-hadith-reference');
-      const hadithBoxesArray = Array.from(hadithBoxes).map(box => box.outerHTML);
-      
-      // Replace placeholders in translated content with original boxes
-      let mergedContent = translatedAIContent;
-      
-      // Replace ayah placeholders
-      ayahBoxesArray.forEach((ayahBox, index) => {
-        const placeholder = `__AYAH_BOX_${index}__`;
-        mergedContent = mergedContent.replace(placeholder, ayahBox);
-      });
-      
-      // Replace hadith placeholders
-      hadithBoxesArray.forEach((hadithBox, index) => {
-        const placeholder = `__HADITH_BOX_${index}__`;
-        mergedContent = mergedContent.replace(placeholder, hadithBox);
-      });
-      
-      // Process any new ayah references that might have been created in the translated text
-      const processedContent = await formatResponse(mergedContent);
-      
-      return processedContent;
-    } catch (error) {
-      // Error merging translated content
-      // Fallback: return the translated content directly if merging fails
-      console.error('Error merging translated content:', error);
-      return translatedAIContent;
-    }
-  }, [formatResponse]);
 
   // Optimized translation function for AI content only
   const translateAIContent = useCallback(async (aiContent: string, targetLanguage: string, sourceLanguage?: string): Promise<string> => {
@@ -112,6 +83,109 @@ export const useTranslationManager = () => {
       throw error;
     }
   }, []);
+
+  // Function to translate suggested questions within HTML content
+  const translateSuggestedQuestionsInHTML = useCallback(async (suggestedQuestionsHTML: string, targetLanguage: string = 'en') => {
+    try {
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = suggestedQuestionsHTML;
+      
+      // Find all suggested question items
+      const questionItems = tempDiv.querySelectorAll('.suggested-question-item p');
+      const questions = Array.from(questionItems).map(p => p.textContent || '').filter(q => q.trim());
+      
+      
+      if (questions.length === 0) {
+        return suggestedQuestionsHTML; // No questions to translate
+      }
+      
+      // Translate the questions
+      const questionsText = questions.join('\n\n');
+      
+      // Detect source language instead of assuming English
+      const { detectLanguage } = await import('../utils/languageDetection');
+      const sourceLanguage = detectLanguage(questionsText);
+      
+      // Skip translation if source and target are the same
+      if (sourceLanguage === targetLanguage) {
+        return suggestedQuestionsHTML;
+      }
+      
+      const translatedQuestionsText = await translateAIContent(questionsText, targetLanguage, sourceLanguage);
+      const translatedQuestions = translatedQuestionsText.split('\n\n').filter(q => q.trim());
+      
+      
+      // Replace the question text in the HTML
+      questionItems.forEach((p, index) => {
+        if (translatedQuestions[index]) {
+          p.textContent = translatedQuestions[index];
+        }
+      });
+      
+      return tempDiv.innerHTML;
+    } catch (error) {
+      return suggestedQuestionsHTML; // Return original if translation fails
+    }
+  }, [translateAIContent]);
+
+  // Function to merge translated AI content with preserved API content
+  const mergeTranslatedContent = useCallback(async (originalFormattedResponse: string, translatedAIContent: string, targetLanguage: string = 'en') => {
+    try {
+      // Extract ayah boxes from original response
+      const originalDiv = document.createElement('div');
+      originalDiv.innerHTML = originalFormattedResponse;
+      const ayahBoxes = originalDiv.querySelectorAll('.stylish-ayah-reference');
+      const ayahBoxesArray = Array.from(ayahBoxes).map(box => box.outerHTML);
+      
+      // Extract hadith boxes from original response
+      const hadithBoxes = originalDiv.querySelectorAll('.stylish-hadith-reference');
+      const hadithBoxesArray = Array.from(hadithBoxes).map(box => box.outerHTML);
+      
+      // Extract suggested questions sections from original response
+      const suggestedQuestionsSections = originalDiv.querySelectorAll('.suggested-questions-section');
+      const suggestedQuestionsArray = Array.from(suggestedQuestionsSections).map(section => section.outerHTML);
+      
+      
+      // Replace placeholders in translated content with original boxes
+      let mergedContent = translatedAIContent;
+      
+      // Replace ayah placeholders
+      ayahBoxesArray.forEach((ayahBox, index) => {
+        const placeholder = `__AYAH_BOX_${index}__`;
+        mergedContent = mergedContent.replace(placeholder, ayahBox);
+      });
+      
+      // Replace hadith placeholders
+      hadithBoxesArray.forEach((hadithBox, index) => {
+        const placeholder = `__HADITH_BOX_${index}__`;
+        mergedContent = mergedContent.replace(placeholder, hadithBox);
+      });
+      
+      // Replace suggested questions placeholders with translated versions
+      for (let index = 0; index < suggestedQuestionsArray.length; index++) {
+        const placeholder = `__SUGGESTED_QUESTIONS_${index}__`;
+        const originalSection = suggestedQuestionsArray[index];
+        
+        
+        // Extract and translate the suggested questions within the section
+        const translatedSection = await translateSuggestedQuestionsInHTML(originalSection, targetLanguage);
+        mergedContent = mergedContent.replace(placeholder, translatedSection);
+        
+      }
+      
+      // Process any new ayah references that might have been created in the translated text
+      const processedContent = await formatResponse(mergedContent);
+      
+      return processedContent;
+    } catch (error) {
+      // Error merging translated content
+      // Fallback: return the translated content directly if merging fails
+      return translatedAIContent;
+    }
+  }, [formatResponse, translateSuggestedQuestionsInHTML]);
+
+
 
   // Function to extract ayah information from ayah boxes for copying
   const extractAyahInfoForCopy = useCallback((formattedResponse: string) => {
@@ -145,7 +219,6 @@ export const useTranslationManager = () => {
       });
       return ayahInfo;
     } catch (error) {
-      console.error('Error extracting ayah info:', error);
       return [];
     }
   }, []);
@@ -202,7 +275,6 @@ export const useTranslationManager = () => {
       
       return hadithInfo;
     } catch (error) {
-      console.error('Error extracting hadith info:', error);
       return [];
     }
   }, []);
@@ -329,7 +401,6 @@ export const useTranslationManager = () => {
             // Update the summary element with translated text
             summaryElement.textContent = translatedSummary;
           } catch (error) {
-            console.error('Error translating hadith summary:', error);
             // Keep original summary if translation fails
           }
         }
@@ -337,7 +408,6 @@ export const useTranslationManager = () => {
       
       return tempDiv.innerHTML;
     } catch (error) {
-      console.error('Error translating hadith summaries:', error);
       return formattedResponse; // Return original if translation fails
     }
   }, [translateAIContent]);

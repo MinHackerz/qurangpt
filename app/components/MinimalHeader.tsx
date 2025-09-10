@@ -102,7 +102,7 @@ export default function MinimalHeader({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleBackToHome}
-            className="flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center justify-center w-9 h-9 rounded-md border transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-600"
             title="Back to home"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +135,7 @@ export default function MinimalHeader({
             onClick={toggleTheme}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group"
+            className="flex items-center justify-center w-9 h-9 rounded-md border transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group border-gray-200 dark:border-gray-600"
             title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
           >
             <motion.div
@@ -163,12 +163,12 @@ export default function MinimalHeader({
               whileTap={{ scale: 0.95 }}
               onClick={handleShareClick}
               disabled={isSharing}
-              className={`flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 ${
+              className={`flex items-center justify-center w-9 h-9 rounded-md border transition-all duration-200 ${
                 showShareSuccess 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700' 
                   : isSharing
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-200 dark:border-gray-600'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-600'
               }`}
               title={showShareSuccess ? "Share link copied!" : "Share this content"}
             >
@@ -226,7 +226,7 @@ export default function MinimalHeader({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleBackToHome}
-          className="flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+          className="flex items-center justify-center w-10 h-10 rounded-md border transition-all duration-200 backdrop-blur-sm bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
           title="Back to home"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +239,7 @@ export default function MinimalHeader({
           onClick={toggleTheme}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 group"
+          className="flex items-center justify-center w-10 h-10 rounded-md border transition-all duration-200 backdrop-blur-sm bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 group"
           title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
         >
           <motion.div
@@ -277,12 +277,12 @@ export default function MinimalHeader({
             whileTap={{ scale: 0.95 }}
             onClick={handleShareClick}
             disabled={isSharing}
-            className={`flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm ${
+            className={`flex items-center justify-center w-10 h-10 rounded-md border transition-all duration-200 backdrop-blur-sm ${
               showShareSuccess 
                 ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
                 : isSharing
                 ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                : 'bg-white/95 dark:bg-gray-800/95 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                : 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
             }`}
             title={showShareSuccess ? "Share link copied!" : "Share this content"}
           >

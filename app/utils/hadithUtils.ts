@@ -240,7 +240,6 @@ export async function searchHadiths(query: string, limit: number = 5): Promise<H
     
     return [];
   } catch (error) {
-    console.error('Error searching hadiths:', error);
     return [];
   }
 }
@@ -261,14 +260,12 @@ export async function fetchSpecificHadith(bookSlug: string, hadithNumber: string
       if (data.hadith.status && data.hadith.status.toLowerCase() === 'sahih') {
         return data.hadith;
       } else {
-        console.log(`Hadith ${hadithNumber} from ${bookSlug} is not Sahih (status: ${data.hadith.status})`);
         return null;
       }
     }
     
     return null;
   } catch (error) {
-    console.error('Error fetching specific hadith:', error);
     return null;
   }
 }

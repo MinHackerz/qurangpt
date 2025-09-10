@@ -23,6 +23,17 @@ interface ChatSectionOutputProps {
   // Cache management
   translatedText?: string; // The actual translated text to cache
   onCacheTranslation?: (langCode: string, translatedText: string) => void; // Callback to cache translation
+  // Content type selection props
+  selectedContentTypes?: {
+    tafsir: boolean;
+    hadith: boolean;
+    suggestedQuestions: boolean;
+  };
+  onContentTypeChange?: (contentTypes: {
+    tafsir: boolean;
+    hadith: boolean;
+    suggestedQuestions: boolean;
+  }) => void;
 }
 
 export default function ChatSectionOutput({ 
@@ -42,7 +53,10 @@ export default function ChatSectionOutput({
   currentLanguage,
   // Cache management
   translatedText,
-  onCacheTranslation
+  onCacheTranslation,
+  // Content type selection props
+  selectedContentTypes = { tafsir: false, hadith: false, suggestedQuestions: false },
+  onContentTypeChange
 }: ChatSectionOutputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -56,6 +70,24 @@ export default function ChatSectionOutput({
   
   // Track if we're using cached translation to prevent progress animation
   const [isUsingCachedTranslation, setIsUsingCachedTranslation] = useState(false);
+  
+  // State for content type dropdown
+  const [showContentTypeDropdown, setShowContentTypeDropdown] = useState(false);
+  
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showContentTypeDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.content-type-dropdown') && !target.closest('.plus-icon-button')) {
+          setShowContentTypeDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showContentTypeDropdown]);
   
   // Popular languages to show first (same as LanguageTabs)
   const POPULAR_LANGUAGES = [
@@ -160,8 +192,22 @@ export default function ChatSectionOutput({
     }
   }, [translationCache, originalText, onTranslationChange, getCachedTranslation]);
 
+  // Handle content type toggle
+  const handleContentTypeToggle = useCallback((contentType: 'tafsir' | 'hadith' | 'suggestedQuestions') => {
+    if (!onContentTypeChange) return;
+    
+    const newContentTypes = {
+      ...selectedContentTypes,
+      [contentType]: !selectedContentTypes[contentType]
+    };
+    onContentTypeChange(newContentTypes);
+  }, [selectedContentTypes, onContentTypeChange]);
 
-  // Auto-resize function with improved mobile support
+  // Check if any content types are selected
+  const hasSelectedContentTypes = selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.suggestedQuestions;
+
+
+  // Auto-resize function with improved mobile support and scrollable behavior
   const autoResize = (target: HTMLTextAreaElement) => {
     // Reset height to auto to get accurate scrollHeight
     target.style.height = 'auto';
@@ -171,25 +217,18 @@ export default function ChatSectionOutput({
     
     // Mobile-first height calculations
     const isMobile = window.innerWidth < 640;
-    const minHeight = isMobile ? 56 : 60; // Increased mobile min height
-    const maxHeight = isMobile ? 300 : 240; // Increased mobile max height for better text visibility
+    const minHeight = isMobile ? 48 : 56; // Optimized mobile min height
+    const maxHeight = isMobile ? 200 : 180; // Optimized mobile max height
     
     // Calculate new height with better mobile support
     let newHeight = Math.max(scrollHeight, minHeight);
-    
-    // On mobile, allow more height for better text visibility
-    if (isMobile && scrollHeight > minHeight) {
-      // Add extra padding for mobile to ensure text is fully visible
-      newHeight = Math.min(scrollHeight + 20, maxHeight);
-    } else {
-      newHeight = Math.min(newHeight, maxHeight);
-    }
+    newHeight = Math.min(newHeight, maxHeight);
     
     // Apply the new height
     target.style.height = newHeight + 'px';
     
-    // Ensure the textarea doesn't get cut off on mobile
-    if (isMobile && newHeight >= maxHeight) {
+    // Enable scrolling when content exceeds max height
+    if (newHeight >= maxHeight) {
       target.style.overflowY = 'auto';
     } else {
       target.style.overflowY = 'hidden';
@@ -250,7 +289,7 @@ export default function ChatSectionOutput({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-        className="mb-0 fixed bottom-[-100px] left-0 right-0 overflow-hidden z-50"
+        className="mb-0 fixed bottom-0 left-0 right-0 overflow-hidden z-50"
         style={{
           // PWA safe area support
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -272,8 +311,8 @@ export default function ChatSectionOutput({
           {showTranslateSection && (
             <div className="absolute -top-12 left-0 right-0 z-10 w-full px-4 sm:px-0">
               <div className="max-w-4xl mx-auto">
-                <div className="flex items-center space-x-3 w-full">
-                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium flex-shrink-0">Translate:</span>
+                <div className="flex items-center space-x-2 sm:space-x-3 w-full">
+                  <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium flex-shrink-0">Translate:</span>
                   
                   {/* Language buttons with exact LanguageTabs styling - Dynamic from API */}
                   {isLoadingLanguages ? (
@@ -428,24 +467,187 @@ export default function ChatSectionOutput({
           {/* Main Input Field - Minimalist Professional */}
           <div className="relative bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200">
             
+            {/* Content Type Dropdown - Above input field */}
+            <AnimatePresence>
+              {showContentTypeDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute -top-16 left-0 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 min-w-[200px] content-type-dropdown"
+                >
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => handleContentTypeToggle('tafsir')}
+                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                        selectedContentTypes.tafsir
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                        selectedContentTypes.tafsir
+                          ? 'border-emerald-500 bg-emerald-500'
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}>
+                        {selectedContentTypes.tafsir && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      Tafsir
+                    </button>
+                    <button
+                      onClick={() => handleContentTypeToggle('hadith')}
+                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                        selectedContentTypes.hadith
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                        selectedContentTypes.hadith
+                          ? 'border-emerald-500 bg-emerald-500'
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}>
+                        {selectedContentTypes.hadith && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      Hadith
+                    </button>
+                    <button
+                      onClick={() => handleContentTypeToggle('suggestedQuestions')}
+                      className={`w-full text-left px-3 py-2 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                        selectedContentTypes.suggestedQuestions
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                        selectedContentTypes.suggestedQuestions
+                          ? 'border-emerald-500 bg-emerald-500'
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}>
+                        {selectedContentTypes.suggestedQuestions && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      Suggested Questions
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Placeholder Text - At the top, hidden when typing */}
+            {!content.trim() && (
+              <div className="absolute top-2 left-3 z-10 pointer-events-none">
+                <span className="text-gray-500 dark:text-gray-400 text-sm font-light tracking-wide">
+                  Ask me anything about Quran & Islam...
+                </span>
+              </div>
+            )}
+
+            {/* Plus Button - Fixed in bottom left corner */}
+            <button
+              onClick={() => setShowContentTypeDropdown(!showContentTypeDropdown)}
+              className="absolute bottom-2 left-3 w-6 h-6 rounded-md flex items-center justify-center transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 plus-icon-button z-10"
+              title="Add content types"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+
+            {/* Selected Content Types Display - At the bottom, positioned after plus button */}
+            <AnimatePresence>
+              {(selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.suggestedQuestions) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="absolute bottom-2 left-12 right-12 z-10"
+                >
+                  <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
+                    {selectedContentTypes.tafsir && (
+                      <span 
+                        onClick={() => handleContentTypeToggle('tafsir')}
+                        className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
+                      >
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-xs sm:text-xs font-medium">Tafsir</span>
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                    )}
+                    {selectedContentTypes.hadith && (
+                      <span 
+                        onClick={() => handleContentTypeToggle('hadith')}
+                        className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
+                      >
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span className="text-xs sm:text-xs font-medium">Hadith</span>
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                    )}
+                    {selectedContentTypes.suggestedQuestions && (
+                      <span 
+                        onClick={() => handleContentTypeToggle('suggestedQuestions')}
+                        className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
+                      >
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs sm:text-xs font-medium">Questions</span>
+                        <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
             <textarea
               ref={textareaRef}
-              placeholder="Ask me anything about Quran & Islam..."
+              placeholder=""
               value={content}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               rows={1}
-              className={`chat-input-textarea w-full p-3 sm:p-4 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 placeholder:font-light placeholder:tracking-wide border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed min-h-[48px] sm:min-h-[52px] max-h-[200px] sm:max-h-[180px] transition-all duration-200 ${
-                (content.trim() || showSummary) ? 'pr-24 sm:pr-28' : 'pr-14 sm:pr-16'
+              className={`chat-input-textarea w-full p-3 sm:p-4 bg-transparent text-black dark:text-white border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed transition-all duration-200 ${
+                (content.trim() || showSummary) ? 'pr-20 sm:pr-24 pl-3' : 'pr-14 sm:pr-16 pl-3'
+              } ${
+                (selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.suggestedQuestions) 
+                  ? 'pt-2 pb-8 sm:pt-2 sm:pb-10' 
+                  : 'pt-2 pb-8 sm:pt-2 sm:pb-10'
               }`}
               style={{ 
                 height: 'auto',
-                overflow: 'hidden'
+                overflowY: 'auto',
+                maxHeight: '200px'
               }}
             />
             
+
             {/* Action buttons container */}
-            <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
+            <div className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 flex items-center gap-2 sm:gap-3">
               {/* Send Button - Minimalist Design */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -511,9 +713,9 @@ export default function ChatSectionOutput({
       </div>
       
       {/* Warning Text - One liner below input section */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-0 -mt-2 pb-10 relative z-30">
+      <div className="max-w-4xl mx-auto px-4 sm:px-0 -mt-2 pb-4 sm:pb-6 relative z-30">
         <div className="text-center">
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             <span className="text-amber-600 dark:text-amber-400 font-semibold mr-1">⚠️ Warning:</span>
             AI responses may contain inaccuracies. Verify religious information with authentic sources.
           </p>

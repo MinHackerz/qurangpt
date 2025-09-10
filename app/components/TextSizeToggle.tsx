@@ -21,19 +21,19 @@ export default function TextSizeToggle({
       case 'small':
         return (
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h12M4 15h16" />
           </svg>
         );
       case 'medium':
         return (
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h12M4 15h16" />
           </svg>
         );
       case 'large':
         return (
           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h12M4 15h16" />
           </svg>
         );
     }
@@ -62,11 +62,9 @@ export default function TextSizeToggle({
       onMouseLeave={() => setIsHovered(false)}
       onClick={cycleSize}
       className={`
-        flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200
-        bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 
-        text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white 
-        border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600
-        shadow-sm hover:shadow-md
+        flex items-center justify-center w-10 h-10 rounded-md border transition-all duration-200 backdrop-blur-sm
+        bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800
+        text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600
         ${className}
       `}
       title={getSizeLabel(currentSize)}

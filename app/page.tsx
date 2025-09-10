@@ -88,8 +88,15 @@ function HomeContent() {
   const [shareUrl, setShareUrl] = useState<string>('');
   const [showShareSuccess, setShowShareSuccess] = useState(false);
   
-  // AI Response hook with text size state
-  const { askQuran } = useAIResponse(isTextLarge);
+  // Content type selection state
+  const [selectedContentTypes, setSelectedContentTypes] = useState({
+    tafsir: true,
+    hadith: false,
+    suggestedQuestions: false
+  });
+  
+  // AI Response hook with text size state and content type selection
+  const { askQuran } = useAIResponse(isTextLarge, selectedContentTypes);
   
   // Handle question parameter from URL (from shared page)
   useEffect(() => {
@@ -124,6 +131,7 @@ function HomeContent() {
           chatManager.setDisplayedContent,
           chatManager.setCurrentLanguage,
           chatManager.setShowTranslateSection,
+          selectedContentTypes
         );
       }, 100);
       
@@ -132,8 +140,51 @@ function HomeContent() {
       url.searchParams.delete('question');
       window.history.replaceState({}, '', url.toString());
     }
-  }, [searchParams, askQuran, chatManager]); // Include all dependencies to fix warning
+  }, [searchParams, askQuran, chatManager, selectedContentTypes]);
 
+  // Handle suggested question clicks from embedded HTML
+  useEffect(() => {
+    const handleEmbeddedSuggestedQuestionClick = (event: CustomEvent) => {
+      const question = event.detail.question;
+      if (question) {
+        // Set the question in the input field
+        chatManager.setContent(question);
+        
+        // Set the submitted question
+        chatManager.setSubmittedQuestion(question);
+        
+        // Reset the form and start fresh with the new question
+        chatManager.setSummary('');
+        chatManager.setShowSummary(false);
+        chatManager.setError('');
+        chatManager.setCopied(false);
+        chatManager.setDisplayedContent('');
+        chatManager.setIsTranslating(false);
+        chatManager.setTranslationProgress(0);
+        
+        // Process the question directly
+        askQuran(
+          question,
+          chatManager.setIsProcessing,
+          chatManager.setSummary,
+          chatManager.setShowSummary,
+          chatManager.setError,
+          chatManager.setDisplayedContent,
+          chatManager.setCurrentLanguage,
+          chatManager.setShowTranslateSection,
+          selectedContentTypes,
+        );
+        
+        chatManager.setIsChatActive(true);
+      }
+    };
+
+    window.addEventListener('suggestedQuestionClick', handleEmbeddedSuggestedQuestionClick as EventListener);
+    
+    return () => {
+      window.removeEventListener('suggestedQuestionClick', handleEmbeddedSuggestedQuestionClick as EventListener);
+    };
+  }, [chatManager, askQuran, selectedContentTypes]);
   
   // Audio management
   // Audio functionality is now handled directly in ResponseSection component
@@ -163,6 +214,7 @@ function HomeContent() {
         chatManager.setDisplayedContent,
         chatManager.setCurrentLanguage,
         chatManager.setShowTranslateSection, // Pass the new setter function
+        selectedContentTypes, // Pass content type selection
         // Audio is now handled in ResponseSection
       );
       
@@ -183,7 +235,7 @@ function HomeContent() {
       // Error in handleAskQuran
       chatManager.setError('Failed to process question. Please try again.');
     }
-  }, [askQuran, chatManager]);
+  }, [askQuran, chatManager, selectedContentTypes]);
 
   // Handle suggested question clicks
   const handleSuggestedQuestionClick = useCallback((question: string) => {
@@ -228,6 +280,8 @@ function HomeContent() {
           chatManager.setError,
           chatManager.setDisplayedContent,
           chatManager.setCurrentLanguage,
+          chatManager.setShowTranslateSection,
+          selectedContentTypes, // Pass content type selection
           // Audio is now handled in ResponseSection
         );
         chatManager.setIsChatActive(true);
@@ -241,7 +295,7 @@ function HomeContent() {
     
     // Process the question immediately without waiting for state updates
     processQuestionDirectly(question);
-  }, [chatManager, askQuran]);
+  }, [chatManager, askQuran, selectedContentTypes]);
   
   // Handle when new AI questions are generated
   const handleQuestionsGenerated = useCallback((questions: string[]) => {
@@ -262,8 +316,6 @@ function HomeContent() {
       const ayahInfo = extractAyahInfoForCopy(chatManager.displayedContent || chatManager.summary);
       const hadithInfo = extractHadithInfoForCopy(chatManager.displayedContent || chatManager.summary);
       
-      console.log('Copy content - Ayah info:', ayahInfo);
-      console.log('Copy content - Hadith info:', hadithInfo);
       
       // Create a structured copy that places ayah boxes directly above their AI explanations
       let structuredContent = `Question: ${chatManager.submittedQuestion}\n\nAnswer:\n\n`;
@@ -364,7 +416,6 @@ function HomeContent() {
         }
         
       } catch (error) {
-        console.error('Error processing content for copy:', error);
         // Fallback to simple text extraction
         const fallbackContent = (chatManager.displayedContent || chatManager.summary)
           .replace(/<[^>]*>/g, '') // Remove HTML tags
@@ -379,7 +430,6 @@ function HomeContent() {
       chatManager.setCopied(true);
       setTimeout(() => chatManager.setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying content:', error);
       // Fallback to copying just the AI content
       await copyAIContentOnly(
         chatManager.displayedContent,
@@ -443,7 +493,6 @@ function HomeContent() {
       setTimeout(() => setShowShareSuccess(false), 3000);
 
     } catch (error) {
-      console.error('Error sharing content:', error);
       // You could add a toast notification here for error feedback
     } finally {
       setIsSharing(false);
@@ -457,6 +506,15 @@ function HomeContent() {
     const nextIndex = (currentIndex + 1) % sizes.length;
     setTextSize(sizes[nextIndex]);
   }, [textSize]);
+
+  // Handle content type change
+  const handleContentTypeChange = useCallback((contentTypes: {
+    tafsir: boolean;
+    hadith: boolean;
+    suggestedQuestions: boolean;
+  }) => {
+    setSelectedContentTypes(contentTypes);
+  }, []);
 
   // Update existing tafsir content when text size changes
   useEffect(() => {
@@ -676,13 +734,9 @@ function HomeContent() {
         // Use optimized translation for AI content only - translate TO English
         // Use the current language as source (since we know what language the content is currently in)
         const sourceLanguage = chatManager.currentLanguage || detectLanguage(aiContentToTranslate);
-        console.log('🔄 Translating to English from:', sourceLanguage);
-        console.log('🔄 Current content language:', chatManager.currentLanguage);
-        console.log('🔄 AI content to translate (first 200 chars):', aiContentToTranslate.substring(0, 200));
         
         // If source language is English, no need to translate
         if (sourceLanguage === 'en') {
-          console.log('🔄 Content is already in English, no translation needed');
           chatManager.setCurrentLanguage('en');
           chatManager.setIsTranslating(false);
           chatManager.setTranslationProgress(0);
@@ -696,7 +750,7 @@ function HomeContent() {
         chatManager.setTranslationProgress(100);
         
         // Merge translated AI content with preserved API components
-        const mergedContent = await mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation);
+        const mergedContent = await mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation, 'en');
         
         // Also translate hadith summaries to English
         const contentWithTranslatedHadithSummaries = await translateHadithSummaries(mergedContent, 'en', sourceLanguage);
@@ -704,35 +758,13 @@ function HomeContent() {
         chatManager.setDisplayedContent(contentWithTranslatedHadithSummaries);
         chatManager.setCurrentLanguage('en');
         
-        // Also translate suggested questions to English
-        try {
-          // First try to translate questions from the current displayed questions
-          let questionsToTranslate: string[] = [];
-          
-          // Check if we have questions from the SuggestedQuestions API
-          if (chatManager.translatedQuestions && chatManager.translatedQuestions.length > 0) {
-            questionsToTranslate = chatManager.translatedQuestions;
-          } else if (originalAIQuestions && originalAIQuestions.length > 0) {
-            // Fallback to original AI questions if no API questions
-            questionsToTranslate = originalAIQuestions;
-          }
-          
-          if (questionsToTranslate.length > 0) {
-            // Translating questions to English
-            const questionsToTranslateText = questionsToTranslate.join('\n\n');
-            const translatedQuestionsText = await translateAIContent(questionsToTranslateText, 'en', sourceLanguage);
-            const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
-            
-            // Questions translation completed
-            
-            chatManager.setTranslatedQuestions(translatedQuestionsArray);
-          } else {
-            // No questions to translate, clear translated questions
-            chatManager.setTranslatedQuestions(undefined);
-          }
-        } catch (error) {
-          // Failed to translate suggested questions to English
-          // Keep original questions if translation fails
+        // When going back to English, we need to restore the original English questions
+        // If we have original AI questions, use them; otherwise clear translated questions
+        if (originalAIQuestions && originalAIQuestions.length > 0) {
+          // Restore original English questions
+          chatManager.setTranslatedQuestions(originalAIQuestions);
+        } else {
+          // Clear translated questions to show original English questions
           chatManager.setTranslatedQuestions(undefined);
         }
         
@@ -791,7 +823,7 @@ function HomeContent() {
       // Translation result
       
             // Merge translated AI content with preserved API components
-      const mergedContent = await mergeTranslatedContent(contentToExtract, translation);
+      const mergedContent = await mergeTranslatedContent(contentToExtract, translation, language);
       
       // Also translate hadith summaries to target language
       const contentWithTranslatedHadithSummaries = await translateHadithSummaries(mergedContent, language, 'en');
@@ -1057,6 +1089,9 @@ function HomeContent() {
                   isTranslating={chatManager.isTranslating}
                   translationProgress={chatManager.translationProgress}
                   currentLanguage={chatManager.currentLanguage}
+                  // Content type selection props
+                  selectedContentTypes={selectedContentTypes}
+                  onContentTypeChange={handleContentTypeChange}
                 />
               </div>
             )}
@@ -1071,9 +1106,9 @@ function HomeContent() {
             {/* Transparency Section - How It Works - Hidden when chat is active */}
             {!chatManager.isChatActive && <TransparencySection />}
 
-            {/* Chat Section - Fixed at bottom center when chat is active */}
+            {/* Chat Section - Fixed at bottom when chat is active */}
             {chatManager.isChatActive && (
-              <div className="fixed left-1/2 transform -translate-x-1/2 z-30 w-full max-w-6xl px-4 pb-4" style={{ bottom: '80px' }}>
+              <div className="fixed left-0 right-0 z-30 w-full" style={{ bottom: '0px' }}>
                 <ChatSectionOutput 
                   content={chatManager.content}
                   setContent={chatManager.setContent}
@@ -1089,6 +1124,9 @@ function HomeContent() {
                   isTranslating={chatManager.isTranslating}
                   translationProgress={chatManager.translationProgress}
                   currentLanguage={chatManager.currentLanguage}
+                  // Content type selection props
+                  selectedContentTypes={selectedContentTypes}
+                  onContentTypeChange={handleContentTypeChange}
                 />
               </div>
             )}
@@ -1125,11 +1163,12 @@ function HomeContent() {
                   isTextLarge={isTextLarge}
                   shareUrl={shareUrl}
                   onShare={handleShareContent}
+                  selectedContentTypes={selectedContentTypes}
                 />
               )}
             </div>
 
-            {/* Sources Section - Above Suggested Questions */}
+            {/* Sources Section - Always visible when there's content */}
             {chatManager.showSummary && !chatManager.isProcessing && chatManager.displayedContent && (
               <SourcesSection 
                 content={chatManager.displayedContent} 
@@ -1137,18 +1176,7 @@ function HomeContent() {
               />
             )}
 
-            {/* Suggested Questions - Below Response */}
-            {chatManager.showSummary && !chatManager.isProcessing && (
-              <SuggestedQuestions
-                userQuestion={chatManager.submittedQuestion}
-                onQuestionClick={handleSuggestedQuestionClick}
-                isVisible={true}
-                currentLanguage={chatManager.currentLanguage}
-                translatedQuestions={chatManager.translatedQuestions}
-                onQuestionsGenerated={handleQuestionsGenerated}
-                isTextLarge={isTextLarge}
-              />
-            )}
+            {/* Suggested Questions - Handled via content filtering in ResponseSection */}
             
           </div>
         </main>
