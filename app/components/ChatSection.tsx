@@ -307,7 +307,7 @@ export default function ChatSection({
       className="mb-0 relative"
     >
       {/* ChatGPT-style Input Container - Clean Home Page Version */}
-      <div className="w-full max-w-4xl mx-auto px-6 sm:px-0 pb-4">
+      <div className="w-full max-w-4xl mx-auto px-6 sm:px-0 pb-4 mt-40 sm:mt-0">
         <div className="relative">
 
 
@@ -773,35 +773,38 @@ export default function ChatSection({
               ease: [0.25, 0.46, 0.45, 0.94],
               delay: 0.2
             }}
-            className="mt-3 flex justify-center pointer-events-none"
+            className="mt-3 flex justify-center pointer-events-none px-4 sm:px-0"
           >
-            <div className="relative">
+            <div className="relative w-full max-w-sm sm:max-w-none">
               {/* Main reminder card */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className="bg-transparent border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-4 py-2.5"
+                className="bg-transparent border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 w-full"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   {/* Globe icon with subtle animation */}
                   <motion.div
                     animate={{ rotate: [0, 5, -5, 0] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    className="flex-shrink-0 w-5 h-5 text-emerald-500 dark:text-emerald-400"
+                    className="flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 dark:text-emerald-400"
                   >
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
                     </svg>
                   </motion.div>
                   
-                  {/* Reminder text */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wide uppercase">
+                  {/* Reminder text - Responsive layout */}
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-1 min-w-0">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wide uppercase truncate">
                       Type in your native language
                     </span>
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono tracking-wide uppercase">
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono tracking-wide uppercase hidden sm:inline">
                       • Multilingual support
+                    </span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono tracking-wide uppercase sm:hidden">
+                      • Multilingual
                     </span>
                   </div>
                 </div>
