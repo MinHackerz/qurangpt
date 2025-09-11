@@ -231,10 +231,10 @@ export default function ChatSection({
     // Get the actual content height
     const scrollHeight = target.scrollHeight;
     
-    // Mobile-first height calculations
-    const isMobile = window.innerWidth < 640;
-    const minHeight = isMobile ? 48 : 56; // Optimized mobile min height
-    const maxHeight = isMobile ? 200 : 180; // Optimized mobile max height
+  // Mobile-first height calculations
+  const isMobile = window.innerWidth < 640;
+  const minHeight = isMobile ? 64 : 72; // Increased min height for better usability
+  const maxHeight = isMobile ? 240 : 220; // Increased max height for more content
     
     // Calculate new height with better mobile support
     let newHeight = Math.max(scrollHeight, minHeight);
@@ -467,7 +467,7 @@ export default function ChatSection({
           )}
 
           {/* Main Input Field - Minimalist Professional */}
-          <div className="relative bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200">
+          <div className="relative bg-transparent rounded-xl border-[0.5px] border-gray-600 dark:border-gray-400 transition-all duration-200">
             
             {/* Content Type Dropdown - Above input field */}
             <AnimatePresence>
@@ -477,7 +477,7 @@ export default function ChatSection({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute -top-12 left-0 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-1.5 min-w-[200px] content-type-dropdown"
+                  className="absolute -top-12 left-0 z-20 bg-white dark:bg-gray-800 border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg shadow-lg p-1.5 min-w-[200px] content-type-dropdown"
                 >
                   <div className="space-y-1">
                     <button
@@ -746,7 +746,7 @@ export default function ChatSection({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center border border-red-200 dark:border-red-800 text-xs"
+                className="mt-3 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center border-[0.5px] border-red-500 dark:border-red-400 text-xs"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -773,15 +773,15 @@ export default function ChatSection({
               ease: [0.25, 0.46, 0.45, 0.94],
               delay: 0.2
             }}
-            className="mt-3 flex justify-center pointer-events-none px-4 sm:px-0"
+            className="mt-3 flex justify-center pointer-events-none px-6 sm:px-0"
           >
-            <div className="relative w-full max-w-sm sm:max-w-none">
+            <div className="relative w-full max-w-4xl mx-auto">
               {/* Main reminder card */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className="bg-transparent border border-gray-200/60 dark:border-gray-700/60 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 w-full"
+                className="bg-transparent border-[0.5px] border-gray-600 dark:border-gray-400 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 w-full"
               >
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   {/* Globe icon with subtle animation */}

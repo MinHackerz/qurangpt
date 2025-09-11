@@ -1132,7 +1132,7 @@ function HomeContent() {
         )}
 
         {/* Main Content */}
-        <main className={`relative z-10 ${chatManager.isChatActive ? 'pt-20 pb-60 sm:pb-64 chat-active-content-spacing' : 'pb-8'}`}>
+        <main className={`relative z-10 ${chatManager.isChatActive ? 'pt-20 pb-60 sm:pb-64 chat-active-content-spacing' : 'pb-8'} mt-16 sm:mt-0`}>
 
           
           <div className="container max-w-7xl mx-auto px-6">

@@ -332,13 +332,18 @@ export async function GET(request: NextRequest) {
         const timeStr = prayers[prayerName].split(' ')[0]; // Remove timezone if present
         const [hours, minutes] = timeStr.split(':');
         
-        // Create today's date in user's timezone and set the prayer time
-        const prayerTime = new Date();
-        // Set to user's timezone first
-        const userDate = new Date(prayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
-        userDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        // Create prayer time in user's timezone properly
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
         
-        prayerTimes[prayerName] = userDate;
+        // Create date in user's timezone
+        const prayerTime = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+        
+        // Convert to proper timezone using Intl.DateTimeFormat
+        const timeInUserTz = new Date(prayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
+        prayerTimes[prayerName] = timeInUserTz;
       }
     }
 
@@ -347,22 +352,28 @@ export async function GET(request: NextRequest) {
       const timeStr = prayerData.data.timings.Sunrise.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
       
-      // Create today's date and set the time
-      const time = new Date();
-      time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      // Create today's date in user's timezone
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const day = today.getDate();
       
-      return time;
+      const time = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+      return new Date(time.toLocaleString('en-US', { timeZone: userTimezone }));
     })() : null;
 
     const sunset = prayerData.data?.timings?.Sunset ? (() => {
       const timeStr = prayerData.data.timings.Sunset.split(' ')[0];
       const [hours, minutes] = timeStr.split(':');
       
-      // Create today's date and set the time
-      const time = new Date();
-      time.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      // Create today's date in user's timezone
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const day = today.getDate();
       
-      return time;
+      const time = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+      return new Date(time.toLocaleString('en-US', { timeZone: userTimezone }));
     })() : null;
 
     // Find current active prayer or next prayer
@@ -376,13 +387,23 @@ export async function GET(request: NextRequest) {
     const currentMinute = userCurrentTime.getMinutes();
     const currentTimeInMinutes = currentHour * 60 + currentMinute;
     
-    // Convert prayer times to minutes for easier comparison
+    // Convert prayer times to minutes for easier comparison using user's timezone
     const prayerTimesInMinutes: { [key: string]: number } = {};
     for (const timingName of allTimings) {
       if (prayers[timingName]) {
         const timeStr = prayers[timingName].split(' ')[0];
         const [hours, minutes] = timeStr.split(':');
-        prayerTimesInMinutes[timingName] = parseInt(hours) * 60 + parseInt(minutes);
+        
+        // Create proper date in user's timezone
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
+        
+        const prayerTime = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+        const timeInUserTz = new Date(prayerTime.toLocaleString('en-US', { timeZone: userTimezone }));
+        
+        prayerTimesInMinutes[timingName] = timeInUserTz.getHours() * 60 + timeInUserTz.getMinutes();
       }
     }
     
@@ -440,18 +461,25 @@ export async function GET(request: NextRequest) {
       if (isInPeriod) {
         currentPrayer = period.name;
         
-        // Create end time for current prayer
+        // Create end time for current prayer in user's timezone
         if (period.isOvernight) {
           // Isha ends at next day's Fajr
-          const nextFajr = new Date();
-          nextFajr.setDate(nextFajr.getDate() + 1);
-          nextFajr.setHours(Math.floor(period.end / 60), period.end % 60, 0, 0);
-          currentPrayerEndTime = nextFajr;
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth();
+          const day = today.getDate() + 1;
+          
+          const nextFajr = new Date(year, month, day, Math.floor(period.end / 60), period.end % 60, 0, 0);
+          currentPrayerEndTime = new Date(nextFajr.toLocaleString('en-US', { timeZone: userTimezone }));
         } else {
           // Regular prayer ends at next prayer time
-          const endTime = new Date();
-          endTime.setHours(Math.floor(period.end / 60), period.end % 60, 0, 0);
-          currentPrayerEndTime = endTime;
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth();
+          const day = today.getDate();
+          
+          const endTime = new Date(year, month, day, Math.floor(period.end / 60), period.end % 60, 0, 0);
+          currentPrayerEndTime = new Date(endTime.toLocaleString('en-US', { timeZone: userTimezone }));
         }
         
         break;
@@ -464,10 +492,14 @@ export async function GET(request: NextRequest) {
       for (const prayerName of prayerNames) {
         if (prayerTimesInMinutes[prayerName] && prayerTimesInMinutes[prayerName] > currentTimeInMinutes) {
           nextPrayer = prayerName;
-          // Create next prayer time
-          const nextTime = new Date();
-          nextTime.setHours(Math.floor(prayerTimesInMinutes[prayerName] / 60), prayerTimesInMinutes[prayerName] % 60, 0, 0);
-          nextPrayerTime = nextTime;
+          // Create next prayer time in user's timezone
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth();
+          const day = today.getDate();
+          
+          const nextTime = new Date(year, month, day, Math.floor(prayerTimesInMinutes[prayerName] / 60), prayerTimesInMinutes[prayerName] % 60, 0, 0);
+          nextPrayerTime = new Date(nextTime.toLocaleString('en-US', { timeZone: userTimezone }));
           foundNextPrayerToday = true;
           break;
         }
@@ -478,15 +510,23 @@ export async function GET(request: NextRequest) {
         // Check if we're before Isha time (Isha is usually the last prayer of the day)
         if (prayerTimesInMinutes['Isha'] && currentTimeInMinutes < prayerTimesInMinutes['Isha']) {
           nextPrayer = 'Isha';
-          const nextTime = new Date();
-          nextTime.setHours(Math.floor(prayerTimesInMinutes['Isha'] / 60), prayerTimesInMinutes['Isha'] % 60, 0, 0);
-          nextPrayerTime = nextTime;
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth();
+          const day = today.getDate();
+          
+          const nextTime = new Date(year, month, day, Math.floor(prayerTimesInMinutes['Isha'] / 60), prayerTimesInMinutes['Isha'] % 60, 0, 0);
+          nextPrayerTime = new Date(nextTime.toLocaleString('en-US', { timeZone: userTimezone }));
         } else {
           // All prayers for today have passed, get tomorrow's Fajr
           nextPrayer = 'Fajr';
-          nextPrayerTime = new Date();
-          nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
-          nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth();
+          const day = today.getDate() + 1;
+          
+          const nextTime = new Date(year, month, day, Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+          nextPrayerTime = new Date(nextTime.toLocaleString('en-US', { timeZone: userTimezone }));
         }
       }
     } else {
@@ -498,19 +538,27 @@ export async function GET(request: NextRequest) {
       
       if (nextPrayerName === 'Fajr' && currentPrayer !== 'Isha') {
         // If next prayer is Fajr but current isn't Isha, it should be tomorrow's Fajr
-        nextPrayerTime = new Date();
-        nextPrayerTime.setDate(nextPrayerTime.getDate() + 1);
-        nextPrayerTime.setHours(Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate() + 1;
+        
+        const nextTime = new Date(year, month, day, Math.floor(prayerTimesInMinutes['Fajr'] / 60), prayerTimesInMinutes['Fajr'] % 60, 0, 0);
+        nextPrayerTime = new Date(nextTime.toLocaleString('en-US', { timeZone: userTimezone }));
         nextPrayer = 'Fajr';
       } else {
         nextPrayer = nextPrayerName;
-        // Create next prayer time
+        // Create next prayer time in user's timezone
         if (prayerTimesInMinutes[nextPrayerName]) {
-          const nextTime = new Date();
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = today.getMonth();
+          const day = today.getDate();
+          
           const nextPrayerMinutes = prayerTimesInMinutes[nextPrayerName];
           if (nextPrayerMinutes) {
-            nextTime.setHours(Math.floor(nextPrayerMinutes / 60), nextPrayerMinutes % 60, 0, 0);
-            nextPrayerTime = nextTime;
+            const nextTime = new Date(year, month, day, Math.floor(nextPrayerMinutes / 60), nextPrayerMinutes % 60, 0, 0);
+            nextPrayerTime = new Date(nextTime.toLocaleString('en-US', { timeZone: userTimezone }));
           }
         }
       }

@@ -228,7 +228,7 @@ export default function DigitalClock() {
           {/* Separate Containers Loading */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-transparent border border-gray-200/80 dark:border-gray-600/80 rounded-lg p-4 text-center">
+              <div key={i} className="bg-transparent border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg p-4 text-center">
                 <div className="h-3 w-16 bg-gray-200 dark:bg-gray-600 rounded mx-auto mb-2 animate-pulse"></div>
                 <div className="flex justify-center items-center mb-2">
                   <div className="w-8 h-12 mx-0.5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
@@ -258,7 +258,7 @@ export default function DigitalClock() {
         {/* Separate Containers - All Information in One Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Digital Clock */}
-          <div className="bg-transparent border border-gray-200/80 dark:border-gray-600/80 rounded-lg p-4 text-center">
+          <div className="bg-transparent border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg p-4 text-center">
             <div className="text-xs text-gray-600 dark:text-gray-400 font-mono uppercase tracking-wide mb-2">
               Time
             </div>
@@ -274,7 +274,7 @@ export default function DigitalClock() {
           </div>
 
           {/* Prayer Time */}
-          <div className="bg-transparent border border-gray-200/80 dark:border-gray-600/80 rounded-lg p-4 text-center">
+          <div className="bg-transparent border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg p-4 text-center">
             <div className="text-xs text-gray-600 dark:text-gray-400 font-mono uppercase tracking-wide mb-2">
               Prayer
             </div>
@@ -316,7 +316,7 @@ export default function DigitalClock() {
           </div>
 
           {/* Eid-ul-Fitr */}
-          <div className="bg-transparent border border-gray-200/80 dark:border-gray-600/80 rounded-lg p-4 text-center">
+          <div className="bg-transparent border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg p-4 text-center">
             <div className="text-xs text-gray-600 dark:text-gray-400 font-mono uppercase tracking-wide mb-2">
               Eid-ul-Fitr
             </div>
@@ -332,7 +332,7 @@ export default function DigitalClock() {
           </div>
 
           {/* Eid-al-Adha */}
-          <div className="bg-transparent border border-gray-200/80 dark:border-gray-600/80 rounded-lg p-4 text-center">
+          <div className="bg-transparent border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg p-4 text-center">
             <div className="text-xs text-gray-600 dark:text-gray-400 font-mono uppercase tracking-wide mb-2">
               Eid-al-Adha
             </div>
