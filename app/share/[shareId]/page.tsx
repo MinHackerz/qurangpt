@@ -10,6 +10,7 @@ import TextSizeToggle from '../../components/TextSizeToggle';
 import SourcesSection from '../../components/SourcesSection';
 import { useAIResponse } from '../../hooks/useAIResponse';
 import { useGlobalEventDelegation } from '../../hooks/useGlobalEventDelegation';
+import { getGlobalAbortManager } from '../../hooks/useAbortManager';
 
 interface SharedContent {
   shareId: string;
@@ -35,7 +36,9 @@ export default function SharePage() {
   // Input field state
   const [showInputField, setShowInputField] = useState(false);
   const [inputQuestion, setInputQuestion] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Content type selection state
   const [selectedContentTypes, setSelectedContentTypes] = useState({
@@ -178,20 +181,50 @@ export default function SharePage() {
       return;
     }
     
-    // Encode the question for URL parameter
-    const encodedQuestion = encodeURIComponent(inputQuestion.trim());
+    // Reset abort state before starting new operation
+    const abortManager = getGlobalAbortManager();
+    abortManager.reset();
     
-    // Build URL parameters including selected content types
-    const params = new URLSearchParams();
-    params.set('question', inputQuestion.trim());
+    setIsProcessing(true);
     
-    // Add content type selections
-    if (selectedContentTypes.tafsir) params.set('tafsir', 'true');
-    if (selectedContentTypes.hadith) params.set('hadith', 'true');
-    if (selectedContentTypes.suggestedQuestions) params.set('suggestedQuestions', 'true');
+    // Simulate processing delay for better UX
+    timeoutRef.current = setTimeout(() => {
+      // Check if operation was aborted before redirecting
+      if (abortManager.isAborted()) {
+        console.log('SharePage - Operation aborted before redirect');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Encode the question for URL parameter
+      const encodedQuestion = encodeURIComponent(inputQuestion.trim());
+      
+      // Build URL parameters including selected content types
+      const params = new URLSearchParams();
+      params.set('question', inputQuestion.trim());
+      
+      // Add content type selections
+      if (selectedContentTypes.tafsir) params.set('tafsir', 'true');
+      if (selectedContentTypes.hadith) params.set('hadith', 'true');
+      if (selectedContentTypes.suggestedQuestions) params.set('suggestedQuestions', 'true');
+      
+      // Redirect to home page with all parameters
+      window.location.href = `/?${params.toString()}`;
+    }, 500);
+  };
+
+  // Handle stop operation
+  const handleStopOperation = () => {
+    // Use global abort manager
+    const abortManager = getGlobalAbortManager();
+    abortManager.setAborted(true);
     
-    // Redirect to home page with all parameters
-    window.location.href = `/?${params.toString()}`;
+    setIsProcessing(false);
+    // Clear any pending timeouts
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   };
 
   // Handle cancel input
@@ -1079,22 +1112,40 @@ export default function SharePage() {
 
                   {/* Action buttons container */}
                   <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
-                    {/* Send Button */}
+                    {/* Send/Stop Button - Revolutionary Design */}
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={handleSendQuestion}
+                      onClick={() => {
+                        if (isProcessing) {
+                          // Stop operation
+                          handleStopOperation();
+                        } else {
+                          // Send message
+                          handleSendQuestion();
+                        }
+                      }}
                       disabled={!inputQuestion.trim()}
                       className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
                         inputQuestion.trim()
-                          ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          ? isProcessing
+                            ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400'
+                            : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
                           : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                       }`}
-                      title="Send message"
+                      title={isProcessing ? "Stop operation" : "Send message"}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                      </svg>
+                      {/* Icon container */}
+                      <div className="relative z-10 flex items-center justify-center">
+                        {isProcessing ? (
+                          /* Revolutionary Stop Animation - Red Square Only */
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-sm"></div>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                          </svg>
+                        )}
+                      </div>
                     </motion.button>
 
                     {/* Cancel Button */}

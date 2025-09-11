@@ -8,19 +8,13 @@ import { useSearchParams } from 'next/navigation';
 import { detectLanguage } from './utils/languageDetection';
 import {
   HeroSection,
-  QuickQuestions,
-  ChatSection,
   ChatSectionOutput,
   ResponseSection,
-  Footer,
-  IslamicWidgets,
-  SuggestedQuestions,
   MinimalHeader,
-  ShareButton,
-  TransparencySection,
   SourcesSection,
   ThemeToggle,
-  WaveAnimationContainer
+  WaveAnimationContainer,
+  UserMenu
 } from './components';
 import InstallPrompt from './components/InstallPrompt';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
@@ -30,6 +24,7 @@ import DynamicThemeColor from './components/DynamicThemeColor';
 import { useChatManager } from './hooks/useChatManager';
 import { useAIResponse } from './hooks/useAIResponse';
 import { useTranslationManager } from './hooks/useTranslationManager';
+import { getGlobalAbortManager } from './hooks/useAbortManager';
 
 
 // Extend Window interface for tafsir functionality
@@ -82,6 +77,9 @@ function HomeContent() {
   // Text size toggle state - using three-state system for consistency
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
   const isTextLarge = textSize === 'large';
+  
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(false);
   
   // Share functionality state
   const [isSharing, setIsSharing] = useState(false);
@@ -204,6 +202,23 @@ function HomeContent() {
   // Audio management
   // Audio functionality is now handled directly in ResponseSection component
 
+  // AbortController for stopping operations
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isAbortingRef = useRef<boolean>(false);
+
+  // Cleanup effect to abort any pending operations on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        try {
+          abortControllerRef.current.abort();
+        } catch (error) {
+          // Ignore abort errors during cleanup
+        }
+      }
+    };
+  }, []);
+
   // Handle asking Quran with the new hook
   const handleAskQuran = useCallback(async () => {
     // Handle ask Quran request
@@ -214,6 +229,23 @@ function HomeContent() {
       chatManager.setError('Question content is missing. Please try again.');
       return;
     }
+    
+    // Reset global abort state for new operation
+    const abortManager = getGlobalAbortManager();
+    abortManager.reset();
+    console.log('handleAskQuran - Reset global abort state');
+    
+    // Abort any existing operation before starting a new one
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch (error) {
+        // Ignore abort errors
+      }
+    }
+    
+    // Create new AbortController for this operation
+    abortControllerRef.current = new AbortController();
     
     // Set the submitted question when user actually sends the message
     const questionText = chatManager.content.trim();
@@ -230,27 +262,58 @@ function HomeContent() {
         chatManager.setCurrentLanguage,
         chatManager.setShowTranslateSection, // Pass the new setter function
         selectedContentTypes, // Pass content type selection
-        // Audio is now handled in ResponseSection
+        abortControllerRef.current, // Pass AbortController
+        () => abortManager.isAborted() // Pass abort check function
       );
       
-      // Cache the original output for future restoration
-      const detectedLanguage = chatManager.currentLanguage;
-      if (detectedLanguage && detectedLanguage !== 'en') {
-        // Cache non-English output for restoration
-        setOriginalLanguageCache({
-          content: chatManager.summary,
-          questions: chatManager.translatedQuestions || [],
-          language: detectedLanguage
-        });
+      // Only proceed if operation wasn't aborted
+      if (!isAbortingRef.current) {
+        // Cache the original output for future restoration
+        const detectedLanguage = chatManager.currentLanguage;
+        if (detectedLanguage && detectedLanguage !== 'en') {
+          // Cache non-English output for restoration
+          setOriginalLanguageCache({
+            content: chatManager.summary,
+            questions: chatManager.translatedQuestions || [],
+            language: detectedLanguage
+          });
+        }
+        
+        chatManager.setIsChatActive(true);
+        // Question processed successfully
       }
-      
-      chatManager.setIsChatActive(true);
-      // Question processed successfully
     } catch (error) {
+      // Don't show error if operation was aborted
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       // Error in handleAskQuran
       chatManager.setError('Failed to process question. Please try again.');
+    } finally {
+      // Clear the abort controller reference
+      abortControllerRef.current = null;
     }
   }, [askQuran, chatManager, selectedContentTypes]);
+
+  // Handle stopping operations
+  const handleStopOperation = useCallback(() => {
+    console.log('handleStopOperation called');
+    
+    // Use global abort manager
+    const abortManager = getGlobalAbortManager();
+    abortManager.setAborted(true);
+    
+    // Reset processing state immediately
+    chatManager.setIsProcessing(false);
+    chatManager.setError('');
+    
+    // Return to home page (hero section) when operation is aborted
+    chatManager.setIsChatActive(false);
+    
+    // Clear the controller reference immediately to prevent further operations
+    abortControllerRef.current = null;
+    console.log('handleStopOperation - Cleared abortControllerRef.current and returned to home page');
+  }, [chatManager]);
 
   // Handle suggested question clicks
   const handleSuggestedQuestionClick = useCallback((question: string) => {
@@ -285,6 +348,24 @@ function HomeContent() {
         return;
       }
       
+      // Reset aborting flag
+      isAbortingRef.current = false;
+      
+      // Abort any existing operation before starting a new one
+      if (abortControllerRef.current) {
+        try {
+          abortControllerRef.current.abort();
+        } catch (error) {
+          // Ignore abort errors
+        }
+      }
+      
+      // Create new AbortController for this operation
+      abortControllerRef.current = new AbortController();
+      
+      // Get global abort manager
+      const abortManager = getGlobalAbortManager();
+      
       try {
         // Call askQuran directly with the question text
         await askQuran(
@@ -297,14 +378,26 @@ function HomeContent() {
           chatManager.setCurrentLanguage,
           chatManager.setShowTranslateSection,
           selectedContentTypes, // Pass content type selection
-          // Audio is now handled in ResponseSection
+          abortControllerRef.current, // Pass AbortController
+          () => abortManager.isAborted() // Pass abort check function
         );
-        chatManager.setIsChatActive(true);
-        // Content state is already updated above, no need to update again
-        // Question processed successfully
+        
+        // Only proceed if operation wasn't aborted
+        if (!isAbortingRef.current) {
+          chatManager.setIsChatActive(true);
+          // Content state is already updated above, no need to update again
+          // Question processed successfully
+        }
       } catch (error) {
+        // Don't show error if operation was aborted
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
         // Error processing suggested question
         chatManager.setError('Failed to process question. Please try again.');
+      } finally {
+        // Clear the abort controller reference
+        abortControllerRef.current = null;
       }
     };
     
@@ -530,6 +623,11 @@ function HomeContent() {
   }) => {
     setSelectedContentTypes(contentTypes);
   }, []);
+
+  // Handle theme toggle
+  const handleThemeToggle = useCallback(() => {
+    setIsDarkMode(!isDarkMode);
+  }, [isDarkMode]);
 
   // Update existing tafsir content when text size changes
   useEffect(() => {
@@ -990,12 +1088,10 @@ function HomeContent() {
       
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
 
-        {/* Theme Toggle Button - Only visible when not in chat mode */}
-        {!chatManager.isChatActive && (
-          <div className="fixed top-0 right-0 z-50 p-4">
-            <ThemeToggle />
-          </div>
-        )}
+        {/* User Menu - Fixed top right - Only visible in home state */}
+        <div className="fixed top-4 right-4 z-50">
+          <UserMenu isVisible={!chatManager.isChatActive} />
+        </div>
         
         {/* Minimal Header - Only visible when chat is active */}
         <MinimalHeader 
@@ -1015,7 +1111,24 @@ function HomeContent() {
 
         {/* Hero Section - Hidden when chat is active */}
         {!chatManager.isChatActive && (
-          <HeroSection getGreetingMessage={getGreetingMessage} />
+          <HeroSection 
+            getGreetingMessage={getGreetingMessage}
+            content={chatManager.content}
+            setContent={chatManager.setContent}
+            askQuran={handleAskQuran}
+            resetForm={chatManager.resetForm}
+            isProcessing={chatManager.isProcessing}
+            error={chatManager.error}
+            showSummary={chatManager.showSummary}
+            originalText={chatManager.summary}
+            onTranslationChange={handleTranslationChange}
+            isTranslating={chatManager.isTranslating}
+            translationProgress={chatManager.translationProgress}
+            currentLanguage={chatManager.currentLanguage}
+            selectedContentTypes={selectedContentTypes}
+            onContentTypeChange={handleContentTypeChange}
+            onStopOperation={handleStopOperation}
+          />
         )}
 
         {/* Main Content */}
@@ -1024,102 +1137,11 @@ function HomeContent() {
           
           <div className="container max-w-7xl mx-auto px-6">
             
-            {/* Quick Questions Section - Hidden when chat is active */}
-            {!chatManager.isChatActive && (
-              <QuickQuestions 
-                insertQuestion={(question) => {
-                  // Set the question content first
-                  chatManager.setContent(question);
-                  // Set the submitted question for SuggestedQuestions generation
-                  chatManager.setSubmittedQuestion(question);
-                  // Activate chat mode
-                  chatManager.setIsChatActive(true);
-                  // Clear any previous errors
-                  chatManager.setError('');
-                  // Process the question directly with the question text
-                  setTimeout(() => {
-                    // Use the question parameter directly instead of relying on state
-                    askQuran(
-                      question, // Pass the question directly
-                      chatManager.setIsProcessing,
-                      chatManager.setSummary,
-                      chatManager.setShowSummary,
-                      chatManager.setError,
-                      chatManager.setDisplayedContent,
-                      chatManager.setCurrentLanguage,
-                      chatManager.setShowTranslateSection, // Add the missing setShowTranslateSection parameter
-                      // Audio is now handled in ResponseSection
-                    );
-                  }, 100);
-                }} 
-              />
-            )}
 
-            {/* Wave Animation Container - Only takes space when animation is active */}
-            {chatManager.isProcessing && !chatManager.isChatActive && (
-              <div className="max-w-4xl mx-auto px-0 -mx-1 mb-4">
-                <div className="h-24 flex items-center justify-center">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="flex items-center justify-center space-x-2 w-full"
-                  >
-                    {[...Array(12)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
-                        animate={{
-                          height: ['20px', '60px', '20px'],
-                          opacity: [0.4, 0.8, 0.4]
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          delay: i * 0.1,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    ))}
-                  </motion.div>
-                </div>
-              </div>
-            )}
 
-            {/* Chat Section - Positioned above IslamicWidgets when not in chat mode */}
-            {!chatManager.isChatActive && (
-              <div className="mb-8 -mx-6 sm:mx-0">
-                <ChatSection 
-                  content={chatManager.content}
-                  setContent={chatManager.setContent}
-                  askQuran={handleAskQuran}
-                  resetForm={chatManager.resetForm}
-                  isProcessing={chatManager.isProcessing}
-                  error={chatManager.error}
-                  showSummary={chatManager.showSummary}
-                  // Language translation props
-                  originalText={chatManager.summary}
-                  onTranslationChange={handleTranslationChange}
-                  isTranslating={chatManager.isTranslating}
-                  translationProgress={chatManager.translationProgress}
-                  currentLanguage={chatManager.currentLanguage}
-                  // Content type selection props
-                  selectedContentTypes={selectedContentTypes}
-                  onContentTypeChange={handleContentTypeChange}
-                />
-              </div>
-            )}
 
-            {/* Islamic Widgets - Hidden when chat is active */}
-            {!chatManager.isChatActive && (
-              <div className="mb-12">
-                <IslamicWidgets showWidgets={true} />
-              </div>
-            )}
 
-            {/* Transparency Section - How It Works - Hidden when chat is active */}
-            {!chatManager.isChatActive && <TransparencySection />}
+
 
             {/* Chat Section - Fixed at bottom when chat is active */}
             {chatManager.isChatActive && (
@@ -1142,6 +1164,8 @@ function HomeContent() {
                   // Content type selection props
                   selectedContentTypes={selectedContentTypes}
                   onContentTypeChange={handleContentTypeChange}
+                  // Stop operation functionality
+                  onStopOperation={handleStopOperation}
                 />
               </div>
             )}
@@ -1196,8 +1220,6 @@ function HomeContent() {
           </div>
         </main>
 
-        {/* Footer - Hidden when chat is active */}
-        {!chatManager.isChatActive && <Footer />}
         
         {/* PWA Install Prompt */}
         <InstallPrompt />

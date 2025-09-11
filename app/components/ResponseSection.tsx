@@ -7,8 +7,6 @@ import { useGlobalEventDelegation } from '../hooks/useGlobalEventDelegation';
 import { useScrollDetection } from '../hooks/useScrollDetection';
 import { processContentLinks } from '../utils/contentUtils';
 import { createShareLink, getShareText } from '../utils/shareUtils';
-import { QuestionDisplay } from './QuestionDisplay';
-import ShareButton from './ShareButton';
 import ShareModal from './ShareModal';
 import SourcesSection from './SourcesSection';
 
@@ -203,23 +201,6 @@ export default function ResponseSection({
       >
         <div className="relative group" style={{ zIndex: 2 }}>
           <div className="relative" style={{ zIndex: 3 }}>
-            {/* Question Display - Only show if there's a user question */}
-            {userQuestion && (
-              <QuestionDisplay
-                userQuestion={userQuestion}
-                isEditingQuestion={questionEditing.isEditingQuestion}
-                editedQuestion={questionEditing.editedQuestion}
-                setEditedQuestion={questionEditing.setEditedQuestion}
-                isHoveringQuestion={questionEditing.isHoveringQuestion}
-                setIsHoveringQuestion={questionEditing.setIsHoveringQuestion}
-                showQuestionCopySuccess={questionEditing.showQuestionCopySuccess}
-                handleEditQuestion={questionEditing.handleEditQuestion}
-                handleSaveQuestion={questionEditing.handleSaveQuestion}
-                handleCancelEdit={questionEditing.handleCancelEdit}
-                handleCopyQuestion={questionEditing.handleCopyQuestion}
-                isTextLarge={isTextLarge}
-              />
-            )}
 
             {/* Welcome Message - Show when no content is available */}
             {shouldShowWelcome ? (

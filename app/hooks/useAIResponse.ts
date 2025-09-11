@@ -4,6 +4,7 @@ import { detectLanguage } from '../utils/languageDetection';
 import { detectAyahReferences, AyahMatch } from '../utils/simpleAyahDetection';
 import { fetchArabicAyahText, fetchArabicAyahRangeText } from '../utils/ayahTextFetcher';
 import { extractHadithReferences, searchHadiths, generateHadithBoxHTML, HadithData } from '../utils/hadithUtils';
+import { getGlobalAbortManager } from './useAbortManager';
 
 
 
@@ -84,14 +85,15 @@ export const useAIResponse = (isTextLarge: boolean = false, selectedContentTypes
   hadith: boolean;
   suggestedQuestions: boolean;
 }) => {
-  const generate_response_with_gemini = useCallback(async (prompt: string): Promise<string> => {
+  const generate_response_with_gemini = useCallback(async (prompt: string, abortController?: AbortController): Promise<string> => {
     try {
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompt }),
+        signal: abortController?.signal
       });
 
       if (!response.ok) {
@@ -102,6 +104,10 @@ export const useAIResponse = (isTextLarge: boolean = false, selectedContentTypes
       const result = await response.json();
       return result.response;
     } catch (error) {
+      // Check if it's an abort error
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error; // Re-throw abort errors
+      }
       // Error calling Gemini API - silent fail for security
       throw new Error((error as Error).message || 'Failed to generate response');
     }
@@ -215,16 +221,39 @@ Question: ${content}`;
     tafsir: boolean;
     hadith: boolean;
     suggestedQuestions: boolean;
-  }) => {
+  }, abortController?: AbortController, isAborted?: () => boolean) => {
+    // Get global abort manager
+    const abortManager = getGlobalAbortManager();
+    
+    // Check if operation was aborted at the very beginning - IMMEDIATE RETURN
+    if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+      console.log('formatResponse - Operation aborted at start, returning early');
+      return response;
+    }
+    
     // First, validate that the response is complete and properly formatted
     const validatedResponse = validateAndCleanResponse(response);
     
     // Find all ayah references using universal detection system
     const ayahMatches = detectAyahReferences(validatedResponse);
     
+    // Check if operation was aborted before processing ayahs
+    if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+      console.log('formatResponse - Operation aborted before processing ayahs');
+      return response;
+    }
+
     // Process each ayah with tafsir data
     const ayahReplacements = await Promise.all(
       ayahMatches.map(async (match: AyahMatch) => {
+        // Check if operation was aborted before processing each ayah
+        if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+          console.log('formatResponse - Ayah processing aborted, skipping ayah:', match.surahName);
+          return {
+            match: match.originalMatch,
+            replacement: match.originalMatch
+          };
+        }
         const { verseText, surahName, ayahNumber, url } = match;
         
         const surahNumber = getSurahNumber(surahName.trim());
@@ -260,18 +289,28 @@ Question: ${content}`;
           } else {
             // Normal mode: fetch range from API
             try {
-              const response = await fetch(`/api/ayah-range?surah=${finalSurahNumber}&startAyah=${startAyah}&endAyah=${endAyah}`);
-              if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.text) {
-                  finalVerseText = data.text;
+              // Check if operation was aborted before API call
+              if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+                console.log('formatResponse - Ayah range API call aborted, using fallback');
+                finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+              } else {
+                console.log('formatResponse - Making ayah range API call:', `/api/ayah-range?surah=${finalSurahNumber}&startAyah=${startAyah}&endAyah=${endAyah}`);
+                const response = await fetch(`/api/ayah-range?surah=${finalSurahNumber}&startAyah=${startAyah}&endAyah=${endAyah}`, {
+                  signal: abortController?.signal
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data.success && data.text) {
+                    finalVerseText = data.text;
+                  } else {
+                    finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+                  }
                 } else {
                   finalVerseText = `[${surahName} ${ayahNumberStr}]`;
                 }
-              } else {
-                finalVerseText = `[${surahName} ${ayahNumberStr}]`;
               }
             } catch (error) {
+              console.log('formatResponse - Ayah range API call failed:', error);
               finalVerseText = `[${surahName} ${ayahNumberStr}]`;
             }
           }
@@ -288,18 +327,28 @@ Question: ${content}`;
           } else {
             // Normal mode: fetch from API
             try {
-              const response = await fetch(`/api/ayah-text?globalAyah=${globalAyahNumber}`);
-              if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.text) {
-                  finalVerseText = data.text;
+              // Check if operation was aborted before API call
+              if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+                console.log('formatResponse - Ayah text API call aborted, using fallback');
+                finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+              } else {
+                console.log('formatResponse - Making ayah text API call:', `/api/ayah-text?globalAyah=${globalAyahNumber}`);
+                const response = await fetch(`/api/ayah-text?globalAyah=${globalAyahNumber}`, {
+                  signal: abortController?.signal
+                });
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data.success && data.text) {
+                    finalVerseText = data.text;
+                  } else {
+                    finalVerseText = `[${surahName} ${ayahNumberStr}]`;
+                  }
                 } else {
                   finalVerseText = `[${surahName} ${ayahNumberStr}]`;
                 }
-              } else {
-                finalVerseText = `[${surahName} ${ayahNumberStr}]`;
               }
             } catch (error) {
+              console.log('formatResponse - Ayah text API call failed:', error);
               finalVerseText = `[${surahName} ${ayahNumberStr}]`;
             }
           }
@@ -307,7 +356,7 @@ Question: ${content}`;
         
         // Fetch tafsir data only if tafsir is selected
         let tafsirData;
-        if (contentTypes?.tafsir !== false) {
+        if (contentTypes?.tafsir !== false && !abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
           if (isRange) {
             // Fetch combined tafsir for range
             const [startAyah, endAyah] = ayahNumberStr.split('-').map(num => parseInt(num.trim()));
@@ -316,7 +365,6 @@ Question: ${content}`;
             // Fetch single ayah tafsir
             tafsirData = await fetchTafsir(finalSurahNumber, ayahNum);
           }
-        } else {
         }
         
         // Generate tafsir buttons and content
@@ -565,27 +613,41 @@ Question: ${content}`;
       processedText = processedText.replace(match, replacement);
     });
 
+    // Check if operation was aborted before processing hadiths
+    if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+      console.log('formatResponse - Operation aborted before processing hadiths');
+      return processedText;
+    }
+
     // Process hadith references only if hadith is selected
     let hadithReferences: any[] = [];
     let intelligentHadiths: HadithData[] = [];
     
-    if (contentTypes?.hadith !== false) {
+    if (contentTypes?.hadith !== false && !abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
       hadithReferences = extractHadithReferences(processedText);
 
       // Intelligent hadith search based on user query
       try {
         if (userQuery && userQuery.trim()) {
+          console.log('formatResponse - Making hadith search API call for:', userQuery.trim());
           intelligentHadiths = await searchHadiths(userQuery.trim(), 3);
-        } else {
         }
       } catch (error) {
+        console.log('formatResponse - Hadith search API call failed:', error);
       }
-    } else {
     }
 
     // Process each hadith reference
     const hadithReplacements = await Promise.all(
       hadithReferences.map(async (ref, index) => {
+        // Check if operation was aborted before processing each hadith
+        if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+          return {
+            match: ref.originalMatch,
+            replacement: ref.originalMatch
+          };
+        }
+        
         try {
           // Try to fetch specific hadith first
           const bookSlug = ref.bookName.toLowerCase().replace(/\s+/g, '-');
@@ -738,12 +800,12 @@ Question: ${content}`;
       .replace(/\n{3,}/g, '\n\n'); // Limit consecutive line breaks
     
     // Generate suggested questions if the option is enabled
-    if (contentTypes?.suggestedQuestions || selectedContentTypes?.suggestedQuestions) {
+    if ((contentTypes?.suggestedQuestions || selectedContentTypes?.suggestedQuestions) && !abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
       try {
-        
         // Detect language from user query
         const detectedLanguage = userQuery ? detectLanguage(userQuery) : 'en';
         
+        console.log('formatResponse - Making suggested questions API call');
         const suggestedQuestionsResponse = await fetch('/api/suggested-questions', {
           method: 'POST',
           headers: {
@@ -753,6 +815,7 @@ Question: ${content}`;
             userQuestion: userQuery || '',
             language: detectedLanguage
           }),
+          signal: abortController?.signal
         });
         
         if (suggestedQuestionsResponse.ok) {
@@ -784,6 +847,7 @@ Question: ${content}`;
           }
         }
       } catch (error) {
+        console.log('formatResponse - Suggested questions API call failed:', error);
         // Don't fail the main response if suggested questions fail
       }
     }
@@ -804,8 +868,12 @@ Question: ${content}`;
       tafsir: boolean;
       hadith: boolean;
       suggestedQuestions: boolean;
-    }
+    },
+    abortController?: AbortController,
+    isAborted?: () => boolean
   ) => {
+    // Get global abort manager
+    const abortManager = getGlobalAbortManager();
     const trimmedContent = content.trim();
     
     if (trimmedContent.length === 0) {
@@ -830,11 +898,45 @@ Question: ${content}`;
     const prompt = getPrompt(trimmedContent);
 
     try {
+      // Check if operation was aborted before starting
+      if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+        console.log('askQuran - Operation aborted before starting');
+        return;
+      }
       
-      const response = await generate_response_with_gemini(prompt);
+      const response = await generate_response_with_gemini(prompt, abortController);
       
+      // Check if operation was aborted after API call
+      if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+        console.log('askQuran - Operation aborted after API call');
+        return;
+      }
       
-      const formattedResponse = await formatResponse(response, trimmedContent, isTextLarge, contentTypes || selectedContentTypes);
+      // Check if operation was aborted before formatting - if so, skip formatting entirely
+      if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+        console.log('askQuran - Operation aborted before formatting, skipping all API calls');
+        return;
+      }
+      
+      // Only format response if not aborted - this prevents ALL API calls
+      let formattedResponse = response;
+      if (!abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
+        console.log('askQuran - Proceeding with formatting...');
+        try {
+          formattedResponse = await formatResponse(response, trimmedContent, isTextLarge, contentTypes || selectedContentTypes, abortController, isAborted);
+        } catch (error) {
+          console.log('askQuran - Formatting failed, using original response:', error);
+          formattedResponse = response;
+        }
+      } else {
+        console.log('askQuran - Skipping formatting due to abort');
+      }
+      
+      // Check if operation was aborted after formatting
+      if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+        console.log('askQuran - Operation aborted after formatting');
+        return;
+      }
       
       setSummary(formattedResponse);
       setDisplayedContent(formattedResponse);
@@ -844,13 +946,22 @@ Question: ${content}`;
       
       
     } catch (error) {
+      // Don't show error if operation was aborted
+      if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
+        console.log('askQuran - Operation aborted, not showing error');
+        return;
+      }
+      
       if (error instanceof Error) {
         setError(`Failed to generate response: ${error.message}. Please try again.`);
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
     } finally {
-      setIsProcessing(false);
+      // Only set processing to false if not aborted
+      if (!abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
+        setIsProcessing(false);
+      }
     }
   }, [getPrompt, generate_response_with_gemini, formatResponse, isTextLarge, selectedContentTypes]);
 
@@ -861,3 +972,4 @@ Question: ${content}`;
     getPrompt,
   };
 };
+

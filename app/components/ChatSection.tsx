@@ -5,6 +5,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { useHadithManager } from '../hooks/useHadithManager';
+import { getGlobalAbortManager } from '../hooks/useAbortManager';
 
 interface ChatSectionProps {
   content: string;
@@ -34,6 +35,8 @@ interface ChatSectionProps {
     hadith: boolean;
     suggestedQuestions: boolean;
   }) => void;
+  // Stop operation functionality
+  onStopOperation?: () => void;
 }
 
 export default function ChatSection({ 
@@ -55,7 +58,9 @@ export default function ChatSection({
   onCacheTranslation,
   // Content type selection props
   selectedContentTypes = { tafsir: false, hadith: false, suggestedQuestions: false },
-  onContentTypeChange
+  onContentTypeChange,
+  // Stop operation functionality
+  onStopOperation
 }: ChatSectionProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -659,36 +664,45 @@ export default function ChatSection({
 
             {/* Action buttons container */}
             <div className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 flex items-center gap-2 sm:gap-3">
-              {/* Send Button - Minimalist Design */}
+              {/* Send/Stop Button - Revolutionary Design */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                  setShowLanguageReminder(false);
-                  askQuran();
+                  if (isProcessing) {
+                    // Stop operation using global abort manager
+                    const abortManager = getGlobalAbortManager();
+                    abortManager.setAborted(true);
+                    onStopOperation?.();
+                  } else {
+                    // Reset abort state and send message
+                    const abortManager = getGlobalAbortManager();
+                    abortManager.reset();
+                    setShowLanguageReminder(false);
+                    askQuran();
+                  }
                 }}
-                disabled={isProcessing || !content.trim()}
+                disabled={!content.trim()}
                 className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                  content.trim() && !isProcessing
-                    ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  content.trim()
+                    ? isProcessing
+                      ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400'
+                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
                     : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
-                title="Send message"
+                title={isProcessing ? "Stop operation" : "Send message"}
               >
-
-                
                 {/* Icon container */}
                 <div className="relative z-10 flex items-center justify-center">
                   {isProcessing ? (
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    /* Revolutionary Stop Animation - Red Square Only */
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-sm"></div>
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                     </svg>
                   )}
                 </div>
-                
-
               </motion.button>
 
               {/* Clear Button - Minimalist Design */}

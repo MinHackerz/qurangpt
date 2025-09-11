@@ -155,21 +155,80 @@ async function getLocationFromIP(clientIP: string): Promise<{
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user's location from IP address
-    const clientIP = getClientIP(request);
+    const { searchParams } = new URL(request.url);
+    const clientLat = searchParams.get('lat');
+    const clientLng = searchParams.get('lng');
+    const useLocation = searchParams.get('useLocation') === 'true';
     
-    // Get actual user location from IP
-    const detectedLocation = await getLocationFromIP(clientIP);
-    
-    // Use detected location or fallback to Kolkata
-    const locationData = detectedLocation || {
-      lat: 22.5726,
-      lng: 88.3639,
-      city: 'Kolkata',
-      country: 'India',
-      timezone: 'Asia/Kolkata',
-      region: 'West Bengal'
+    let locationData: {
+      lat: number;
+      lng: number;
+      city: string;
+      country: string;
+      timezone: string;
+      region: string;
     };
+    
+    // If client provided location coordinates, use them
+    if (useLocation && clientLat && clientLng) {
+      const lat = parseFloat(clientLat);
+      const lng = parseFloat(clientLng);
+      
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        // Use client-provided coordinates and get city info from reverse geocoding
+        try {
+          const reverseGeocodeResponse = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`,
+            {
+              headers: {
+                'User-Agent': 'QuranGPT/1.0'
+              },
+              signal: AbortSignal.timeout(5000)
+            }
+          );
+          
+          if (reverseGeocodeResponse.ok) {
+            const reverseData = await reverseGeocodeResponse.json();
+            locationData = {
+              lat,
+              lng,
+              city: reverseData.city || reverseData.locality || 'Unknown',
+              country: reverseData.countryName || 'Unknown',
+              timezone: reverseData.localityInfo?.administrative?.[0]?.timezone || 'UTC',
+              region: reverseData.principalSubdivision || reverseData.administrativeArea || 'Unknown'
+            };
+          } else {
+            throw new Error('Reverse geocoding failed');
+          }
+        } catch (error) {
+          // Fallback to coordinates without city info
+          locationData = {
+            lat,
+            lng,
+            city: 'Unknown',
+            country: 'Unknown',
+            timezone: 'UTC',
+            region: 'Unknown'
+          };
+        }
+      } else {
+        throw new Error('Invalid coordinates provided');
+      }
+    } else {
+      // Fallback to IP-based location detection
+      const clientIP = getClientIP(request);
+      const detectedLocation = await getLocationFromIP(clientIP);
+      
+      // Use detected location or fallback to Kolkata
+      locationData = detectedLocation || {
+        lat: 22.5726,
+        lng: 88.3639,
+        city: 'Kolkata',
+        country: 'India',
+        timezone: 'Asia/Kolkata',
+        region: 'West Bengal'
+      };
+    }
     
     
     const lat = locationData.lat.toString();
