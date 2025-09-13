@@ -14,10 +14,11 @@ interface Source {
 
 interface SourcesSectionProps {
   content: string;
-  isTextLarge?: boolean;
+  textSize?: 'small' | 'medium' | 'large';
 }
 
-export default function SourcesSection({ content, isTextLarge = false }: SourcesSectionProps) {
+export default function SourcesSection({ content, textSize = 'small' }: SourcesSectionProps) {
+  const isTextLarge = textSize === 'large';
   const [sources, setSources] = useState<Source[]>([]);
 
   useEffect(() => {

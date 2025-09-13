@@ -142,14 +142,14 @@ export function formatHadithForDisplay(hadith: HadithData): {
 }
 
 // Generate hadith box HTML similar to ayah boxes
-export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, isTextLarge: boolean = false): string {
+export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, textSize: 'small' | 'medium' | 'large' = 'small'): string {
   const formatted = formatHadithForDisplay(hadith);
   const hadithId = `hadith-${hadith.bookSlug}-${hadith.hadithNumber}-${index}`;
   
-  // Text size classes based on isTextLarge parameter - professional hierarchy
-  const textSizeClass = isTextLarge ? 'text-base md:text-lg' : 'text-sm md:text-base'; // Professional hadith text sizing
-  const headerTextSizeClass = isTextLarge ? 'text-sm md:text-base' : 'text-xs md:text-sm'; // Match ayah header sizing
-  const summaryTextSizeClass = isTextLarge ? 'text-base' : 'text-sm'; // Match AI content sizing
+  // Text size classes based on textSize parameter - professional hierarchy
+  const textSizeClass = textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'; // Professional hadith text sizing
+  const headerTextSizeClass = textSize === 'large' ? 'text-base md:text-lg' : textSize === 'medium' ? 'text-sm md:text-base' : 'text-xs md:text-sm'; // Match ayah header sizing
+  const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'; // Match AI content sizing exactly
   
   return `
     <div class="stylish-hadith-reference mb-4 max-w-none w-full" 
@@ -212,7 +212,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, isT
       
       <!-- AI Summary - Simple text below the box -->
       ${hadith.aiSummary ? `
-        <div class="mt-3 hadith-ai-summary ${summaryTextSizeClass} text-gray-600 dark:text-gray-400 leading-relaxed">
+        <div class="mt-3 hadith-ai-summary ${summaryTextSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed">
           ${hadith.aiSummary}
         </div>
       ` : ''}

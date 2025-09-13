@@ -20,7 +20,7 @@ interface ResponseSectionProps {
   onCopyAIContent?: () => void; // New prop for copying AI content
   userQuestion?: string; // New prop for the user's question
   onQuestionEdit?: (newQuestion: string) => void; // New prop for editing the user's question
-  isTextLarge?: boolean; // Text size state from parent
+  textSize?: 'small' | 'medium' | 'large'; // Text size state from parent
   // Share functionality props
   shareUrl?: string; // URL to share
   onShare?: () => void; // Callback when share is triggered
@@ -40,11 +40,12 @@ export default function ResponseSection({
   onCopyAIContent,
   userQuestion,
   onQuestionEdit,
-  isTextLarge,
+  textSize = 'small',
   shareUrl,
   onShare,
   selectedContentTypes = { tafsir: false, hadith: false, suggestedQuestions: false }
 }: ResponseSectionProps) {
+  const isTextLarge = textSize === 'large';
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedShareUrl, setGeneratedShareUrl] = useState<string>('');
@@ -229,7 +230,7 @@ export default function ResponseSection({
                   
                   {/* Professional Subtitle - Matching HeroSection */}
                   <p className={`text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed font-light ${
-                    isTextLarge ? 'text-base md:text-lg' : 'text-sm md:text-base'
+                    textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'
                   }`}>
                     AI-powered Islamic knowledge from the Holy Quran
                   </p>
@@ -257,7 +258,7 @@ export default function ResponseSection({
                           Question
                         </div>
                         <div className={`text-gray-800 dark:text-gray-200 leading-relaxed ${
-                          isTextLarge ? 'text-base' : 'text-sm'
+                          textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
                         }`}>
                           {userQuestion}
                         </div>
@@ -270,7 +271,7 @@ export default function ResponseSection({
                 <div 
                   ref={containerRef}
                   className={`text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed p-4 -m-4 transition-all duration-200 ${
-                    isTextLarge ? 'text-base' : 'text-sm'
+                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
                   }`}
                   style={{ 
                     zIndex: 4,

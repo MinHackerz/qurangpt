@@ -75,7 +75,7 @@ function HomeContent() {
   const [originalAIQuestions, setOriginalAIQuestions] = useState<string[]>([]);
   
   // Text size toggle state - using three-state system for consistency
-  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('small');
   const isTextLarge = textSize === 'large';
   
   // Theme state
@@ -94,7 +94,7 @@ function HomeContent() {
   });
   
   // AI Response hook with text size state and content type selection
-  const { askQuran } = useAIResponse(isTextLarge, selectedContentTypes);
+  const { askQuran } = useAIResponse(textSize, selectedContentTypes);
   
   // Handle question parameter from URL (from shared page)
   useEffect(() => {
@@ -636,14 +636,14 @@ function HomeContent() {
       const tafsirHeaders = document.querySelectorAll('.tafsir-content h5');
       tafsirHeaders.forEach(header => {
         header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        header.classList.add(textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs');
+        header.classList.add(textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm');
       });
 
       // Update tafsir author names
       const tafsirAuthors = document.querySelectorAll('.tafsir-content h5 span');
       tafsirAuthors.forEach(author => {
         author.className = author.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        author.classList.add(textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs');
+        author.classList.add(textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs');
         author.classList.add('md:text-base', 'md:text-sm');
       });
 
@@ -651,7 +651,7 @@ function HomeContent() {
       const tafsirContentDivs = document.querySelectorAll('.tafsir-content .text-gray-700');
       tafsirContentDivs.forEach(contentDiv => {
         contentDiv.className = contentDiv.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        contentDiv.classList.add(textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs');
+        contentDiv.classList.add(textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs');
         contentDiv.classList.add('md:text-base', 'md:text-sm');
       });
 
@@ -659,40 +659,83 @@ function HomeContent() {
       const aiExplanationHeaders = document.querySelectorAll('.ai-explanation-section h4');
       aiExplanationHeaders.forEach(header => {
         header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        header.classList.add(isTextLarge ? 'text-xl' : 'text-lg');
+        header.classList.add(textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg');
       });
 
       const aiExplanationContent = document.querySelectorAll('.ai-explanation-section .text-gray-700');
       aiExplanationContent.forEach(content => {
         content.className = content.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        content.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+        content.classList.add(textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm');
       });
 
       // Update Authentic Tafsir sections
       const authenticTafsirHeaders = document.querySelectorAll('.authentic-tafsir-section h4');
       authenticTafsirHeaders.forEach(header => {
         header.className = header.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        header.classList.add(isTextLarge ? 'text-xl' : 'text-lg');
+        header.classList.add(textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg');
       });
 
       const authenticTafsirContent = document.querySelectorAll('.authentic-tafsir-section .text-gray-700');
       authenticTafsirContent.forEach(content => {
         content.className = content.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        content.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+        content.classList.add(textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm');
       });
 
       // Update main Tafsir section headers
       const mainTafsirHeaders = document.querySelectorAll('.tafsir-section h3');
       mainTafsirHeaders.forEach(header => {
         header.className = header.className.replace(/text-(xs|sm|base|lg|xl|2xl|3xl)/g, '');
-        header.classList.add(isTextLarge ? 'text-2xl' : 'text-xl');
-        header.classList.add('md:text-3xl', 'md:text-2xl');
+        header.classList.add(textSize === 'large' ? 'text-3xl' : textSize === 'medium' ? 'text-2xl' : 'text-xl');
+        header.classList.add('md:text-4xl', 'md:text-3xl', 'md:text-2xl');
       });
 
       const mainTafsirDescriptions = document.querySelectorAll('.tafsir-section p');
       mainTafsirDescriptions.forEach(desc => {
         desc.className = desc.className.replace(/text-(xs|sm|base|lg|xl)/g, '');
-        desc.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+        desc.classList.add(textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm');
+      });
+
+      // Update ayah content text sizes
+      const ayahBoxes = document.querySelectorAll('.stylish-ayah-reference');
+      ayahBoxes.forEach(ayahBox => {
+        // Update ayah text content
+        const ayahText = ayahBox.querySelector('blockquote');
+        if (ayahText) {
+          ayahText.className = ayahText.className.replace(/text-(xs|sm|base|lg|xl|2xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl|md:text-2xl)/g, '');
+          if (textSize === 'large') {
+            ayahText.classList.add('text-xl', 'md:text-2xl');
+          } else if (textSize === 'medium') {
+            ayahText.classList.add('text-lg', 'md:text-xl');
+          } else {
+            ayahText.classList.add('text-base', 'md:text-lg');
+          }
+        }
+
+        // Update ayah headers
+        const ayahHeader = ayahBox.querySelector('h3');
+        if (ayahHeader) {
+          ayahHeader.className = ayahHeader.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
+          if (textSize === 'large') {
+            ayahHeader.classList.add('text-base', 'md:text-lg');
+          } else if (textSize === 'medium') {
+            ayahHeader.classList.add('text-sm', 'md:text-base');
+          } else {
+            ayahHeader.classList.add('text-xs', 'md:text-sm');
+          }
+        }
+
+        // Update ayah verse number
+        const ayahVerse = ayahBox.querySelector('p');
+        if (ayahVerse) {
+          ayahVerse.className = ayahVerse.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
+          if (textSize === 'large') {
+            ayahVerse.classList.add('text-sm', 'md:text-base');
+          } else if (textSize === 'medium') {
+            ayahVerse.classList.add('text-xs', 'md:text-sm');
+          } else {
+            ayahVerse.classList.add('text-xs');
+          }
+        }
       });
 
       // Update hadith text sizes
@@ -702,7 +745,9 @@ function HomeContent() {
         const bookName = hadithBox.querySelector('span.font-medium');
         if (bookName) {
           bookName.className = bookName.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
-          if (isTextLarge) {
+          if (textSize === 'large') {
+            bookName.classList.add('text-base', 'md:text-lg');
+          } else if (textSize === 'medium') {
             bookName.classList.add('text-sm', 'md:text-base');
           } else {
             bookName.classList.add('text-xs', 'md:text-sm');
@@ -713,7 +758,9 @@ function HomeContent() {
         const hadithNumber = hadithBox.querySelector('span.text-xs');
         if (hadithNumber) {
           hadithNumber.className = hadithNumber.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
-          if (isTextLarge) {
+          if (textSize === 'large') {
+            hadithNumber.classList.add('text-base', 'md:text-lg');
+          } else if (textSize === 'medium') {
             hadithNumber.classList.add('text-sm', 'md:text-base');
           } else {
             hadithNumber.classList.add('text-xs', 'md:text-sm');
@@ -724,7 +771,9 @@ function HomeContent() {
         const statusBadge = hadithBox.querySelector('span[class*="px-2"][class*="py-0"]');
         if (statusBadge) {
           statusBadge.className = statusBadge.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
-          if (isTextLarge) {
+          if (textSize === 'large') {
+            statusBadge.classList.add('text-base', 'md:text-lg');
+          } else if (textSize === 'medium') {
             statusBadge.classList.add('text-sm', 'md:text-base');
           } else {
             statusBadge.classList.add('text-xs', 'md:text-sm');
@@ -735,7 +784,9 @@ function HomeContent() {
         const hadithText = hadithBox.querySelector('.hadith-text-english, .hadith-text-arabic');
         if (hadithText) {
           hadithText.className = hadithText.className.replace(/text-(xs|sm|base|lg|xl|2xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl|md:text-2xl)/g, '');
-          if (isTextLarge) {
+          if (textSize === 'large') {
+            hadithText.classList.add('text-lg', 'md:text-xl');
+          } else if (textSize === 'medium') {
             hadithText.classList.add('text-base', 'md:text-lg');
           } else {
             hadithText.classList.add('text-sm', 'md:text-base');
@@ -746,7 +797,9 @@ function HomeContent() {
         const narrator = hadithBox.querySelector('.hadith-narrator');
         if (narrator) {
           narrator.className = narrator.className.replace(/text-(xs|sm|base|lg|xl|md:text-xs|md:text-sm|md:text-base|md:text-lg|md:text-xl)/g, '');
-          if (isTextLarge) {
+          if (textSize === 'large') {
+            narrator.classList.add('text-base', 'md:text-lg');
+          } else if (textSize === 'medium') {
             narrator.classList.add('text-sm', 'md:text-base');
           } else {
             narrator.classList.add('text-xs', 'md:text-sm');
@@ -756,25 +809,39 @@ function HomeContent() {
         // Update AI summary - match AI content sizing exactly
         const aiSummary = hadithBox.querySelector('.hadith-ai-summary');
         if (aiSummary) {
-          // Remove all text size classes more thoroughly
-          aiSummary.className = aiSummary.className.replace(/\btext-(xs|sm|base|lg|xl|2xl)\b/g, '');
-          aiSummary.className = aiSummary.className.replace(/\bmd:text-(xs|sm|base|lg|xl|2xl)\b/g, '');
-          // Clean up extra spaces
-          aiSummary.className = aiSummary.className.replace(/\s+/g, ' ').trim();
-          // Add the new class
-          aiSummary.classList.add(isTextLarge ? 'text-base' : 'text-sm');
+          // Check if the element already has the correct text size class
+          const expectedClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base';
+          if (!aiSummary.classList.contains(expectedClass)) {
+            // Remove all text size classes more thoroughly
+            aiSummary.className = aiSummary.className.replace(/\btext-(xs|sm|base|lg|xl|2xl)\b/g, '');
+            aiSummary.className = aiSummary.className.replace(/\bmd:text-(xs|sm|base|lg|xl|2xl)\b/g, '');
+            // Clean up extra spaces
+            aiSummary.className = aiSummary.className.replace(/\s+/g, ' ').trim();
+            // Add the new class and ensure consistent color
+            aiSummary.classList.add(expectedClass);
+            // Ensure consistent color with main content
+            aiSummary.classList.add('text-gray-700', 'dark:text-gray-300');
+          }
+        }
+      });
+
+      // Update suggested questions text sizes
+      const suggestedQuestionItems = document.querySelectorAll('.suggested-question-item p');
+      suggestedQuestionItems.forEach(questionItem => {
+        const expectedClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base';
+        if (!questionItem.classList.contains(expectedClass)) {
+          questionItem.className = questionItem.className.replace(/text-(xs|sm|base|lg|xl|2xl)/g, '');
+          questionItem.classList.add(expectedClass);
         }
       });
     };
 
-    // Run the update function immediately and with a delay to handle re-renders
+    // Run the update function immediately and with a single delay to handle re-renders
     updateExistingTafsirTextSize();
     
-    // Also run with delays to handle any async re-renders
+    // Single delay to handle any async re-renders
     setTimeout(() => updateExistingTafsirTextSize(), 100);
-    setTimeout(() => updateExistingTafsirTextSize(), 500);
-    setTimeout(() => updateExistingTafsirTextSize(), 1000);
-  }, [textSize, isTextLarge]);
+  }, [textSize]);
 
   // Handle translation changes
   const handleTranslationChange = useCallback(async (translatedText: string, language: string) => {
@@ -1199,7 +1266,7 @@ function HomeContent() {
                   onCopyAIContent={handleCopyAIContent}
                   userQuestion={chatManager.submittedQuestion}
                   onQuestionEdit={handleSuggestedQuestionClick}
-                  isTextLarge={isTextLarge}
+                  textSize={textSize}
                   shareUrl={shareUrl}
                   onShare={handleShareContent}
                   selectedContentTypes={selectedContentTypes}
@@ -1211,7 +1278,7 @@ function HomeContent() {
             {chatManager.showSummary && !chatManager.isProcessing && chatManager.displayedContent && (
               <SourcesSection 
                 content={chatManager.displayedContent} 
-                isTextLarge={isTextLarge}
+                textSize={textSize}
               />
             )}
 

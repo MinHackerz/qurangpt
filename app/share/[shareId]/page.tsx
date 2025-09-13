@@ -49,14 +49,14 @@ export default function SharePage() {
   const [showContentTypeDropdown, setShowContentTypeDropdown] = useState(false);
   
   // Text size state
-  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('small');
   
   // Formatted response state
   const [formattedResponse, setFormattedResponse] = useState<string>('');
   const [isFormatting, setIsFormatting] = useState<boolean>(false);
 
   // Use the same AI response formatting as the main page
-  const { formatResponse } = useAIResponse(textSize === 'large', selectedContentTypes);
+  const { formatResponse } = useAIResponse(textSize, selectedContentTypes);
   
   // Use global event delegation for audio progress bars
   useGlobalEventDelegation();
@@ -107,12 +107,12 @@ export default function SharePage() {
       } else {
         // Content needs formatting
         setIsFormatting(true);
-        formatResponse(sharedContent.response, sharedContent.question, false, selectedContentTypes)
+        formatResponse(sharedContent.response, sharedContent.question, textSize, selectedContentTypes)
           .then(setFormattedResponse)
           .finally(() => setIsFormatting(false));
       }
     }
-  }, [sharedContent?.response, sharedContent?.question, formatResponse, selectedContentTypes]);
+  }, [sharedContent?.response, sharedContent?.question, formatResponse, selectedContentTypes, textSize]);
 
   // Handle sharing current page content
   const handleShareContent = useCallback(async () => {
@@ -807,9 +807,9 @@ export default function SharePage() {
               Question
             </h2>
             <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${
-              textSize === 'small' ? 'text-xs' : 
-              textSize === 'medium' ? 'text-sm' : 
-              'text-base'
+              textSize === 'small' ? 'text-sm' : 
+              textSize === 'medium' ? 'text-base' : 
+              'text-lg'
             }`}>
               {sharedContent.question}
             </p>
@@ -831,9 +831,9 @@ export default function SharePage() {
             ) : (
               <div 
                 className={`text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${
-                  textSize === 'small' ? 'text-xs' : 
-                  textSize === 'medium' ? 'text-sm' : 
-                  'text-base'
+                  textSize === 'small' ? 'text-sm' : 
+                  textSize === 'medium' ? 'text-base' : 
+                  'text-lg'
                 }`}
                 dangerouslySetInnerHTML={{ 
                   __html: filteredContent
@@ -846,7 +846,7 @@ export default function SharePage() {
           {filteredContent && (
             <SourcesSection 
               content={filteredContent} 
-              isTextLarge={textSize === 'large'}
+              textSize={textSize}
             />
           )}
 

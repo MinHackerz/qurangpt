@@ -80,11 +80,12 @@ const validateAndCleanResponse = (response: string): string => {
   return cleanedResponse;
 };
 
-export const useAIResponse = (isTextLarge: boolean = false, selectedContentTypes?: {
+export const useAIResponse = (textSize: 'small' | 'medium' | 'large' = 'small', selectedContentTypes?: {
   tafsir: boolean;
   hadith: boolean;
   suggestedQuestions: boolean;
 }) => {
+  const isTextLarge = textSize === 'large';
   const generate_response_with_gemini = useCallback(async (prompt: string, abortController?: AbortController): Promise<string> => {
     try {
       const response = await fetch('/api/gemini', {
@@ -217,7 +218,7 @@ This verse directly addresses your question about patience by teaching us that A
 Question: ${content}`;
   }, []);
 
-  const formatResponse = useCallback(async (response: string, userQuery?: string, currentIsTextLarge?: boolean, contentTypes?: {
+  const formatResponse = useCallback(async (response: string, userQuery?: string, currentTextSize?: 'small' | 'medium' | 'large', contentTypes?: {
     tafsir: boolean;
     hadith: boolean;
     suggestedQuestions: boolean;
@@ -407,11 +408,11 @@ Question: ${content}`;
                 <div class="bg-transparent rounded-xl border border-gray-200 dark:border-gray-700  overflow-hidden">
                   <div class="bg-gray-100 dark:bg-gray-900 px-3 md:px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
-                      <h5 class="${isTextLarge ? 'text-base' : 'text-sm'} font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                      <h5 class="${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'} font-semibold text-gray-800 dark:text-gray-200 flex items-center">
                         <svg class="w-4 h-4 mr-2 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        <span class="${isTextLarge ? 'text-sm md:text-base' : 'text-xs md:text-sm'}">${tafsir.author}</span>
+                        <span class="${textSize === 'large' ? 'text-base md:text-lg' : textSize === 'medium' ? 'text-sm md:text-base' : 'text-xs md:text-sm'}">${tafsir.author}</span>
                       </h5>
                       <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -421,7 +422,7 @@ Question: ${content}`;
                     </div>
                   </div>
                   <div class="p-3 md:p-4">
-                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed ${isTextLarge ? 'text-sm md:text-base' : 'text-xs md:text-sm'} space-y-2 md:space-y-3">
+                    <div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-base md:text-lg' : textSize === 'medium' ? 'text-sm md:text-base' : 'text-xs md:text-sm'} space-y-2 md:space-y-3">
                       ${formattedContent}
                     </div>
                   </div>
@@ -457,8 +458,8 @@ Question: ${content}`;
                       </svg>
                     </div>
                     <div>
-                      <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)]">${surahName}</h3>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">Verse ${ayahNumberStr}</p>
+                      <h3 class="${(currentTextSize ?? textSize) === 'large' ? 'text-base md:text-lg' : (currentTextSize ?? textSize) === 'medium' ? 'text-sm md:text-base' : 'text-xs md:text-sm'} font-semibold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)]">${surahName}</h3>
+                      <p class="${(currentTextSize ?? textSize) === 'large' ? 'text-sm md:text-base' : (currentTextSize ?? textSize) === 'medium' ? 'text-xs md:text-sm' : 'text-xs'} text-gray-500 dark:text-gray-400">Verse ${ayahNumberStr}</p>
                     </div>
                   </div>
                   <!-- Top Right: Language toggle + Surah:Verse format -->
@@ -488,7 +489,7 @@ Question: ${content}`;
                   <div class="relative">
                     <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -left-4">"</div>
                     <div class="text-3xl md:text-4xl text-gray-300 dark:text-gray-600 opacity-30 absolute -top-2 -right-4">"</div>
-                    <blockquote class="text-lg md:text-xl text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed font-medium tracking-wide px-6 py-2">
+                    <blockquote class="${(currentTextSize ?? textSize) === 'large' ? 'text-xl md:text-2xl' : (currentTextSize ?? textSize) === 'medium' ? 'text-lg md:text-xl' : 'text-base md:text-lg'} text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] leading-relaxed font-medium tracking-wide px-6 py-2">
                       ${finalVerseText}
                     </blockquote>
                   </div>
@@ -654,7 +655,7 @@ Question: ${content}`;
           const hadith = await searchHadiths(`${ref.bookName} ${ref.hadithNumber}`, 1);
           
           if (hadith && hadith.length > 0) {
-            const hadithBoxHTML = generateHadithBoxHTML(hadith[0], index, currentIsTextLarge ?? isTextLarge);
+            const hadithBoxHTML = generateHadithBoxHTML(hadith[0], index, currentTextSize ?? textSize);
             return {
               match: ref.originalMatch,
               replacement: hadithBoxHTML
@@ -697,7 +698,7 @@ Question: ${content}`;
     // Add intelligent hadiths at the end of the response only if hadith is selected
     if (contentTypes?.hadith !== false && intelligentHadiths.length > 0) {
       const intelligentHadithsHTML = intelligentHadiths.map((hadith, index) => 
-        generateHadithBoxHTML(hadith, index + 1000, currentIsTextLarge ?? isTextLarge) // Use high index to avoid conflicts
+        generateHadithBoxHTML(hadith, index + 1000, currentTextSize ?? textSize) // Use high index to avoid conflicts
       ).join('');
       
       processedText += `
@@ -776,15 +777,15 @@ Question: ${content}`;
       
       // Format Tafsir/Tafseer headers with simple styling (matching AI Explanation design)
       .replace(/^(Tafs[ie]r):?\s*$/gmi, 
-        `<div class="tafsir-section mt-12 mb-8"><h3 class="${isTextLarge ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-bold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] tracking-wide border-b border-gray-300 dark:border-gray-600 pb-2">Tafsir</h3><p class="${isTextLarge ? 'text-base' : 'text-sm'} text-gray-600 dark:text-gray-400 mt-1">Detailed scholarly interpretation</p></div>`)
+        `<div class="tafsir-section mt-12 mb-8"><h3 class="${textSize === 'large' ? 'text-3xl md:text-4xl' : textSize === 'medium' ? 'text-2xl md:text-3xl' : 'text-xl md:text-2xl'} font-bold text-gray-800 dark:text-gray-200 font-[var(--font-amiri)] tracking-wide border-b border-gray-300 dark:border-gray-600 pb-2">Tafsir</h3><p class="${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'} text-gray-600 dark:text-gray-400 mt-1">Detailed scholarly interpretation</p></div>`)
       
       // Format AI Explanation sections with simple styling
       .replace(/\[AI Explanation:\s*([\s\S]*?)\]/gi, 
-        `<div class="ai-explanation-section mt-2 mb-4"><h4 class="${isTextLarge ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${isTextLarge ? 'text-base' : 'text-sm'}">$1</div></div>`)
+        `<div class="ai-explanation-section mt-2 mb-4"><h4 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'}">$1</div></div>`)
       
       // Format Authentic Tafsir sections with simple styling
       .replace(/\[Authentic Tafsir:\s*([\s\S]*?)\]/g, 
-        `<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="${isTextLarge ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${isTextLarge ? 'text-base' : 'text-sm'}">$1</div></div>`)
+        `<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'}">$1</div></div>`)
       
       // Format other common section headers with enhanced styling
       .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi, 
@@ -825,7 +826,7 @@ Question: ${content}`;
             // Add suggested questions to the response
             const suggestedQuestionsHTML = suggestedData.questions.map((question: string, index: number) => 
               `<div class="suggested-question-item mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer" data-suggested-question="true">
-                <p class="text-gray-700 dark:text-gray-300 ${isTextLarge ? 'text-base' : 'text-sm'}">${question}</p>
+                <p class="text-gray-700 dark:text-gray-300 ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'}">${question}</p>
               </div>`
             ).join('');
             
@@ -835,7 +836,7 @@ Question: ${content}`;
                   <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                  <h3 class="${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'} font-semibold text-gray-800 dark:text-gray-200">
                     Suggested Questions
                   </h3>
                 </div>
@@ -853,7 +854,7 @@ Question: ${content}`;
     }
     
     return processedText;
-  }, [isTextLarge, selectedContentTypes]);
+  }, [textSize, selectedContentTypes]);
 
   const askQuran = useCallback(async (
     content: string,
@@ -923,7 +924,7 @@ Question: ${content}`;
       if (!abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
         console.log('askQuran - Proceeding with formatting...');
         try {
-          formattedResponse = await formatResponse(response, trimmedContent, isTextLarge, contentTypes || selectedContentTypes, abortController, isAborted);
+          formattedResponse = await formatResponse(response, trimmedContent, textSize, contentTypes || selectedContentTypes, abortController, isAborted);
         } catch (error) {
           console.log('askQuran - Formatting failed, using original response:', error);
           formattedResponse = response;
@@ -963,7 +964,7 @@ Question: ${content}`;
         setIsProcessing(false);
       }
     }
-  }, [getPrompt, generate_response_with_gemini, formatResponse, isTextLarge, selectedContentTypes]);
+  }, [getPrompt, generate_response_with_gemini, formatResponse, textSize, selectedContentTypes]);
 
   return {
     askQuran,
