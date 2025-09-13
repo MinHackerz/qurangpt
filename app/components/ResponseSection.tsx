@@ -230,7 +230,7 @@ export default function ResponseSection({
                   
                   {/* Professional Subtitle - Matching HeroSection */}
                   <p className={`text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed font-light ${
-                    textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'
+                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
                   }`}>
                     AI-powered Islamic knowledge from the Holy Quran
                   </p>

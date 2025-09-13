@@ -807,9 +807,7 @@ export default function SharePage() {
               Question
             </h2>
             <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${
-              textSize === 'small' ? 'text-sm' : 
-              textSize === 'medium' ? 'text-base' : 
-              'text-lg'
+              textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
             }`}>
               {sharedContent.question}
             </p>
@@ -831,9 +829,7 @@ export default function SharePage() {
             ) : (
               <div 
                 className={`text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${
-                  textSize === 'small' ? 'text-sm' : 
-                  textSize === 'medium' ? 'text-base' : 
-                  'text-lg'
+                  textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
                 }`}
                 dangerouslySetInnerHTML={{ 
                   __html: filteredContent

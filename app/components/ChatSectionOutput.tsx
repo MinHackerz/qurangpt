@@ -316,6 +316,8 @@ export default function ChatSectionOutput({
           {showTranslateSection && (
             <div className="absolute -top-12 left-0 right-0 z-10 w-full px-4 sm:px-0">
               <div className="max-w-4xl mx-auto">
+                {/* Fading top border */}
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent mb-3"></div>
                 <div className="flex items-center space-x-2 sm:space-x-3 w-full">
                   <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium flex-shrink-0">Translate:</span>
                   

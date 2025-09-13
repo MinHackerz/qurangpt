@@ -781,11 +781,11 @@ Question: ${content}`;
       
       // Format AI Explanation sections with simple styling
       .replace(/\[AI Explanation:\s*([\s\S]*?)\]/gi, 
-        `<div class="ai-explanation-section mt-2 mb-4"><h4 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'}">$1</div></div>`)
+        `<div class="ai-explanation-section mt-2 mb-4"><h4 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">AI Explanation</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'}">$1</div></div>`)
       
       // Format Authentic Tafsir sections with simple styling
       .replace(/\[Authentic Tafsir:\s*([\s\S]*?)\]/g, 
-        `<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'}">$1</div></div>`)
+        `<br><br><div class="authentic-tafsir-section mt-6 mb-4"><h4 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-semibold text-gray-800 dark:text-gray-200 mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'}">$1</div></div>`)
       
       // Format other common section headers with enhanced styling
       .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi, 

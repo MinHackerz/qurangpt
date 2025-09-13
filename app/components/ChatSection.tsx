@@ -314,7 +314,10 @@ export default function ChatSection({
           {/* Translate Section - Left side top with exact LanguageTabs styling */}
           {showSummary && (
             <div className="absolute -top-12 left-0 right-0 z-10 w-full">
-              <div className="flex items-center space-x-3 w-full">
+              <div className="max-w-4xl mx-auto">
+                {/* Fading top border */}
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent mb-3"></div>
+                <div className="flex items-center space-x-3 w-full">
                 <span className="text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wider uppercase flex-shrink-0">Translate:</span>
                 
                 {/* Language buttons with exact LanguageTabs styling - Dynamic from API */}
@@ -462,6 +465,7 @@ export default function ChatSection({
                     })}
                   </div>
                 )}
+                </div>
               </div>
             </div>
           )}
