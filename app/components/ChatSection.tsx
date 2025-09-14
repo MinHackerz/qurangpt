@@ -176,19 +176,21 @@ export default function ChatSection({
     return translationCache[langCode] !== undefined;
   }, [translationCache]);
   
-  // Handle instant translation with caching
+  // Handle instant translation with caching - optimized
   const handleInstantTranslation = useCallback((langCode: string) => {
+    // Early return if no original text
+    if (!originalText) return;
+    
     // Check if we have a cached translation
     if (translationCache[langCode]) {
       // Instant cached translation - NO API CALL
       setIsUsingCachedTranslation(true);
-      // Pass the cached text directly to show immediately
       onTranslationChange?.(translationCache[langCode], langCode);
       return;
     }
     
     // Check if there's a cached translation from the API
-    if (originalText && getCachedTranslation) {
+    if (getCachedTranslation) {
       const apiCached = getCachedTranslation(originalText, langCode);
       if (apiCached) {
         // Cache it locally for future instant access

@@ -24,13 +24,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate surah and ayah numbers
+    // Validate surah and ayah numbers with enhanced security
     const surahNum = parseInt(surah);
     const ayahNum = parseInt(ayah);
 
-    if (isNaN(surahNum) || isNaN(ayahNum) || surahNum < 1 || surahNum > 114 || ayahNum < 1) {
+    // Check for valid numbers and reasonable ranges
+    if (isNaN(surahNum) || isNaN(ayahNum) || 
+        surahNum < 1 || surahNum > 114 || 
+        ayahNum < 1 || ayahNum > 300 || // Reasonable upper limit for ayah numbers
+        !Number.isInteger(surahNum) || !Number.isInteger(ayahNum)) {
       return NextResponse.json(
-        { error: 'Invalid surah or ayah number' },
+        { error: 'Invalid surah or ayah number. Please provide valid numbers.' },
         { status: 400 }
       );
     }
@@ -114,8 +118,12 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
+    console.error('Audio API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQuestionEditing } from '../hooks/useQuestionEditing';
 import { useGlobalEventDelegation } from '../hooks/useGlobalEventDelegation';
 import { useScrollDetection } from '../hooks/useScrollDetection';
@@ -51,8 +51,8 @@ export default function ResponseSection({
   const [generatedShareUrl, setGeneratedShareUrl] = useState<string>('');
   const [isCreatingShare, setIsCreatingShare] = useState(false);
 
-  // Process content based on selected content types
-  const processContentBasedOnSelection = (content: string) => {
+  // Process content based on selected content types - memoized for performance
+  const processContentBasedOnSelection = useCallback((content: string) => {
     if (!content) return content;
     
     // Create a temporary DOM element to parse the content
@@ -75,7 +75,7 @@ export default function ResponseSection({
     // Existing suggested questions content remains visible regardless of option state
     
     return tempDiv.innerHTML;
-  };
+  }, [selectedContentTypes.tafsir]);
 
   // Use displayedContent if provided, otherwise use summary, and process based on selection
   const contentToShow = processContentBasedOnSelection(displayedContent || summary);
@@ -140,32 +140,35 @@ export default function ResponseSection({
   
   useEffect(() => {
     if (contentToShow && contentToShow.includes('ayah-audio-play-btn')) {
-      
-      // Check for buttons after a short delay to allow DOM to update
-      setTimeout(() => {
+      // Use requestAnimationFrame for better performance
+      requestAnimationFrame(() => {
         const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn');
         if (buttons.length > 0) {
-          buttons.forEach((button, index) => {
+          buttons.forEach((button) => {
             const btn = button as HTMLElement;
             
-            // Ensure button is clickable
-            btn.style.pointerEvents = 'auto';
-            btn.style.cursor = 'pointer';
-            btn.style.position = 'relative';
-            btn.style.zIndex = '10';
-            if (btn instanceof HTMLButtonElement) {
-              btn.disabled = false;
+            // Only update if button is not already properly configured
+            if (btn.style.pointerEvents !== 'auto' || btn.style.cursor !== 'pointer') {
+              btn.style.pointerEvents = 'auto';
+              btn.style.cursor = 'pointer';
+              btn.style.position = 'relative';
+              btn.style.zIndex = '10';
+              if (btn instanceof HTMLButtonElement) {
+                btn.disabled = false;
+              }
             }
           });
         }
-      }, 100);
+      });
     }
   }, [contentToShow]);
 
-  // Additional effect to periodically ensure button clickability
+  // Additional effect to periodically ensure button clickability - optimized
   useEffect(() => {
     const ensureButtonClickability = () => {
       const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn');
+      if (buttons.length === 0) return; // Early return if no buttons
+      
       buttons.forEach((button) => {
         const btn = button as HTMLElement;
         // Only fix if button is not currently disabled by the audio system
@@ -181,8 +184,8 @@ export default function ResponseSection({
     // Run immediately
     ensureButtonClickability();
 
-    // Set up interval to periodically check
-    const interval = setInterval(ensureButtonClickability, 2000);
+    // Set up interval to periodically check - reduced frequency for better performance
+    const interval = setInterval(ensureButtonClickability, 5000); // Increased from 2s to 5s
 
     return () => clearInterval(interval);
   }, [contentToShow]);

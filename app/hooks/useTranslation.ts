@@ -104,6 +104,7 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
         localStorage.setItem('quran-gpt-translation-cache', JSON.stringify(cache));
       } catch (err) {
         // Failed to save translation cache to localStorage
+        console.warn('Failed to save translation cache to localStorage:', err);
       }
     }, 1000); // Debounce by 1 second
     
@@ -136,12 +137,14 @@ export function useTranslation(options: UseTranslationOptions = {}): UseTranslat
     
     const now = Date.now();
     if (now - cached.timestamp > cacheTimeout) {
-      // Remove expired cache entry
-      setCache(prev => {
-        const newCache = { ...prev };
-        delete newCache[cacheKey];
-        return newCache;
-      });
+      // Remove expired cache entry asynchronously to avoid blocking
+      setTimeout(() => {
+        setCache(prev => {
+          const newCache = { ...prev };
+          delete newCache[cacheKey];
+          return newCache;
+        });
+      }, 0);
       return null;
     }
 

@@ -829,28 +829,42 @@ export const useGlobalEventDelegation = () => {
 
     // Run immediately and then periodically
     ensureButtonsClickable();
-    const intervalId = setInterval(ensureButtonsClickable, 1000);
+    const intervalId = setInterval(ensureButtonsClickable, 2000); // Reduced frequency for better performance
 
-    // Cleanup on unmount
+    // Cleanup on unmount - optimized
     return () => {
+      // Cleanup event listeners
       if (window.globalTafsirClickHandler) {
         document.removeEventListener('click', window.globalTafsirClickHandler, true);
         document.removeEventListener('click', window.globalTafsirClickHandler, false);
         delete window.globalTafsirClickHandler;
       }
-      observer.disconnect();
-      mutationObserver.disconnect();
-      themeObserver.disconnect();
+      
+      // Cleanup observers
+      try {
+        observer.disconnect();
+        mutationObserver.disconnect();
+        themeObserver.disconnect();
+      } catch (error) {
+        console.warn('Error disconnecting observers:', error);
+      }
+      
+      // Cleanup interval
       clearInterval(intervalId);
       
-      // Cleanup audio states
+      // Cleanup audio states more efficiently
       audioStates.forEach((state) => {
-        if (state.audio) {
-          state.audio.pause();
-          state.audio.src = '';
-        }
-        if (state.progressInterval) {
-          clearInterval(state.progressInterval);
+        try {
+          if (state.audio) {
+            state.audio.pause();
+            state.audio.src = '';
+            state.audio.load(); // Reset audio element
+          }
+          if (state.progressInterval) {
+            clearInterval(state.progressInterval);
+          }
+        } catch (error) {
+          console.warn('Error cleaning up audio state:', error);
         }
       });
       audioStates.clear();

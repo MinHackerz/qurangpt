@@ -121,12 +121,28 @@ export default function DigitalClock() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Islamic data using IP-based location detection
+  // Fetch Islamic data using IP-based location detection - with caching
   useEffect(() => {
     const fetchIslamicData = async () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Check if we have cached data that's still fresh (less than 5 minutes old)
+        const cachedData = localStorage.getItem('quran-gpt-islamic-data');
+        const cacheTime = localStorage.getItem('quran-gpt-islamic-data-time');
+        
+        if (cachedData && cacheTime) {
+          const now = Date.now();
+          const cacheAge = now - parseInt(cacheTime);
+          const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+          
+          if (cacheAge < fiveMinutes) {
+            setIslamicData(JSON.parse(cachedData));
+            setLoading(false);
+            return;
+          }
+        }
         
         const response = await fetch('/api/islamic-data');
         
@@ -142,6 +158,10 @@ export default function DigitalClock() {
         
         setIslamicData(data);
         setError(null);
+        
+        // Cache the data
+        localStorage.setItem('quran-gpt-islamic-data', JSON.stringify(data));
+        localStorage.setItem('quran-gpt-islamic-data-time', Date.now().toString());
         
       } catch (err) {
         console.error('Error fetching Islamic data:', err);
