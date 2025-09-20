@@ -1070,69 +1070,69 @@ function HomeContent() {
                   className="fixed z-20 sm:flex sm:flex-col sm:items-center sm:space-y-3"
                   style={{
                     right: '16px', // Fixed position from right edge on all devices
-                    top: `calc(70% - 30px)`, // Lower position for mobile
+                    top: `calc(50% - 30px)`, // Center position for mobile
                     bottom: 'auto'
                   }}
                 >
-                  {/* Mobile: Inline horizontal layout */}
-                  <div className="flex sm:hidden items-center space-x-3">
-                    {/* Share Button */}
-                  <button
-                    onClick={() => {
-                      // Track share button click in Google Analytics
-                      if (typeof window !== 'undefined' && (window as any).gtag) {
-                        (window as any).gtag('event', 'share_button_click', {
-                          event_category: 'engagement',
-                          event_label: 'share_button',
-                          custom_parameter_1: chatManager.submittedQuestion ? chatManager.submittedQuestion.substring(0, 100) : 'unknown_question',
-                            custom_parameter_2: 'mobile_inline_action_bar'
-                        });
-                      }
+                  {/* Mobile: Vertical layout - Share button on top, text size toggle below */}
+                  <div className="flex sm:hidden flex-col items-center space-y-3">
+                    {/* Share Button - On Top */}
+                    <button
+                      onClick={() => {
+                        // Track share button click in Google Analytics
+                        if (typeof window !== 'undefined' && (window as any).gtag) {
+                          (window as any).gtag('event', 'share_button_click', {
+                            event_category: 'engagement',
+                            event_label: 'share_button',
+                            custom_parameter_1: chatManager.submittedQuestion ? chatManager.submittedQuestion.substring(0, 100) : 'unknown_question',
+                              custom_parameter_2: 'mobile_vertical_action_bar'
+                          });
+                        }
 
-                      // If we have a share URL, open modal directly
-                      if (shareUrl) {
-                        setShowShareModal(true);
-                      } else {
-                        // If no share URL, trigger the share creation first
-                        setPendingShareModal(true);
-                        handleShareContent();
-                      }
-                    }}
-                    disabled={isSharing}
-                    className={`p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 hover:animate-none ${
-                      showShareSuccess 
-                        ? 'text-green-700 dark:text-green-300' 
-                        : isSharing
-                        ? 'text-green-400 dark:text-green-600 cursor-not-allowed'
-                        : 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40'
-                    }`}
-                    style={{ animation: 'bounce 4s infinite' }}
-                    title={showShareSuccess ? "Share link copied!" : "Share this content"}
-                  >
-                    {isSharing ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
-                    ) : (
+                        // If we have a share URL, open modal directly
+                        if (shareUrl) {
+                          setShowShareModal(true);
+                        } else {
+                          // If no share URL, trigger the share creation first
+                          setPendingShareModal(true);
+                          handleShareContent();
+                        }
+                      }}
+                      disabled={isSharing}
+                      className={`p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 hover:animate-none ${
+                        showShareSuccess 
+                          ? 'text-green-700 dark:text-green-300' 
+                          : isSharing
+                          ? 'text-green-400 dark:text-green-600 cursor-not-allowed'
+                          : 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40'
+                      }`}
+                      style={{ animation: 'bounce 4s infinite' }}
+                      title={showShareSuccess ? "Share link copied!" : "Share this content"}
+                    >
+                      {isSharing ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Text Size Toggle - Below Share Button */}
+                    <button
+                      onClick={() => {
+                        const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+                        const currentIndex = sizes.indexOf(textSize);
+                        const nextIndex = (currentIndex + 1) % sizes.length;
+                        setTextSize(sizes[nextIndex]);
+                      }}
+                      className="p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40"
+                      title={`Text size: ${textSize} (click to change)`}
+                    >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
-                    )}
-                  </button>
-
-                  {/* Text Size Toggle */}
-                  <button
-                    onClick={() => {
-                      const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
-                      const currentIndex = sizes.indexOf(textSize);
-                      const nextIndex = (currentIndex + 1) % sizes.length;
-                      setTextSize(sizes[nextIndex]);
-                    }}
-                    className="p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40"
-                    title={`Text size: ${textSize} (click to change)`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </button>
+                    </button>
                   </div>
 
                   {/* Desktop: Vertical layout (hidden on mobile) */}

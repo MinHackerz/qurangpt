@@ -873,13 +873,12 @@ export default function SharePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.3 }}
-                className="w-full max-w-4xl mx-auto px-6 sm:px-0 py-6 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm"
+                className="w-full max-w-4xl mx-auto px-6 sm:px-0 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm"
               >
                 <div 
                   className="relative"
                   style={{
-                    minHeight: '80px',
-                    padding: '8px 0'
+                    minHeight: '80px'
                   }}
                 >
                   {/* Main Input Field - Minimalist Professional - Exact ChatSection Design */}
@@ -1110,17 +1109,6 @@ export default function SharePage() {
                       }}
                     />
                     
-                    {/* Dynamic changing color border animation when typing */}
-                    {inputValue.trim() && (
-                      <div
-                        className="absolute inset-0 rounded-xl pointer-events-none"
-                        style={{ 
-                          zIndex: -1,
-                          border: '1px solid',
-                          animation: 'borderColorChange 2s ease-in-out infinite'
-                        }}
-                      />
-                    )}
 
                     {/* Action buttons container */}
                     <div className="absolute bottom-2 right-1 sm:right-2 flex items-center gap-1.5 sm:gap-3 z-20">

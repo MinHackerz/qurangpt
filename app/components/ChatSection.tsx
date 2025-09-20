@@ -715,17 +715,6 @@ export default function ChatSection({
               }}
             />
             
-            {/* Dynamic changing color border animation when typing */}
-            {content.trim() && (
-              <div
-                className="absolute inset-0 rounded-xl pointer-events-none"
-                style={{ 
-                  zIndex: -1,
-                  border: '1px solid',
-                  animation: 'borderColorChange 2s ease-in-out infinite'
-                }}
-              />
-            )}
             
 
             
