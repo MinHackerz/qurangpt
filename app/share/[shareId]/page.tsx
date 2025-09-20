@@ -6,13 +6,9 @@ import Head from 'next/head';
 import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processContentLinks } from '../../utils/contentUtils';
-import TextSizeToggle from '../../components/TextSizeToggle';
 import SourcesSection from '../../components/SourcesSection';
-import ChatSection from '../../components/ChatSection';
 import { useAIResponse } from '../../hooks/useAIResponse';
 import { useGlobalEventDelegation } from '../../hooks/useGlobalEventDelegation';
-import { getGlobalAbortManager } from '../../hooks/useAbortManager';
-import { useChatManager } from '../../hooks/useChatManager';
 
 interface SharedContent {
   shareId: string;
@@ -35,8 +31,6 @@ export default function SharePage() {
   const [isSharing, setIsSharing] = useState(false);
   const [showShareSuccess, setShowShareSuccess] = useState(false);
   
-  // Chat functionality using the same ChatManager as main page
-  const chatManager = useChatManager();
   
   // Content type selection state
   const [selectedContentTypes, setSelectedContentTypes] = useState({
@@ -48,6 +42,9 @@ export default function SharePage() {
   // Show new question input state
   const [showNewQuestionInput, setShowNewQuestionInput] = useState(false);
   
+  // Input field state for the converted button
+  const [inputValue, setInputValue] = useState('');
+  
   // Text size state
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('small');
   
@@ -58,8 +55,6 @@ export default function SharePage() {
   // Use the same AI response formatting as the main page
   const { formatResponse } = useAIResponse(textSize, selectedContentTypes);
   
-  // AI response functionality for new questions
-  const aiResponseForNewQuestion = useAIResponse(textSize, selectedContentTypes);
   
   // Use global event delegation for audio progress bars
   useGlobalEventDelegation();
@@ -156,69 +151,44 @@ export default function SharePage() {
     handleShareContent();
   };
 
-  // Handle Ask QuranGPT button click - show ChatSection
+  // Handle Ask QuranGPT button click - convert to input field
   const handleAskQuranClick = () => {
     setShowNewQuestionInput(true);
   };
-
-
-  // Handle stop operation
-  const handleStopOperation = () => {
-    // Use global abort manager
-    const abortManager = getGlobalAbortManager();
-    abortManager.setAborted(true);
+  
+  // Handle reset - convert back to button
+  const handleResetInput = () => {
+    setShowNewQuestionInput(false);
+    setInputValue('');
+  };
+  
+  // Handle send - redirect to homepage with query and options
+  const handleSendToHomepage = () => {
+    if (!inputValue.trim()) return;
     
-    // Use chatManager to stop processing
-    chatManager.setIsProcessing(false);
+    // Create URL with query parameters
+    const params = new URLSearchParams({
+      question: inputValue.trim(),
+      tafsir: selectedContentTypes.tafsir.toString(),
+      hadith: selectedContentTypes.hadith.toString(),
+      suggestedQuestions: selectedContentTypes.suggestedQuestions.toString(),
+      textSize: textSize
+    });
+    
+    // Redirect to homepage with parameters
+    window.location.href = `/?${params.toString()}`;
+  };
+  
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendToHomepage();
+    }
   };
 
-  // Handle content type change for new ChatSection
-  const handleContentTypeChange = useCallback((contentTypes: {
-    tafsir: boolean;
-    hadith: boolean;
-    suggestedQuestions: boolean;
-  }) => {
-    setSelectedContentTypes(contentTypes);
-  }, []);
 
-  // Handle ChatSection askQuran - process the question directly on shared page
-  const handleAskQuran = useCallback(async () => {
-    if (!chatManager.content.trim() || chatManager.isProcessing) return;
 
-    try {
-      // Use the AI response functionality
-      chatManager.setIsProcessing(true);
-      chatManager.setSubmittedQuestion(chatManager.content.trim());
-      chatManager.setError('');
-      chatManager.setDisplayedContent('');
-      chatManager.setSummary('');
-      
-      // Call the AI response with the question
-      const response = await aiResponseForNewQuestion.formatResponse(
-        chatManager.content.trim(),
-        chatManager.submittedQuestion,
-        textSize,
-        selectedContentTypes
-      );
-      
-      if (response) {
-        chatManager.setSummary(response);
-        chatManager.setDisplayedContent(response);
-        chatManager.setShowSummary(true);
-        chatManager.setIsChatActive(true);
-      }
-    } catch (error) {
-      chatManager.setError('Failed to get response. Please try again.');
-    } finally {
-      chatManager.setIsProcessing(false);
-    }
-  }, [chatManager, aiResponseForNewQuestion, selectedContentTypes, textSize]);
-
-  // Handle reset - go back to shared content view
-  const handleReset = useCallback(() => {
-    chatManager.resetForm();
-    setShowNewQuestionInput(false);
-  }, [chatManager]);
 
 
   // Handle text size change
@@ -788,58 +758,6 @@ export default function SharePage() {
             />
           )}
 
-          {/* New Question Output - Show when user asks a new question */}
-          {showNewQuestionInput && chatManager.showSummary && (
-            <div className="space-y-6 mt-12">
-              <div className="w-full max-w-4xl mx-auto px-6 sm:px-6">
-                {/* User Question Display */}
-                {chatManager.submittedQuestion && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg p-4 shadow-sm mb-6"
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mt-0.5">
-                        <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-gray-900 dark:text-gray-100 ${
-                          textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'
-                        }`}>
-                          Your Question
-                        </p>
-                        <p className={`mt-1 text-gray-700 dark:text-gray-300 ${
-                          textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs'
-                        }`}>
-                          {chatManager.submittedQuestion}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* AI Response Content */}
-                <div 
-                  className={`text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed transition-all duration-200 ${
-                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
-                  }`}
-                  dangerouslySetInnerHTML={{ __html: chatManager.displayedContent || chatManager.summary }}
-                />
-              </div>
-
-              {/* Sources Section for new question */}
-              {(chatManager.displayedContent || chatManager.summary) && (
-                <SourcesSection 
-                  content={chatManager.displayedContent || chatManager.summary} 
-                  textSize={textSize}
-                />
-              )}
-            </div>
-          )}
 
           {/* Bottom Spacing */}
           <div className="h-20"></div>
@@ -850,11 +768,16 @@ export default function SharePage() {
             {!showNewQuestionInput ? (
               /* Ask QuranGPT Button with Text Size Toggle and Share Icon */
               <div className="flex items-center gap-3 justify-center">
-                {/* Text Size Toggle Button */}
-                <TextSizeToggle
-                  onSizeChange={handleTextSizeChange}
-                  currentSize={textSize}
-                />
+                {/* Text Size Toggle Button with Book Icon */}
+                <button
+                  onClick={() => handleTextSizeChange(textSize === 'small' ? 'medium' : textSize === 'medium' ? 'large' : 'small')}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                  title={`Text size: ${textSize}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </button>
                 
                 <button 
                   onClick={handleAskQuranClick}
@@ -926,21 +849,97 @@ export default function SharePage() {
                 </motion.button>
               </div>
             ) : (
-              /* New Question Input using ChatSection */
-              <div className="relative w-full">
-                <ChatSection
-                  content={chatManager.content}
-                  setContent={chatManager.setContent}
-                  askQuran={handleAskQuran}
-                  resetForm={handleReset}
-                  isProcessing={chatManager.isProcessing}
-                  error={chatManager.error}
-                  showSummary={false}
-                  selectedContentTypes={selectedContentTypes}
-                  onContentTypeChange={handleContentTypeChange}
-                  onStopOperation={handleStopOperation}
-                />
-              </div>
+              /* Converted Input Field with Options */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-4"
+              >
+                <div className="flex items-center gap-3">
+                  {/* Content Type Options */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleContentTypeToggle('tafsir')}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                        selectedContentTypes.tafsir
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Tafsir
+                    </button>
+                    <button
+                      onClick={() => handleContentTypeToggle('hadith')}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                        selectedContentTypes.hadith
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Hadith
+                    </button>
+                    <button
+                      onClick={() => handleContentTypeToggle('suggestedQuestions')}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                        selectedContentTypes.suggestedQuestions
+                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Questions
+                    </button>
+                  </div>
+                  
+                  {/* Text Size Toggle */}
+                  <button
+                    onClick={() => handleTextSizeChange(textSize === 'small' ? 'medium' : textSize === 'medium' ? 'large' : 'small')}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
+                    title={`Text size: ${textSize}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Input Field */}
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="flex-1 relative">
+                    <textarea
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Ask your question about the Quran..."
+                      className="w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={1}
+                      style={{ minHeight: '48px', maxHeight: '120px' }}
+                    />
+                  </div>
+                  
+                  {/* Send Button */}
+                  <button
+                    onClick={handleSendToHomepage}
+                    disabled={!inputValue.trim()}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white disabled:text-gray-500 dark:disabled:text-gray-400 transition-all duration-200 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                  
+                  {/* Reset/Close Button */}
+                  <button
+                    onClick={handleResetInput}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 transition-all duration-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </motion.div>
             )}
             </div>
           </div>

@@ -209,7 +209,7 @@ export default function MinimalHeader({
       className="fixed top-0 left-0 right-0 z-40 sm:p-6"
     >
       {/* Mobile: Minimalist horizontal header layout */}
-      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-300 dark:border-gray-600">
+      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-300 dark:border-gray-500">
         {/* Left side: QuranGPT Title */}
         <div className="flex items-center">
           <h1 className="text-lg font-light tracking-tight text-gray-900 dark:text-white">
