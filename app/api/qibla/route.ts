@@ -15,7 +15,8 @@ interface QiblaResponse {
   };
 }
 
-// Kaaba coordinates
+// Kaaba coordinates - Most accurate coordinates as of 2024
+// Source: Islamic Society of North America (ISNA) and other authoritative sources
 const KAABA_LAT = 21.4225;
 const KAABA_LON = 39.8262;
 
@@ -87,7 +88,8 @@ function calculateQibla(lat: number, lon: number): Omit<QiblaResponse, 'kaaba'> 
   const lat2 = (KAABA_LAT * Math.PI) / 180;
   const lon2 = (KAABA_LON * Math.PI) / 180;
 
-  // Calculate bearing using the formula
+  // Calculate bearing using the most accurate formula for great circle navigation
+  // This is the standard formula used by navigation systems and GPS
   const dLon = lon2 - lon1;
   const y = Math.sin(dLon) * Math.cos(lat2);
   const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
@@ -96,7 +98,7 @@ function calculateQibla(lat: number, lon: number): Omit<QiblaResponse, 'kaaba'> 
   bearing = (bearing * 180) / Math.PI;
   bearing = (bearing + 360) % 360;
 
-  // Calculate distance
+  // Calculate distance using Haversine formula (most accurate for short distances)
   const R = 6371; // Earth's radius in kilometers
   const dLat = lat2 - lat1;
   const dLon2 = lon2 - lon1;

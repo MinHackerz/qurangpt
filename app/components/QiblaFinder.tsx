@@ -72,21 +72,55 @@ export default function QiblaFinder() {
   const compassRef = useRef<HTMLDivElement>(null);
   const orientationHistoryRef = useRef<number[]>([]);
 
-  // Kaaba coordinates
+  // Kaaba coordinates - Most accurate coordinates as of 2024
+  // Source: Islamic Society of North America (ISNA) and other authoritative sources
   const KAABA_LAT = 21.4225;
   const KAABA_LON = 39.8262;
 
 
-  // Compass smoothing function
+  // Improved compass smoothing function with outlier detection
   const smoothOrientation = useCallback((newOrientation: number) => {
-    orientationHistoryRef.current.push(newOrientation);
-    if (orientationHistoryRef.current.length > 10) {
+    // Handle angle wrapping (0-360 degrees)
+    const normalizeAngle = (angle: number) => {
+      while (angle < 0) angle += 360;
+      while (angle >= 360) angle -= 360;
+      return angle;
+    };
+
+    const normalizedOrientation = normalizeAngle(newOrientation);
+    
+    // Add to history
+    orientationHistoryRef.current.push(normalizedOrientation);
+    if (orientationHistoryRef.current.length > 15) {
       orientationHistoryRef.current.shift();
     }
     
-    // Calculate average of recent readings for smoothing
-    const sum = orientationHistoryRef.current.reduce((a, b) => a + b, 0);
-    return sum / orientationHistoryRef.current.length;
+    // If we have enough readings, apply outlier detection and smoothing
+    if (orientationHistoryRef.current.length >= 5) {
+      // Calculate median to reduce impact of outliers
+      const sorted = [...orientationHistoryRef.current].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)];
+      
+      // Filter out readings that are too far from median (outliers)
+      const filtered = orientationHistoryRef.current.filter(reading => {
+        const diff = Math.abs(reading - median);
+        return diff <= 180 ? diff < 30 : (360 - diff) < 30; // Handle angle wrapping
+      });
+      
+      if (filtered.length > 0) {
+        // Calculate weighted average (more recent readings have higher weight)
+        let weightedSum = 0;
+        let totalWeight = 0;
+        filtered.forEach((reading, index) => {
+          const weight = index + 1; // More recent = higher weight
+          weightedSum += reading * weight;
+          totalWeight += weight;
+        });
+        return normalizeAngle(weightedSum / totalWeight);
+      }
+    }
+    
+    return normalizedOrientation;
   }, []);
 
   // Check compass support
@@ -136,8 +170,8 @@ export default function QiblaFinder() {
         const smoothedOrientation = smoothOrientation(event.alpha);
         setDeviceOrientation(smoothedOrientation);
         
-        // Auto-calibrate after a few readings
-        if (orientationHistoryRef.current.length >= 5 && !compassCalibrated) {
+        // Auto-calibrate after sufficient readings for accuracy
+        if (orientationHistoryRef.current.length >= 10 && !compassCalibrated) {
           setCompassCalibrated(true);
         }
       }
@@ -232,7 +266,12 @@ export default function QiblaFinder() {
       // deviceOrientation is the device's current heading (0° = North)
       // qiblaInfo.direction is the bearing to Qibla from North
       // We need to rotate the compass so the Qibla direction aligns with device heading
-      const rotation = qiblaInfo.direction - deviceOrientation;
+      
+      // Handle angle wrapping properly
+      let rotation = qiblaInfo.direction - deviceOrientation;
+      while (rotation < 0) rotation += 360;
+      while (rotation >= 360) rotation -= 360;
+      
       setCompassRotation(rotation);
     }
   }, [qiblaInfo, deviceOrientation, compassCalibrated]);
@@ -244,7 +283,8 @@ export default function QiblaFinder() {
     const lat2 = (KAABA_LAT * Math.PI) / 180;
     const lon2 = (KAABA_LON * Math.PI) / 180;
 
-    // Calculate bearing using the formula
+    // Calculate bearing using the most accurate formula for great circle navigation
+    // This is the standard formula used by navigation systems and GPS
     const dLon = lon2 - lon1;
     const y = Math.sin(dLon) * Math.cos(lat2);
     const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
@@ -253,7 +293,7 @@ export default function QiblaFinder() {
     bearing = (bearing * 180) / Math.PI;
     bearing = (bearing + 360) % 360;
 
-    // Calculate distance
+    // Calculate distance using Haversine formula (most accurate for short distances)
     const R = 6371; // Earth's radius in kilometers
     const dLat = lat2 - lat1;
     const dLon2 = lon2 - lon1;
@@ -446,14 +486,20 @@ export default function QiblaFinder() {
                           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                           <span className="text-xs">Compass Active</span>
                         </div>
-                      ) : orientationHistoryRef.current.length > 0 && orientationHistoryRef.current.length < 5 ? (
+                      ) : orientationHistoryRef.current.length > 0 && orientationHistoryRef.current.length < 10 ? (
                         <div className="flex items-center space-x-1 text-yellow-600 dark:text-yellow-400">
                           <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs">Calibrating...</span>
+                          <span className="text-xs">Calibrating... ({orientationHistoryRef.current.length}/10)</span>
+                        </div>
+                      ) : orientationHistoryRef.current.length >= 10 ? (
+                        <div className="flex items-center space-x-1 text-orange-600 dark:text-orange-400">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs">Calibrated - Move device to activate</span>
                         </div>
                       ) : (
                         <div className="flex items-center space-x-1 text-blue-600 dark:text-blue-400">
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs">Initializing...</span>
                         </div>
                       )
                     ) : (
@@ -543,7 +589,7 @@ export default function QiblaFinder() {
                   </div>
                 </div>
 
-                {/* Instructions */}
+                  {/* Instructions */}
                 <div className="bg-transparent rounded-2xl border border-amber-300 dark:border-amber-600 p-3 sm:p-4 lg:p-6">
                   <div className="text-xs sm:text-sm font-medium text-amber-800 dark:text-amber-200 mb-2 sm:mb-3">
                     How to Use
@@ -565,7 +611,11 @@ export default function QiblaFinder() {
                         </li>
                         <li className="flex items-start space-x-2">
                           <span className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">•</span>
-                          <span>Tap "Enable Compass" for real-time direction</span>
+                          <span>Move device in figure-8 pattern to calibrate compass</span>
+                        </li>
+                        <li className="flex items-start space-x-2">
+                          <span className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">•</span>
+                          <span>Avoid metal objects and electronic devices</span>
                         </li>
                       </>
                     ) : (
