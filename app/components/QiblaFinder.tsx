@@ -68,6 +68,8 @@ export default function QiblaFinder() {
   const [compassSupported, setCompassSupported] = useState(false);
   const [compassCalibrated, setCompassCalibrated] = useState(false);
   const [compassError, setCompassError] = useState<string | null>(null);
+  const [showCalibrationPrompt, setShowCalibrationPrompt] = useState(false);
+  const [manualCalibration, setManualCalibration] = useState(false);
   const compassRef = useRef<HTMLDivElement>(null);
   const orientationHistoryRef = useRef<number[]>([]);
 
@@ -90,7 +92,7 @@ export default function QiblaFinder() {
 
   // Check compass support
   const checkCompassSupport = useCallback(() => {
-    if (typeof DeviceOrientationEvent !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof DeviceOrientationEvent !== 'undefined') {
       // Check if we can request permission (iOS 13+)
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
         setCompassSupported(true);
@@ -105,7 +107,7 @@ export default function QiblaFinder() {
 
   // Request compass permission (iOS 13+)
   const requestCompassPermission = useCallback(async () => {
-    if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+    if (typeof window !== 'undefined' && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
       try {
         const permission = await (DeviceOrientationEvent as any).requestPermission();
         if (permission === 'granted') {
@@ -116,6 +118,7 @@ export default function QiblaFinder() {
           return false;
         }
       } catch (error) {
+        console.error('Compass permission error:', error);
         setCompassError('Failed to request compass permission.');
         return false;
       }
@@ -125,7 +128,7 @@ export default function QiblaFinder() {
 
   // Initialize compass
   const initializeCompass = useCallback(async () => {
-    if (!compassSupported) return;
+    if (!compassSupported || typeof window === 'undefined') return;
     
     const hasPermission = await requestCompassPermission();
     if (!hasPermission) return;
@@ -147,15 +150,19 @@ export default function QiblaFinder() {
       window.addEventListener('deviceorientation', handleOrientation, true);
       setCompassError(null);
     } catch (error) {
+      console.error('Compass initialization error:', error);
       setCompassError('Failed to access device orientation.');
     }
 
+    // Return cleanup function
     return () => {
       window.removeEventListener('deviceorientation', handleOrientation, true);
     };
   }, [compassSupported, compassCalibrated, requestCompassPermission, smoothOrientation]);
 
   useEffect(() => {
+    let cleanupCompass: (() => void) | undefined;
+    
     // Mobile detection
     const checkMobile = () => {
       setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
@@ -170,7 +177,7 @@ export default function QiblaFinder() {
       
       // Auto-initialize compass immediately if supported
       if (typeof DeviceOrientationEvent !== 'undefined') {
-        await initializeCompass();
+        cleanupCompass = await initializeCompass();
       }
     };
     
@@ -214,12 +221,27 @@ export default function QiblaFinder() {
           setIsLoading(false);
         },
         (error) => {
-          setError('Unable to get your location. Please enable location services.');
+          console.error('Geolocation error:', error);
+          let errorMessage = 'Unable to get your location. Please enable location services.';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Please enable location services in your browser settings.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable. Please check your device settings.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
+          }
+          
+          setError(errorMessage);
           setIsLoading(false);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 300000, // 5 minutes
         }
       );
@@ -229,21 +251,29 @@ export default function QiblaFinder() {
 
     return () => {
       window.removeEventListener('resize', checkMobile);
+      if (cleanupCompass) {
+        cleanupCompass();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   useEffect(() => {
-    if (qiblaInfo && compassCalibrated) {
-      // Calculate the rotation needed to point to Qibla
-      // deviceOrientation is the device's current heading (0° = North)
-      // qiblaInfo.direction is the bearing to Qibla from North
-      // We need to rotate the compass so the Qibla direction aligns with device heading
-      const rotation = qiblaInfo.direction - deviceOrientation;
-      setCompassRotation(rotation);
+    if (qiblaInfo) {
+      if (compassCalibrated && !manualCalibration) {
+        // Calculate the rotation needed to point to Qibla
+        // deviceOrientation is the device's current heading (0° = North)
+        // qiblaInfo.direction is the bearing to Qibla from North
+        // We need to rotate the compass so the Qibla direction aligns with device heading
+        const rotation = qiblaInfo.direction - deviceOrientation;
+        setCompassRotation(rotation);
+      } else {
+        // Static display - just show the Qibla direction
+        setCompassRotation(qiblaInfo.direction);
+      }
     }
-  }, [qiblaInfo, deviceOrientation, compassCalibrated]);
+  }, [qiblaInfo, deviceOrientation, compassCalibrated, manualCalibration]);
 
   const calculateQibla = useCallback((lat: number, lon: number) => {
     // Convert to radians
@@ -331,15 +361,33 @@ export default function QiblaFinder() {
           setIsLoading(false);
         },
         (error) => {
-          setError('Unable to get your location. Please enable location services.');
+          console.error('Geolocation error:', error);
+          let errorMessage = 'Unable to get your location. Please enable location services.';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Please enable location services in your browser settings.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable. Please check your device settings.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
+          }
+          
+          setError(errorMessage);
           setIsLoading(false);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0,
         }
       );
+    } else {
+      setError('Geolocation is not supported by this browser.');
+      setIsLoading(false);
     }
   }, [calculateQibla]);
 
@@ -362,7 +410,7 @@ export default function QiblaFinder() {
             </div>
             
             {/* Location Status */}
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <div className="flex items-center space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg flex-1 sm:flex-none">
                 <MapPinIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                 <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 truncate">
@@ -381,14 +429,46 @@ export default function QiblaFinder() {
                 </div>
               </div>
               
-              <button
-                onClick={requestLocation}
-                disabled={isLoading}
-                className="p-2 sm:p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg disabled:opacity-50 touch-manipulation"
-                title="Update location"
-              >
-                <ArrowPathIcon className={`w-4 h-4 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
+              {/* Mode Toggle Buttons - Desktop: right side, Mobile: below location */}
+              {isMobile && compassSupported && qiblaInfo && (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setManualCalibration(!manualCalibration)}
+                    className={`px-2 py-1.5 text-xs rounded-lg transition-colors flex-1 sm:flex-none ${
+                      manualCalibration 
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-600'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {manualCalibration ? 'Auto Mode' : 'Manual Mode'}
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={requestLocation}
+                  disabled={isLoading}
+                  className="p-2 sm:p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg disabled:opacity-50 touch-manipulation"
+                  title="Update location"
+                >
+                  <ArrowPathIcon className={`w-4 h-4 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </button>
+                
+                {/* Mode Toggle Buttons - Desktop: right side of refresh button */}
+                {!isMobile && compassSupported && qiblaInfo && (
+                  <button
+                    onClick={() => setManualCalibration(!manualCalibration)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                      manualCalibration 
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-600'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {manualCalibration ? 'Auto Mode' : 'Manual Mode'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -431,18 +511,31 @@ export default function QiblaFinder() {
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         <span className="text-xs">Compass Active</span>
                       </div>
+                    ) : compassSupported ? (
+                      <div className="flex items-center space-x-1 text-amber-600 dark:text-amber-400">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs">Calibrating...</span>
+                      </div>
                     ) : (
                       <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
                         <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                        <span className="text-xs">Compass Inactive</span>
+                        <span className="text-xs">Compass Unavailable</span>
                       </div>
                     )}
                   </div>
                   
                   {/* Compass Error */}
                   {compassError && (
-                    <div className="mt-2 text-xs text-red-600 dark:text-red-400">
-                      {compassError}
+                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                      <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">
+                        Compass Issue
+                      </div>
+                      <div className="text-xs text-red-500 dark:text-red-400">
+                        {compassError}
+                      </div>
+                      <div className="text-xs text-red-500 dark:text-red-400 mt-1">
+                        The Qibla direction is still shown above - use it as a reference.
+                      </div>
                     </div>
                   )}
                 </div>
@@ -477,8 +570,17 @@ export default function QiblaFinder() {
                   {/* Qibla Direction Indicator - Mosque Icon Outside Circle */}
                   <motion.div
                     className="absolute inset-0"
-                    animate={{ rotate: compassCalibrated ? compassRotation : qiblaInfo.direction }}
-                    transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                    animate={{ 
+                      rotate: manualCalibration 
+                        ? qiblaInfo.direction 
+                        : (compassCalibrated ? compassRotation : qiblaInfo.direction)
+                    }}
+                    transition={{ 
+                      type: manualCalibration ? "tween" : "spring", 
+                      stiffness: 100, 
+                      damping: 20,
+                      duration: manualCalibration ? 0.3 : undefined
+                    }}
                   >
                     <div className="relative w-full h-full">
                       {/* Mosque Icon positioned outside the circle at the top */}
@@ -541,6 +643,10 @@ export default function QiblaFinder() {
                         <li className="flex items-start space-x-2">
                           <span className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">•</span>
                           <span>Compass automatically tracks your device orientation</span>
+                        </li>
+                        <li className="flex items-start space-x-2">
+                          <span className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">•</span>
+                          <span>Move device in a figure-8 motion to calibrate</span>
                         </li>
                       </>
                     ) : (
