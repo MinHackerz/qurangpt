@@ -18,7 +18,6 @@ interface SourcesSectionProps {
 }
 
 export default function SourcesSection({ content, textSize = 'small' }: SourcesSectionProps) {
-  const isTextLarge = textSize === 'large';
   const [sources, setSources] = useState<Source[]>([]);
 
   useEffect(() => {
@@ -83,10 +82,10 @@ export default function SourcesSection({ content, textSize = 'small' }: SourcesS
   }, [content]);
 
   return (
-    <div className="w-full px-4 sm:px-0 relative pb-[120px] sm:pb-0">
-      <div className="flex justify-end items-center space-x-2 sm:space-x-3 mr-0 sm:mr-8 md:mr-16 lg:mr-32 xl:mr-40 bg-gray-50 dark:bg-gray-800/30 sm:bg-transparent dark:sm:bg-transparent rounded-lg sm:rounded-none px-2 py-1 sm:p-0 min-h-[44px] sm:min-h-0">
+    <div className="w-full max-w-4xl mx-auto px-6 sm:px-6 relative py-6 mb-12">
+      <div className="flex justify-end items-center space-x-2 sm:space-x-3 bg-transparent px-0 py-3 min-h-[48px]">
         <span className={`text-gray-600 dark:text-gray-400 font-medium ${
-          isTextLarge ? 'text-sm' : 'text-xs'
+          textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs'
         }`}>
           Sources:
         </span>
@@ -101,11 +100,15 @@ export default function SourcesSection({ content, textSize = 'small' }: SourcesS
                 className="group relative"
                 title={source.title}
               >
-                <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 text-sm sm:text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 cursor-pointer touch-manipulation shadow-sm active:scale-95">
+                <div className={`w-10 h-10 sm:w-8 sm:h-8 bg-gray-100/80 dark:bg-gray-800/80 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 font-semibold hover:bg-gray-200/80 dark:hover:bg-gray-700/80 hover:text-gray-800 dark:hover:text-gray-200 transition-all duration-200 cursor-pointer touch-manipulation backdrop-blur-sm active:scale-95 ${
+                  textSize === 'large' ? 'text-base sm:text-sm' : textSize === 'medium' ? 'text-sm sm:text-xs' : 'text-xs sm:text-xs'
+                }`}>
                   {source.type === 'ayah' ? 'Q' : 'H'}
                 </div>
                 {/* Tooltip - hidden on mobile, shown on hover for desktop */}
-                <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                <div className={`hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 ${
+                  textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs'
+                }`}>
                   {source.title}
                 </div>
               </a>
@@ -113,7 +116,7 @@ export default function SourcesSection({ content, textSize = 'small' }: SourcesS
           </div>
         ) : (
           <span className={`text-gray-400 dark:text-gray-500 italic ${
-            isTextLarge ? 'text-sm' : 'text-xs'
+            textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs'
           }`}>
             No sources available
           </span>

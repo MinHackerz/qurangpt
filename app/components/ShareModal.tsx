@@ -17,10 +17,6 @@ interface ShareModalProps {
   title: string;
   question: string;
   isCreatingShare?: boolean;
-  // Copy content functionality
-  onCopyContent?: () => void;
-  copied?: boolean;
-  content?: string; // The AI response content to copy
 }
 
 export default function ShareModal({ 
@@ -29,10 +25,7 @@ export default function ShareModal({
   shareUrl, 
   title, 
   question,
-  isCreatingShare = false,
-  onCopyContent,
-  copied = false,
-  content
+  isCreatingShare = false
 }: ShareModalProps) {
   const [linkCopied, setLinkCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -40,7 +33,7 @@ export default function ShareModal({
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -67,211 +60,6 @@ export default function ShareModal({
     }
   };
 
-  // Handle copy content (question and response) with proper structure
-  const handleCopyContent = async () => {
-    if (onCopyContent) {
-      onCopyContent();
-      
-      // Track copy content event
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'share_content_copied', {
-          event_category: 'engagement',
-          event_label: 'copy_content',
-          custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
-          custom_parameter_2: 'share_modal'
-        });
-      }
-    } else if (content) {
-      // Fallback: if no onCopyContent function is provided, create structured content directly
-      try {
-        // Extract ayah and hadith info from content
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-        
-        // Extract ayah information
-        const ayahBoxElements = tempDiv.querySelectorAll('.stylish-ayah-reference');
-        const ayahInfo: Array<{text: string, surahName: string, ayahNumber: string, surahNumber: string}> = [];
-        
-        ayahBoxElements.forEach((ayahBox) => {
-          // Find the ayah text - it's in a blockquote element
-          const ayahTextElement = ayahBox.querySelector('blockquote');
-          const ayahText = ayahTextElement ? ayahTextElement.textContent?.trim() : '';
-          
-          if (ayahText) {
-            const surahName = ayahBox.getAttribute('data-surah-name') || '';
-            const ayahNumber = ayahBox.getAttribute('data-ayah-number') || '';
-            const surahNumber = ayahBox.getAttribute('data-surah-number') || '';
-            
-            ayahInfo.push({
-              text: ayahText,
-              surahName: surahName,
-              ayahNumber: ayahNumber,
-              surahNumber: surahNumber
-            });
-          }
-        });
-        
-        // Extract hadith information
-        const hadithBoxes = tempDiv.querySelectorAll('.stylish-hadith-reference');
-        const hadithInfo: Array<{
-          text: string;
-          bookName: string;
-          hadithNumber: string;
-          narrator: string;
-          aiSummary: string;
-          status: string;
-        }> = [];
-        
-        hadithBoxes.forEach((hadithBox) => {
-          const bookName = hadithBox.getAttribute('data-book-name');
-          const hadithNumber = hadithBox.getAttribute('data-hadith-number');
-          
-          if (bookName && hadithNumber) {
-            const hadithTextElement = hadithBox.querySelector('.hadith-text-english, .hadith-text-arabic');
-            const hadithText = hadithTextElement ? hadithTextElement.textContent?.trim() || '' : '';
-            
-            const narratorElement = hadithTextElement?.parentElement?.querySelector('.mt-2');
-            const narrator = narratorElement ? narratorElement.textContent?.replace('—', '').trim() || '' : '';
-            
-            const summaryElement = hadithBox.querySelector('.mt-3');
-            const aiSummary = summaryElement ? summaryElement.textContent?.trim() || '' : '';
-            
-            const statusElement = hadithBox.querySelector('span[class*="px-2"][class*="py-0"]');
-            const status = statusElement ? statusElement.textContent?.trim() || 'Unknown' : 'Unknown';
-            
-            hadithInfo.push({
-              text: hadithText,
-              bookName: bookName,
-              hadithNumber: hadithNumber,
-              narrator: narrator,
-              aiSummary: aiSummary,
-              status: status
-            });
-          }
-        });
-        
-        // Remove ayah and hadith boxes to get only AI content
-        ayahBoxElements.forEach(box => box.remove());
-        hadithBoxes.forEach(box => box.remove());
-        
-        // Also remove suggested questions section
-        const suggestedQuestionsSection = tempDiv.querySelector('.suggested-questions-section, .related-questions-section');
-        if (suggestedQuestionsSection) {
-          suggestedQuestionsSection.remove();
-        }
-        
-        // Clean up the AI content
-        let cleanAIContent = tempDiv.innerHTML
-          .replace(/<[^>]*>/g, '') // Remove HTML tags
-          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
-          .replace(/^\s+|\s+$/gm, '') // Trim lines
-          .trim();
-
-        // Create a structured copy that places ayah boxes directly above their AI explanations
-        let structuredContent = `Question: ${question}\n\nAnswer:\n\n`;
-        
-        // Remove hadith sections from the main content to avoid duplication
-        const hadithSections = tempDiv.querySelectorAll('.stylish-hadith-reference, .related-hadiths-section');
-        hadithSections.forEach(section => section.remove());
-        
-        // Use DOM parsing to extract ayah boxes and their corresponding AI explanations
-        const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
-        let previousPosition = 0;
-        
-        // Process the content sequentially, extracting text between ayah boxes
-        ayahBoxes.forEach((ayahBox, index) => {
-          // Find the position of this ayah box in the original content
-          const ayahBoxHTML = ayahBox.outerHTML;
-          const currentPosition = tempDiv.innerHTML.indexOf(ayahBoxHTML, previousPosition);
-          
-          if (currentPosition > previousPosition) {
-            // Extract the text content before this ayah box (AI explanation)
-            const beforeAyahDiv = document.createElement('div');
-            beforeAyahDiv.innerHTML = tempDiv.innerHTML.substring(previousPosition, currentPosition);
-            
-            const textContent = beforeAyahDiv.textContent?.trim() || '';
-            if (textContent) {
-              structuredContent += textContent.replace(/\s+/g, ' ').trim() + '\n\n';
-            }
-          }
-          
-          // Extract only the essential ayah information (no tafsirs, audio, etc.)
-          const surahName = ayahBox.getAttribute('data-surah-name') || 'Unknown';
-          const ayahNumber = ayahBox.getAttribute('data-ayah-number') || 'Unknown';
-          const surahNumber = ayahBox.getAttribute('data-surah-number') || 'Unknown';
-          
-          // Extract only the pure ayah text from the blockquote
-          const blockquote = ayahBox.querySelector('blockquote');
-          let ayahText = '';
-          if (blockquote) {
-            // Get all text content from the blockquote, including nested elements
-            ayahText = blockquote.textContent?.trim() || '';
-            
-            // Clean up any extra whitespace and normalize
-            ayahText = ayahText.replace(/\s+/g, ' ').trim();
-          }
-          
-          if (ayahText) {
-            structuredContent += `"${ayahText}"\n\n---Surah ${surahNumber}: ${surahName}, Ayah ${ayahNumber}\n\n`;
-          }
-          
-          // Update position for next iteration
-          previousPosition = currentPosition + ayahBoxHTML.length;
-        });
-        
-        // Add any remaining content after the last ayah box (excluding hadith sections)
-        if (previousPosition < tempDiv.innerHTML.length) {
-          const remainingDiv = document.createElement('div');
-          remainingDiv.innerHTML = tempDiv.innerHTML.substring(previousPosition);
-          
-          // Remove any remaining hadith content from the remaining text
-          const remainingHadithSections = remainingDiv.querySelectorAll('.stylish-hadith-reference, .related-hadiths-section');
-          remainingHadithSections.forEach(section => section.remove());
-          
-          const remainingText = remainingDiv.textContent?.trim() || '';
-          if (remainingText) {
-            structuredContent += remainingText.replace(/\s+/g, ' ').trim() + '\n\n';
-          }
-        }
-        
-        // Add hadith references if available (with reduced spacing)
-        if (hadithInfo.length > 0) {
-          structuredContent += '---Related Hadiths\n\n';
-          
-          hadithInfo.forEach((hadith, index) => {
-            if (hadith.text) {
-              structuredContent += `"${hadith.text}"\n\n`;
-            }
-            
-            if (hadith.aiSummary) {
-              structuredContent += `${hadith.aiSummary}\n\n`;
-            }
-            
-            structuredContent += `---${hadith.bookName}, Hadith #${hadith.hadithNumber}`;
-            if (hadith.status && hadith.status !== 'Unknown') {
-              structuredContent += ` (${hadith.status})`;
-            }
-            structuredContent += '\n\n';
-          });
-        }
-        
-        await navigator.clipboard.writeText(structuredContent);
-        
-        // Track copy content event
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', 'share_content_copied', {
-            event_category: 'engagement',
-            event_label: 'copy_content',
-            custom_parameter_1: question ? question.substring(0, 100) : 'unknown_question',
-            custom_parameter_2: 'share_modal_fallback'
-          });
-        }
-      } catch (error) {
-        // Fallback to simple copy
-        await navigator.clipboard.writeText(`Question: ${question}\n\nAnswer:\n\n${content.replace(/<[^>]*>/g, '').trim()}`);
-      }
-    }
-  };
 
   // Handle native share (mobile)
   const handleNativeShare = async () => {
@@ -433,15 +221,6 @@ export default function ShareModal({
 
   const shareOptions = [
     {
-      id: 'copy-content',
-      name: 'Copy Content',
-      icon: copied ? CheckIcon : ClipboardDocumentIcon,
-      action: handleCopyContent,
-      color: copied ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400',
-      bgColor: copied ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700',
-      description: copied ? 'Copied!' : 'Copy question and response'
-    },
-    {
       id: 'whatsapp',
       name: 'WhatsApp',
       icon: () => (
@@ -589,7 +368,7 @@ export default function ShareModal({
                         title={option.name}
                       >
                         <div className={`${option.color}`}>
-                          <IconComponent className="w-5 h-5" />
+                          <IconComponent />
                         </div>
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                           {option.name}

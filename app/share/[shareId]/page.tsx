@@ -8,9 +8,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { processContentLinks } from '../../utils/contentUtils';
 import TextSizeToggle from '../../components/TextSizeToggle';
 import SourcesSection from '../../components/SourcesSection';
+import ChatSection from '../../components/ChatSection';
 import { useAIResponse } from '../../hooks/useAIResponse';
 import { useGlobalEventDelegation } from '../../hooks/useGlobalEventDelegation';
 import { getGlobalAbortManager } from '../../hooks/useAbortManager';
+import { useChatManager } from '../../hooks/useChatManager';
 
 interface SharedContent {
   shareId: string;
@@ -33,12 +35,8 @@ export default function SharePage() {
   const [isSharing, setIsSharing] = useState(false);
   const [showShareSuccess, setShowShareSuccess] = useState(false);
   
-  // Input field state
-  const [showInputField, setShowInputField] = useState(false);
-  const [inputQuestion, setInputQuestion] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Chat functionality using the same ChatManager as main page
+  const chatManager = useChatManager();
   
   // Content type selection state
   const [selectedContentTypes, setSelectedContentTypes] = useState({
@@ -46,7 +44,9 @@ export default function SharePage() {
     hadith: false,
     suggestedQuestions: false
   });
-  const [showContentTypeDropdown, setShowContentTypeDropdown] = useState(false);
+  
+  // Show new question input state
+  const [showNewQuestionInput, setShowNewQuestionInput] = useState(false);
   
   // Text size state
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('small');
@@ -57,6 +57,9 @@ export default function SharePage() {
 
   // Use the same AI response formatting as the main page
   const { formatResponse } = useAIResponse(textSize, selectedContentTypes);
+  
+  // AI response functionality for new questions
+  const aiResponseForNewQuestion = useAIResponse(textSize, selectedContentTypes);
   
   // Use global event delegation for audio progress bars
   useGlobalEventDelegation();
@@ -153,65 +156,11 @@ export default function SharePage() {
     handleShareContent();
   };
 
-  // Handle Ask QuranGPT button click - show input field
+  // Handle Ask QuranGPT button click - show ChatSection
   const handleAskQuranClick = () => {
-    setShowInputField(true);
+    setShowNewQuestionInput(true);
   };
 
-  // Handle input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputQuestion(e.target.value);
-  };
-
-  // Handle Enter key press
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
-      if (e.shiftKey) {
-        return; // Allow new line with Shift+Enter
-      } else {
-        e.preventDefault();
-        handleSendQuestion();
-      }
-    }
-  };
-
-  // Handle send question - redirect to home page with pre-filled question
-  const handleSendQuestion = () => {
-    if (!inputQuestion.trim()) {
-      return;
-    }
-    
-    // Reset abort state before starting new operation
-    const abortManager = getGlobalAbortManager();
-    abortManager.reset();
-    
-    setIsProcessing(true);
-    
-    // Simulate processing delay for better UX
-    timeoutRef.current = setTimeout(() => {
-      // Check if operation was aborted before redirecting
-      if (abortManager.isAborted()) {
-        console.log('SharePage - Operation aborted before redirect');
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Encode the question for URL parameter
-      const encodedQuestion = encodeURIComponent(inputQuestion.trim());
-      
-      // Build URL parameters including selected content types
-      const params = new URLSearchParams();
-      params.set('question', inputQuestion.trim());
-      
-      // Add content type selections
-      if (selectedContentTypes.tafsir) params.set('tafsir', 'true');
-      if (selectedContentTypes.hadith) params.set('hadith', 'true');
-      if (selectedContentTypes.suggestedQuestions) params.set('suggestedQuestions', 'true');
-      
-      // Redirect to home page with all parameters
-      window.location.href = `/?${params.toString()}`;
-    }, 500);
-  };
 
   // Handle stop operation
   const handleStopOperation = () => {
@@ -219,19 +168,58 @@ export default function SharePage() {
     const abortManager = getGlobalAbortManager();
     abortManager.setAborted(true);
     
-    setIsProcessing(false);
-    // Clear any pending timeouts
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
+    // Use chatManager to stop processing
+    chatManager.setIsProcessing(false);
   };
 
-  // Handle cancel input
-  const handleCancelInput = () => {
-    setShowInputField(false);
-    setInputQuestion('');
-  };
+  // Handle content type change for new ChatSection
+  const handleContentTypeChange = useCallback((contentTypes: {
+    tafsir: boolean;
+    hadith: boolean;
+    suggestedQuestions: boolean;
+  }) => {
+    setSelectedContentTypes(contentTypes);
+  }, []);
+
+  // Handle ChatSection askQuran - process the question directly on shared page
+  const handleAskQuran = useCallback(async () => {
+    if (!chatManager.content.trim() || chatManager.isProcessing) return;
+
+    try {
+      // Use the AI response functionality
+      chatManager.setIsProcessing(true);
+      chatManager.setSubmittedQuestion(chatManager.content.trim());
+      chatManager.setError('');
+      chatManager.setDisplayedContent('');
+      chatManager.setSummary('');
+      
+      // Call the AI response with the question
+      const response = await aiResponseForNewQuestion.formatResponse(
+        chatManager.content.trim(),
+        chatManager.submittedQuestion,
+        textSize,
+        selectedContentTypes
+      );
+      
+      if (response) {
+        chatManager.setSummary(response);
+        chatManager.setDisplayedContent(response);
+        chatManager.setShowSummary(true);
+        chatManager.setIsChatActive(true);
+      }
+    } catch (error) {
+      chatManager.setError('Failed to get response. Please try again.');
+    } finally {
+      chatManager.setIsProcessing(false);
+    }
+  }, [chatManager, aiResponseForNewQuestion, selectedContentTypes, textSize]);
+
+  // Handle reset - go back to shared content view
+  const handleReset = useCallback(() => {
+    chatManager.resetForm();
+    setShowNewQuestionInput(false);
+  }, [chatManager]);
+
 
   // Handle text size change
   const handleTextSizeChange = (size: 'small' | 'medium' | 'large') => {
@@ -246,53 +234,7 @@ export default function SharePage() {
     }));
   };
 
-  // Click outside handler to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showContentTypeDropdown) {
-        const target = event.target as HTMLElement;
-        if (!target.closest('.content-type-dropdown') && !target.closest('.plus-icon-button')) {
-          setShowContentTypeDropdown(false);
-        }
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showContentTypeDropdown]);
-
-  // Auto-resize textarea with scrollable behavior
-  const autoResize = (target: HTMLTextAreaElement) => {
-    target.style.height = 'auto';
-    const scrollHeight = target.scrollHeight;
-    const isMobile = window.innerWidth < 640;
-    const minHeight = isMobile ? 56 : 60;
-    const maxHeight = isMobile ? 300 : 240;
-    
-    let newHeight = Math.max(scrollHeight, minHeight);
-    
-    if (isMobile && scrollHeight > minHeight) {
-      newHeight = Math.min(scrollHeight + 20, maxHeight);
-    } else {
-      newHeight = Math.min(newHeight, maxHeight);
-    }
-    
-    target.style.height = newHeight + 'px';
-    
-    // Enable scrolling when content exceeds max height
-    if (newHeight >= maxHeight) {
-      target.style.overflowY = 'auto';
-    } else {
-      target.style.overflowY = 'hidden';
-    }
-  };
-
-  // Effect to handle textarea resize
-  useEffect(() => {
-    if (textareaRef.current) {
-      autoResize(textareaRef.current);
-    }
-  }, [inputQuestion]);
 
 
   // Calculate time remaining until expiry
@@ -846,13 +788,66 @@ export default function SharePage() {
             />
           )}
 
+          {/* New Question Output - Show when user asks a new question */}
+          {showNewQuestionInput && chatManager.showSummary && (
+            <div className="space-y-6 mt-12">
+              <div className="w-full max-w-4xl mx-auto px-6 sm:px-6">
+                {/* User Question Display */}
+                {chatManager.submittedQuestion && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg p-4 shadow-sm mb-6"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-medium text-gray-900 dark:text-gray-100 ${
+                          textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'
+                        }`}>
+                          Your Question
+                        </p>
+                        <p className={`mt-1 text-gray-700 dark:text-gray-300 ${
+                          textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-xs'
+                        }`}>
+                          {chatManager.submittedQuestion}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* AI Response Content */}
+                <div 
+                  className={`text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed transition-all duration-200 ${
+                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+                  }`}
+                  dangerouslySetInnerHTML={{ __html: chatManager.displayedContent || chatManager.summary }}
+                />
+              </div>
+
+              {/* Sources Section for new question */}
+              {(chatManager.displayedContent || chatManager.summary) && (
+                <SourcesSection 
+                  content={chatManager.displayedContent || chatManager.summary} 
+                  textSize={textSize}
+                />
+              )}
+            </div>
+          )}
+
           {/* Bottom Spacing */}
           <div className="h-20"></div>
 
           {/* Floating Button/Input Section */}
           <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-4xl px-4 sm:px-6">
             <div className="w-full">
-            {!showInputField ? (
+            {!showNewQuestionInput ? (
               /* Ask QuranGPT Button with Text Size Toggle and Share Icon */
               <div className="flex items-center gap-3 justify-center">
                 {/* Text Size Toggle Button */}
@@ -931,233 +926,20 @@ export default function SharePage() {
                 </motion.button>
               </div>
             ) : (
-              /* Input Field Mode - ChatGPT-style */
+              /* New Question Input using ChatSection */
               <div className="relative w-full">
-                <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 shadow-sm w-full">
-                  
-                  {/* Content Type Dropdown - Above input field */}
-                  <AnimatePresence>
-                    {showContentTypeDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute -top-12 left-0 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-1.5 min-w-[200px] content-type-dropdown"
-                      >
-                        <div className="space-y-1">
-                          <button
-                            onClick={() => handleContentTypeToggle('tafsir')}
-                            className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
-                              selectedContentTypes.tafsir
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                              selectedContentTypes.tafsir
-                                ? 'border-emerald-500 bg-emerald-500'
-                                : 'border-gray-300 dark:border-gray-600'
-                            }`}>
-                              {selectedContentTypes.tafsir && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                            Tafsir
-                          </button>
-                          <button
-                            onClick={() => handleContentTypeToggle('hadith')}
-                            className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
-                              selectedContentTypes.hadith
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                              selectedContentTypes.hadith
-                                ? 'border-emerald-500 bg-emerald-500'
-                                : 'border-gray-300 dark:border-gray-600'
-                            }`}>
-                              {selectedContentTypes.hadith && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                            Hadith
-                          </button>
-                          <button
-                            onClick={() => handleContentTypeToggle('suggestedQuestions')}
-                            className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
-                              selectedContentTypes.suggestedQuestions
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                              selectedContentTypes.suggestedQuestions
-                                ? 'border-emerald-500 bg-emerald-500'
-                                : 'border-gray-300 dark:border-gray-600'
-                            }`}>
-                              {selectedContentTypes.suggestedQuestions && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                            Suggested Questions
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Plus Icon - Always positioned above placeholder text */}
-                  <button
-                    onClick={() => setShowContentTypeDropdown(!showContentTypeDropdown)}
-                    className="absolute left-3 top-2 z-10 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 plus-icon-button"
-                    title="Add content types"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                  </button>
-
-                  {/* Selected Content Types Display - Stuck to bottom of input field */}
-                  <AnimatePresence>
-                    {(selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.suggestedQuestions) && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="absolute bottom-2 left-3 right-12 z-10"
-                      >
-                        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
-                          {selectedContentTypes.tafsir && (
-                            <span 
-                              onClick={() => handleContentTypeToggle('tafsir')}
-                              className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
-                            >
-                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              <span className="text-xs sm:text-xs font-medium">Tafsir</span>
-                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </span>
-                          )}
-                          {selectedContentTypes.hadith && (
-                            <span 
-                              onClick={() => handleContentTypeToggle('hadith')}
-                              className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
-                            >
-                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                              </svg>
-                              <span className="text-xs sm:text-xs font-medium">Hadith</span>
-                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </span>
-                          )}
-                          {selectedContentTypes.suggestedQuestions && (
-                            <span 
-                              onClick={() => handleContentTypeToggle('suggestedQuestions')}
-                              className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
-                            >
-                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="text-xs sm:text-xs font-medium">Questions</span>
-                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </span>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  
-                  <textarea
-                    ref={textareaRef}
-                    placeholder="Ask me anything about Quran & Islam..."
-                    value={inputQuestion}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    rows={1}
-                    className={`w-full p-3 sm:p-4 bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 placeholder:font-light placeholder:tracking-wide border-none resize-none focus:outline-none text-sm sm:text-base leading-relaxed transition-all duration-200 ${
-                      inputQuestion.trim() ? 'pr-24 sm:pr-28 pl-12' : 'pr-14 sm:pr-16 pl-12'
-                    } ${
-                      (selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.suggestedQuestions) 
-                        ? 'pt-2 pb-10 sm:pt-2 sm:pb-11' 
-                        : 'pt-2 pb-10 sm:pt-2 sm:pb-11'
-                    }`}
-                    style={{ 
-                      height: 'auto',
-                      overflowY: 'auto',
-                      maxHeight: '200px',
-                      paddingLeft: '50px'
-                    }}
-                  />
-                  
-
-                  {/* Action buttons container */}
-                  <div className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 flex items-center gap-3">
-                    {/* Send/Stop Button - Revolutionary Design */}
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        if (isProcessing) {
-                          // Stop operation
-                          handleStopOperation();
-                        } else {
-                          // Send message
-                          handleSendQuestion();
-                        }
-                      }}
-                      disabled={!inputQuestion.trim()}
-                      className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                        inputQuestion.trim()
-                          ? isProcessing
-                            ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400'
-                            : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
-                          : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                      }`}
-                      title={isProcessing ? "Stop operation" : "Send message"}
-                    >
-                      {/* Icon container */}
-                      <div className="relative z-10 flex items-center justify-center">
-                        {isProcessing ? (
-                          /* Revolutionary Stop Animation - Red Square Only */
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-sm"></div>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                          </svg>
-                        )}
-                      </div>
-                    </motion.button>
-
-                    {/* Cancel Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleCancelInput}
-                      className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-                      title="Cancel"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </motion.button>
-                  </div>
-                </div>
+                <ChatSection
+                  content={chatManager.content}
+                  setContent={chatManager.setContent}
+                  askQuran={handleAskQuran}
+                  resetForm={handleReset}
+                  isProcessing={chatManager.isProcessing}
+                  error={chatManager.error}
+                  showSummary={false}
+                  selectedContentTypes={selectedContentTypes}
+                  onContentTypeChange={handleContentTypeChange}
+                  onStopOperation={handleStopOperation}
+                />
               </div>
             )}
             </div>

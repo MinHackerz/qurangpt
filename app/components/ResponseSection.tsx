@@ -15,9 +15,7 @@ import SourcesSection from './SourcesSection';
 interface ResponseSectionProps {
   showSummary: boolean;
   summary: string;
-  copied: boolean;
   displayedContent?: string; // Content to display (could be translated)
-  onCopyAIContent?: () => void; // New prop for copying AI content
   userQuestion?: string; // New prop for the user's question
   onQuestionEdit?: (newQuestion: string) => void; // New prop for editing the user's question
   textSize?: 'small' | 'medium' | 'large'; // Text size state from parent
@@ -35,9 +33,7 @@ interface ResponseSectionProps {
 export default function ResponseSection({ 
   showSummary, 
   summary, 
-  copied,
   displayedContent,
-  onCopyAIContent,
   userQuestion,
   onQuestionEdit,
   textSize = 'small',
@@ -92,14 +88,6 @@ export default function ResponseSection({
     containerRef: containerRef
   });
 
-  // Show copy success message
-  useEffect(() => {
-    if (copied && onCopyAIContent) {
-      setShowCopySuccess(true);
-      const timer = setTimeout(() => setShowCopySuccess(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [copied, onCopyAIContent]);
   
   // Check if we should show welcome message (no content but showSummary is true)
   const shouldShowWelcome = showSummary && !contentToShow && !userQuestion;
@@ -216,25 +204,21 @@ export default function ResponseSection({
               >
                 <div className="max-w-2xl mx-auto">
                   {/* Clean, Professional Title - Matching HeroSection */}
-                  <div className="mb-6">
-                    <h1 className={`font-light tracking-tight text-gray-900 dark:text-white mb-4 ${
-                      isTextLarge ? 'text-4xl md:text-5xl lg:text-6xl' : 'text-3xl md:text-4xl lg:text-5xl'
-                    }`}>
+                  <div className="mb-8">
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-gray-900 dark:text-white mb-4">
                       QuranGPT
                     </h1>
                     
                     {/* Minimalist Arabic Ornament - Matching HeroSection */}
                     <div className="flex items-center justify-center mb-6">
-                      <div className="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
-                      <div className="mx-4 text-lg text-gray-400 dark:text-gray-500 font-[var(--font-scheherazade)]">۞</div>
-                      <div className="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
+                      <div className="w-12 h-px bg-gray-300 dark:bg-gray-600"></div>
+                      <div className="mx-6 text-2xl text-gray-400 dark:text-gray-500 font-[var(--font-scheherazade)]">۞</div>
+                      <div className="w-12 h-px bg-gray-300 dark:bg-gray-600"></div>
                     </div>
                   </div>
                   
                   {/* Professional Subtitle - Matching HeroSection */}
-                  <p className={`text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed font-light ${
-                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
-                  }`}>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed font-light">
                     AI-powered Islamic knowledge from the Holy Quran
                   </p>
                 </div>
@@ -248,7 +232,7 @@ export default function ResponseSection({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="bg-gray-50 dark:bg-gray-800/50 border-[0.5px] border-gray-200 dark:border-gray-600 rounded-lg p-4"
+                    className="bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg p-4 shadow-sm"
                   >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mt-0.5">
@@ -283,6 +267,23 @@ export default function ResponseSection({
                   }}
                   dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
                 />
+
+                {/* Desktop Share Button - Bottom Right */}
+                {onShare && (
+                  <div className="hidden sm:block absolute bottom-4 right-4 z-10">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={onShare}
+                      className="flex items-center justify-center w-12 h-12 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/70 dark:border-gray-700/70 shadow-lg hover:shadow-xl transition-all duration-200 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                      title="Share this content"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </svg>
+                    </motion.button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -299,9 +300,6 @@ export default function ResponseSection({
         title={shareTitle}
         question={userQuestion || 'QuranGPT Answer'}
         isCreatingShare={isCreatingShare}
-        onCopyContent={onCopyAIContent}
-        copied={copied}
-        content={contentToShow}
       />
     </AnimatePresence>
   );

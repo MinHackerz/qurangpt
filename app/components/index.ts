@@ -1,10 +1,11 @@
-export { default as HeroSection } from './HeroSection';
 export { default as ChatSection } from './ChatSection';
-export { default as ChatSectionOutput } from './ChatSectionOutput';
 export { default as ResponseSection } from './ResponseSection';
 export { default as ThemeToggle } from './ThemeToggle';
 export { default as WaveAnimationContainer } from './WaveAnimationContainer';
 export { default as MinimalHeader } from './MinimalHeader';
 export { default as SourcesSection } from './SourcesSection';
-export { default as DigitalClock } from './DigitalClock';
-export { default as UserMenu } from './UserMenu';
+export { default as VerticalActionBar } from './VerticalActionBar';
+export { default as TimeDashboard } from './TimeDashboard';
+export { default as ReadQuran } from './ReadQuran';
+export { default as QiblaFinder } from './QiblaFinder';
+export { default as MosqueFinder } from './MosqueFinder';

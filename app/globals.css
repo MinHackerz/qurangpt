@@ -233,6 +233,13 @@ body {
     font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif;
   }
 
+  /* Arabic text styling for Quran reading */
+  .font-arabic {
+    font-family: 'Amiri', 'Scheherazade New', 'Cairo', serif;
+    direction: rtl;
+    text-align: right;
+  }
+
   /* Dark mode specific title styling */
   .dark .quran-word {
     background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);
@@ -717,6 +724,21 @@ body {
   scrollbar-width: none;     /* Firefox */
 }
 
+/* Hide scrollbars globally */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Align HeroSection container with sidebar offset on desktop */
+.chat-hero-container {
+  padding-left: var(--chat-hero-pl, 0px);
+}
+
 /* Mobile-specific improvements for chat input */
 @media (max-width: 639px) {
   .chat-input-textarea {
@@ -950,6 +972,13 @@ body {
   line-height: 1.6;
 }
 
+/* Enhanced typography for hadith text */
+.stylish-hadith-reference blockquote {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.6;
+}
+
 /* Divine Islamic Terms Styling */
 .ai-explanation-section,
 .authentic-tafsir-section {
@@ -1099,7 +1128,7 @@ body {
   
   /* Main content area spacing when chat is active */
   .chat-active-content-spacing {
-    padding-bottom: 8rem; /* 128px to ensure content doesn't overlap with fixed ChatSection */
+    padding-bottom: 12rem; /* Extra space so content clears the fixed ChatSection */
   }
   
   /* Response section spacing to prevent overlap with Translate container */
@@ -1468,4 +1497,26 @@ body {
 .hadith-loading .hadith-text-arabic,
 .hadith-loading .hadith-text-urdu {
   @apply bg-gray-200 dark:bg-gray-700 rounded;
+}
+
+/* Dynamic border color change animation */
+@keyframes borderColorChange {
+  0% {
+    border-color: rgba(16, 185, 129, 0.8); /* Emerald */
+  }
+  20% {
+    border-color: rgba(34, 197, 94, 0.8); /* Green */
+  }
+  40% {
+    border-color: rgba(59, 130, 246, 0.8); /* Blue */
+  }
+  60% {
+    border-color: rgba(147, 51, 234, 0.8); /* Purple */
+  }
+  80% {
+    border-color: rgba(236, 72, 153, 0.8); /* Pink */
+  }
+  100% {
+    border-color: rgba(16, 185, 129, 0.8); /* Back to Emerald */
+  }
 }

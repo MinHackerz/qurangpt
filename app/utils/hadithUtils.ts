@@ -148,7 +148,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
   
   // Text size classes based on textSize parameter - professional hierarchy
   const textSizeClass = textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'; // Professional hadith text sizing
-  const headerTextSizeClass = textSize === 'large' ? 'text-base md:text-lg' : textSize === 'medium' ? 'text-sm md:text-base' : 'text-xs md:text-sm'; // Match ayah header sizing
+  const headerTextSizeClass = textSize === 'large' ? 'text-xs md:text-sm' : textSize === 'medium' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'; // Match ayah header sizing
   const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'; // Match AI content sizing exactly
   
   return `
@@ -156,7 +156,8 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
          data-hadith-id="${hadithId}" 
          data-book-slug="${hadith.bookSlug}" 
          data-hadith-number="${hadith.hadithNumber}" 
-         data-book-name="${formatted.bookName}">
+         data-book-name="${formatted.bookName}"
+         data-status="${formatted.status}">
       <div class="bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-full relative">
         <!-- Minimal Header: Book name + Hadith number -->
         <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
@@ -185,9 +186,9 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
         <div class="p-4">
           <!-- English Text (Default) -->
           <div class="hadith-text-english" data-hadith-id="${hadithId}">
-            <div class="text-gray-800 dark:text-gray-200 leading-relaxed ${textSizeClass}">
+            <blockquote class="text-gray-800 dark:text-gray-200 leading-relaxed ${textSizeClass} font-medium tracking-wide px-6 py-2">
               ${formatted.text.english}
-            </div>
+            </blockquote>
             ${formatted.narrator ? `
               <div class="mt-2 hadith-narrator ${headerTextSizeClass} text-gray-500 dark:text-gray-400 italic">
                 — ${formatted.narrator}
@@ -197,9 +198,9 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
           
           <!-- Arabic Text (Hidden by default) -->
           <div class="hadith-text-arabic hidden" data-hadith-id="${hadithId}">
-            <div class="text-gray-800 dark:text-gray-200 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] text-right">
+            <blockquote class="text-gray-800 dark:text-gray-200 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] text-right font-medium tracking-wide px-6 py-2">
               ${formatted.text.arabic}
-            </div>
+            </blockquote>
             ${formatted.narrator ? `
               <div class="mt-2 hadith-narrator ${headerTextSizeClass} text-gray-500 dark:text-gray-400 italic text-right">
                 — ${formatted.narrator}

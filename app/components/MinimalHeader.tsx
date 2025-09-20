@@ -3,9 +3,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { Code, Shield, Monitor } from 'lucide-react';
 import ShareModal from './ShareModal';
 import TextSizeToggle from './TextSizeToggle';
+import Link from 'next/link';
 
 interface MinimalHeaderProps {
   isVisible: boolean;
@@ -18,10 +20,6 @@ interface MinimalHeaderProps {
   shareUrl?: string;
   isSharing?: boolean;
   showShareSuccess?: boolean;
-  // Copy functionality props
-  onCopyContent?: () => void;
-  copied?: boolean;
-  content?: string;
 }
 
 export default function MinimalHeader({ 
@@ -32,20 +30,85 @@ export default function MinimalHeader({
   onShareContent,
   shareUrl,
   isSharing,
-  showShareSuccess,
-  onCopyContent,
-  copied,
-  content
+  showShareSuccess
 }: MinimalHeaderProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingShareModal, setPendingShareModal] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [activeButton, setActiveButton] = useState<string | null>('ask-quran');
+  const [isMobile, setIsMobile] = useState(false);
+  const { theme, toggleTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch for theme toggle
+  // Custom Mosque Icon Component
+  const MosqueIcon = ({ className }: { className?: string }) => (
+    <svg 
+      width="20" 
+      height="20" 
+      viewBox="0 0 64 64" 
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <circle cx="43.5" cy="8.5" r="1.5"/>
+      <circle cx="47" cy="16" r="1"/>
+      <line x1="54" y1="8.463" x2="54" y2="9.878" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="54" y1="14.122" x2="54" y2="15.537" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="50.463" y1="12" x2="51.878" y2="12" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="56.122" y1="12" x2="57.537" y2="12" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <path d="M55.689,39.588A13.8,13.8,0,0,0,57,33.636c0-6.326-9-11.454-9-11.454a24.758,24.758,0,0,0-2.146,1.425" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <path d="M20.846,19a12.891,12.891,0,0,0,1.287-5.714C22.133,7.605,14.5,3,14.5,3S6.867,7.605,6.867,13.286A12.891,12.891,0,0,0,8.154,19Z" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <path d="M44,31.533a9.9,9.9,0,0,0,2-5.9c0-6.326-14-11.454-14-11.454S18,19.31,18,25.636a9.888,9.888,0,0,0,2,5.9" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <path d="M44.389,40H56.5A1.5,1.5,0,0,1,58,41.5h0A1.5,1.5,0,0,1,56.5,43H44.324" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <rect x="17" y="32" width="30" height="3" rx="1.5" ry="1.5" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <polyline points="29 60.554 29 43 32 40 35 43 35 60.554" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="32" y1="14" x2="32" y2="10" style={{fill:'none',stroke:'currentColor',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <path d="M32.191,4.66a3,3,0,0,0,3.166,5.1" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <path d="M19.564,44H8.5A1.5,1.5,0,0,0,7,45.5H7A1.5,1.5,0,0,0,8.5,47H19.637" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="51" y1="43" x2="51" y2="48" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="48" y1="43" x2="48" y2="48" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="39" y1="35" x2="39" y2="50" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="25" y1="35" x2="25" y2="50" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="13" y1="47.364" x2="13" y2="52" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="16" y1="47.364" x2="16" y2="52" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="13" y1="39" x2="13" y2="43.564" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="16" y1="39" x2="16" y2="43.564" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="60" y1="61" x2="4" y2="61" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="9" y1="44" x2="9" y2="19" style={{fill:'none',stroke:'currentColor',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="20" y1="21" x2="20" y2="20" style={{fill:'none',stroke:'currentColor',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="55" y1="43" x2="55" y2="61" style={{fill:'none',stroke:'currentColor',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="9" y1="47" x2="9" y2="61" style={{fill:'none',stroke:'currentColor',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="20" y1="61" x2="20" y2="35" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+      <line x1="44" y1="61" x2="44" y2="35" style={{fill:'none',stroke:'currentColor',strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:'2px'}}/>
+    </svg>
+  );
+
+  // Prevent hydration mismatch for theme toggle and detect mobile
   useEffect(() => {
     setMounted(true);
+    const checkMobile = () => {
+      const mobile = typeof window !== 'undefined' && window.innerWidth < 640;
+      setIsMobile(mobile);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Apply theme from sidebar triple-toggle
+  useEffect(() => {
+    const onApplyTheme = (e: any) => {
+      const mode = e?.detail?.mode as 'system' | 'light' | 'dark' | undefined;
+      if (!mode) return;
+      if (mode === 'system') {
+        // Set to system by cycling until state is 'system'
+        setTheme?.('system' as any);
+      } else {
+        setTheme?.(mode as any);
+      }
+    };
+    window.addEventListener('qgpt:apply-theme', onApplyTheme as EventListener);
+    return () => window.removeEventListener('qgpt:apply-theme', onApplyTheme as EventListener);
+  }, [setTheme]);
 
   // Open share modal when share URL is generated
   useEffect(() => {
@@ -55,10 +118,62 @@ export default function MinimalHeader({
     }
   }, [shareUrl, isSharing, pendingShareModal]);
 
-  if (!isVisible) return null;
+  // Listen to component switch events to update active button state
+  useEffect(() => {
+    const onShowComponent = (e: any) => {
+      const component = e?.detail?.component as string;
+      if (component) {
+        setActiveButton(component);
+        setShowMobileMenu(false); // Close mobile menu when component is selected
+      }
+    };
+
+    const onOpenChat = () => {
+      setActiveButton('chat');
+      setShowMobileMenu(false); // Close mobile menu when chat is opened
+    };
+
+    const onResetToDefault = () => {
+      setActiveButton('ask-quran');
+      setShowMobileMenu(false); // Close mobile menu when reset to default
+    };
+
+    const onToggleTime = (e: any) => {
+      if (e?.detail?.open) {
+        setActiveButton('time-dashboard');
+        setShowMobileMenu(false); // Close mobile menu when time dashboard is opened
+      } else {
+        setActiveButton(null);
+      }
+    };
+
+    window.addEventListener('qgpt:show-component', onShowComponent as EventListener);
+    window.addEventListener('qgpt:open-chat', onOpenChat as EventListener);
+    window.addEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
+    window.addEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
+
+    return () => {
+      window.removeEventListener('qgpt:show-component', onShowComponent as EventListener);
+      window.removeEventListener('qgpt:open-chat', onOpenChat as EventListener);
+      window.removeEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
+      window.removeEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
+    };
+  }, []);
+
+  // Always show on mobile, only show when visible on desktop
+  if (!isVisible && !isMobile) return null;
 
   const handleBackToHome = () => {
     window.location.reload();
+  };
+
+  const toggleMobileMenu = () => {
+    setShowMobileMenu(!showMobileMenu);
+  };
+
+  const handleMobileMenuAction = (action: () => void) => {
+    action();
+    setShowMobileMenu(false); // Close menu after action
   };
 
   // Handle share button click - open modal instead of direct copy
@@ -94,131 +209,222 @@ export default function MinimalHeader({
       className="fixed top-0 left-0 right-0 z-40 sm:p-6"
     >
       {/* Mobile: Minimalist horizontal header layout */}
-      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-        {/* Left side: Back button + Title */}
-        <div className="flex items-center gap-3">
-          {/* Back Button - Minimalist */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleBackToHome}
-            className="flex items-center justify-center w-9 h-9 rounded-full border transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-600"
-            title="Back to home"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M4 12L10 6M4 12L10 18"/>
-            </svg>
-          </motion.button>
-
-          {/* QuranGPT Title */}
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-mono text-gray-600 dark:text-gray-400 tracking-wider uppercase">
-              QuranGPT
-            </h1>
-          </div>
+      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-300 dark:border-gray-600">
+        {/* Left side: QuranGPT Title */}
+        <div className="flex items-center">
+          <h1 className="text-lg font-light tracking-tight text-gray-900 dark:text-white">
+            QuranGPT
+          </h1>
         </div>
 
-        {/* Right side: Action buttons */}
-        <div className="flex items-center gap-1.5">
-          {/* Text Size Toggle Button - Only show when there's content */}
-          {userQuestion && onTextSizeChange && (
-            <TextSizeToggle
-              onSizeChange={onTextSizeChange}
-              currentSize={textSize}
-              className="w-9 h-9"
-              variant="header"
-            />
-          )}
+        {/* Right side: Mobile Menu Toggle Button */}
+        <div className="flex items-center gap-2">
 
-
-          {/* Theme Toggle Button - Minimalist */}
+          {/* Mobile Menu Toggle Button */}
           <motion.button
-            onClick={toggleTheme}
+            onClick={toggleMobileMenu}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center w-9 h-9 rounded-full border transition-all duration-200 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 group border-gray-200 dark:border-gray-600"
-            title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
+            className={`flex items-center justify-center w-10 h-10 sm:rounded-full sm:border transition-all duration-200 backdrop-blur-sm ${
+              showMobileMenu 
+                ? 'sm:bg-gray-200/80 sm:dark:bg-gray-700/80 text-gray-600 dark:text-gray-300 sm:border-gray-200 sm:dark:border-gray-600' 
+                : 'sm:bg-transparent sm:hover:bg-gray-100 sm:dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 sm:border-gray-200 sm:dark:border-gray-600'
+            }`}
+            title="Menu"
           >
             <motion.div
-              initial={false}
-              animate={{ rotate: mounted && theme === 'dark' ? 180 : 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="relative w-4 h-4"
+              animate={{ rotate: showMobileMenu ? 90 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-5 h-5"
             >
-              {!mounted ? (
-                <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded-full animate-pulse"></div>
-              ) : theme === 'light' ? (
-                <SunIcon className="w-4 h-4 text-gray-600 group-hover:text-gray-700 transition-colors duration-200" />
-              ) : (
-                <div className="relative w-4 h-4">
-                  <MoonIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-300 transition-colors duration-200 transform rotate-90" />
-                </div>
-              )}
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg" data-rtl-flip="" className="icon">
+                <path d="M6.83496 3.99992C6.38353 4.00411 6.01421 4.0122 5.69824 4.03801C5.31232 4.06954 5.03904 4.12266 4.82227 4.20012L4.62207 4.28606C4.18264 4.50996 3.81498 4.85035 3.55859 5.26848L3.45605 5.45207C3.33013 5.69922 3.25006 6.01354 3.20801 6.52824C3.16533 7.05065 3.16504 7.71885 3.16504 8.66301V11.3271C3.16504 12.2712 3.16533 12.9394 3.20801 13.4618C3.25006 13.9766 3.33013 14.2909 3.45605 14.538L3.55859 14.7216C3.81498 15.1397 4.18266 15.4801 4.62207 15.704L4.82227 15.79C5.03904 15.8674 5.31234 15.9205 5.69824 15.9521C6.01398 15.9779 6.383 15.986 6.83398 15.9902L6.83496 3.99992ZM18.165 11.3271C18.165 12.2493 18.1653 12.9811 18.1172 13.5702C18.0745 14.0924 17.9916 14.5472 17.8125 14.9648L17.7295 15.1415C17.394 15.8 16.8834 16.3511 16.2568 16.7353L15.9814 16.8896C15.5157 17.1268 15.0069 17.2285 14.4102 17.2773C13.821 17.3254 13.0893 17.3251 12.167 17.3251H7.83301C6.91071 17.3251 6.17898 17.3254 5.58984 17.2773C5.06757 17.2346 4.61294 17.1508 4.19531 16.9716L4.01855 16.8896C3.36014 16.5541 2.80898 16.0434 2.4248 15.4169L2.27051 15.1415C2.03328 14.6758 1.93158 14.167 1.88281 13.5702C1.83468 12.9811 1.83496 12.2493 1.83496 11.3271V8.66301C1.83496 7.74072 1.83468 7.00898 1.88281 6.41985C1.93157 5.82309 2.03329 5.31432 2.27051 4.84856L2.4248 4.57317C2.80898 3.94666 3.36012 3.436 4.01855 3.10051L4.19531 3.0175C4.61285 2.83843 5.06771 2.75548 5.58984 2.71281C6.17898 2.66468 6.91071 2.66496 7.83301 2.66496H12.167C13.0893 2.66496 13.821 2.66468 14.4102 2.71281C15.0069 2.76157 15.5157 2.86329 15.9814 3.10051L16.2568 3.25481C16.8833 3.63898 17.394 4.19012 17.7295 4.84856L17.8125 5.02531C17.9916 5.44285 18.0745 5.89771 18.1172 6.41985C18.1653 7.00898 18.165 7.74072 18.165 8.66301V11.3271ZM8.16406 15.995H12.167C13.1112 15.995 13.7794 15.9947 14.3018 15.9521C14.8164 15.91 15.1308 15.8299 15.3779 15.704L15.5615 15.6015C15.9797 15.3451 16.32 14.9774 16.5439 14.538L16.6299 14.3378C16.7074 14.121 16.7605 13.8478 16.792 13.4618C16.8347 12.9394 16.835 12.2712 16.835 11.3271V8.66301C16.835 7.71885 16.8347 7.05065 16.792 6.52824C16.7605 6.14232 16.7073 5.86904 16.6299 5.65227L16.5439 5.45207C16.32 5.01264 15.9796 4.64498 15.5615 4.3886L15.3779 4.28606C15.1308 4.16013 14.8165 4.08006 14.3018 4.03801C13.7794 3.99533 13.1112 3.99504 12.167 3.99504H8.16406C8.16407 3.99667 8.16504 3.99829 8.16504 3.99992L8.16406 15.995Z"></path>
+              </svg>
             </motion.div>
           </motion.button>
-
-          {/* Share Button - Only show when there's content */}
-          {userQuestion && onShareContent && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleShareClick}
-              disabled={isSharing}
-              className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all duration-200 ${
-                showShareSuccess 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700' 
-                  : isSharing
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-200 dark:border-gray-600'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-600'
-              }`}
-              title={showShareSuccess ? "Share link copied!" : "Share this content"}
-            >
-              <AnimatePresence mode="wait">
-                {showShareSuccess ? (
-                  <motion.svg
-                    key="tick"
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: 90 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </motion.svg>
-                ) : isSharing ? (
-                  <motion.div
-                    key="loading"
-                    className="w-4 h-4"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </motion.div>
-                ) : (
-                  <motion.svg
-                    key="share"
-                    initial={{ scale: 0, rotate: 90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: -90 }}
-                    transition={{ duration: 0.2 }}
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                  </motion.svg>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          )}
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {showMobileMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 sm:hidden"
+              onClick={() => setShowMobileMenu(false)}
+            />
+            
+            {/* Mobile Menu */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20, x: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20, x: 20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="fixed top-16 right-4 z-50 sm:hidden"
+            >
+              <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-gray-200/70 dark:border-gray-700/70 rounded-xl shadow-xl p-4 min-w-[240px] max-w-[280px]">
+                {/* Menu Items */}
+                <div className="space-y-2">
+
+                  {/* Ask Quran */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      const event = new CustomEvent('qgpt:reset-to-default');
+                      window.dispatchEvent(event);
+                    })}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 transition ${
+                      activeButton === 'ask-quran' 
+                        ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Ask Quran</span>
+                  </button>
+
+                  {/* Read Quran */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      const event = new CustomEvent('qgpt:show-component', { detail: { component: 'read-quran' } });
+                      window.dispatchEvent(event);
+                    })}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 transition ${
+                      activeButton === 'read-quran' 
+                        ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75c0-1.243 0-1.864.242-2.34a2.25 2.25 0 0 1 .918-.918C5.386 3.25 6.007 3.25 7.25 3.25h.5c1.657 0 2.486 0 3.191.205.9.265 1.719.77 2.309 1.45.59-.68 1.41-1.185 2.309-1.45.705-.205 1.534-.205 3.191-.205h.5c1.243 0 1.864 0 2.34.242.392.206.712.526.918.918.242.476.242 1.097.242 2.34v10.5c0 1.243 0 1.864-.242 2.34a2.25 2.25 0 0 1-.918.918c-.476.242-1.097.242-2.34.242h-.5c-1.657 0-2.486 0-3.191-.205-.9-.265-1.719-.77-2.309-1.45-.59.68-1.41 1.185-2.309 1.45-.705.205-1.534.205-3.191.205h-.5c-1.243 0-1.864 0-2.34-.242a2.25 2.25 0 0 1-.918-.918C3.75 19.114 3.75 18.493 3.75 17.25V6.75Z"/>
+                    </svg>
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Read Quran</span>
+                  </button>
+
+                  {/* Qibla Finder */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      const event = new CustomEvent('qgpt:show-component', { detail: { component: 'qibla-finder' } });
+                      window.dispatchEvent(event);
+                    })}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 transition ${
+                      activeButton === 'qibla-finder' 
+                        ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/>
+                      <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Find Qibla</span>
+                  </button>
+
+                  {/* Nearest Mosque */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      const event = new CustomEvent('qgpt:show-component', { detail: { component: 'mosque-finder' } });
+                      window.dispatchEvent(event);
+                    })}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 transition ${
+                      activeButton === 'mosque-finder' 
+                        ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <MosqueIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Nearest Mosque</span>
+                  </button>
+
+                  {/* Time Dashboard */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      const event = new CustomEvent('qgpt:toggle-time-dashboard', { detail: { open: true } });
+                      window.dispatchEvent(event);
+                    })}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 transition ${
+                      activeButton === 'time-dashboard' 
+                        ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <ClockIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Time and Calendar</span>
+                  </button>
+
+                  {/* Divider */}
+                  <div className="h-px bg-gray-200/70 dark:bg-gray-700/70 my-2" />
+
+                  {/* Theme Toggle (Mobile only: Light/Dark) */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      if (!mounted) return;
+                      setTheme?.(theme === 'light' ? 'dark' : 'light');
+                    })}
+                    className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  >
+                    {mounted && theme === 'light' ? (
+                      <SunIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    ) : (
+                      <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    )}
+                    <span className="text-sm text-gray-800 dark:text-gray-200">
+                      {mounted && theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+                    </span>
+                  </button>
+
+                  {/* Text Size Toggle - Only show when there's a user question */}
+                  {userQuestion && onTextSizeChange && (
+                    <button
+                      onClick={() => handleMobileMenuAction(() => {
+                        const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+                        const currentIndex = sizes.indexOf(textSize);
+                        const nextIndex = (currentIndex + 1) % sizes.length;
+                        onTextSizeChange(sizes[nextIndex]);
+                      })}
+                      className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M7 4h10M7 4l-2 16h14l-2-16M10 9v6M14 9v6" />
+                      </svg>
+                      <span className="text-sm text-gray-800 dark:text-gray-200">Text Size: {textSize}</span>
+                    </button>
+                  )}
+
+
+                  {/* Transparency Link */}
+                  <Link
+                    href="/transparency"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  >
+                    <Shield className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Transparency</span>
+                  </Link>
+
+                  {/* Contact Developer */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      window.open('https://www.linkedin.com/in/menajul-hoque/', '_blank');
+                    })}
+                    className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                  >
+                    <Code className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Contact Developer</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Desktop: Vertical layout */}
       <div className="hidden sm:flex flex-col items-start gap-2">
@@ -235,31 +441,7 @@ export default function MinimalHeader({
           </svg>
         </motion.button>
 
-        {/* Theme Toggle Button - Always visible */}
-        <motion.button
-          onClick={toggleTheme}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 group"
-          title={`Switch to ${mounted && theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          <motion.div
-            initial={false}
-            animate={{ rotate: mounted && theme === 'dark' ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="relative w-5 h-5"
-          >
-            {!mounted ? (
-              <div className="w-5 h-5 bg-gray-300 dark:bg-gray-600 rounded-full animate-pulse"></div>
-            ) : theme === 'light' ? (
-              <SunIcon className="w-5 h-5 text-gray-600 group-hover:text-gray-700 transition-colors duration-200" />
-            ) : (
-              <div className="relative w-5 h-5">
-                <MoonIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-300 transition-colors duration-200 transform rotate-90" />
-              </div>
-            )}
-          </motion.div>
-        </motion.button>
+        {/* Theme Toggle removed on desktop */}
 
         {/* Text Size Toggle Button - Only show when there's content AND output is generated */}
         {userQuestion && onTextSizeChange && (
@@ -272,66 +454,7 @@ export default function MinimalHeader({
         )}
 
 
-        {/* Share Button - Only show when there's content AND output is generated */}
-        {userQuestion && onShareContent && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleShareClick}
-            disabled={isSharing}
-            className={`flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm ${
-              showShareSuccess 
-                ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300' 
-                : isSharing
-                ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                : 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-            }`}
-            title={showShareSuccess ? "Share link copied!" : "Share this content"}
-          >
-            <AnimatePresence mode="wait">
-              {showShareSuccess ? (
-                <motion.svg
-                  key="tick"
-                  initial={{ scale: 0, rotate: -90 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: 90 }}
-                  transition={{ duration: 0.2 }}
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </motion.svg>
-              ) : isSharing ? (
-                <motion.div
-                  key="loading"
-                  className="w-5 h-5"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </motion.div>
-              ) : (
-                <motion.svg
-                  key="share"
-                  initial={{ scale: 0, rotate: 90 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: -90 }}
-                  transition={{ duration: 0.2 }}
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                </motion.svg>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        )}
+        {/* Share Button removed from desktop - now shown in ResponseSection */}
 
       </div>
 
@@ -343,9 +466,6 @@ export default function MinimalHeader({
         title={userQuestion ? `QuranGPT: ${userQuestion}` : 'QuranGPT Answer'}
         question={userQuestion || 'QuranGPT Question'}
         isCreatingShare={isSharing}
-        onCopyContent={onCopyContent}
-        copied={copied}
-        content={content}
       />
     </motion.header>
   );

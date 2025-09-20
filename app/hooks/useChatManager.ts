@@ -56,7 +56,7 @@ export const useChatManager = () => {
       content: '',
       submittedQuestion: '',
       summary: '',
-      showSummary: true, // Keep showSummary true to display welcome message
+      showSummary: false, // Hide summary to show hero section
       showTranslateSection: false, // Hide translate section when resetting
       isProcessing: false,
       error: '',
@@ -65,7 +65,7 @@ export const useChatManager = () => {
       currentLanguage: 'en',
       isTranslating: false,
       translationProgress: 0,
-      isChatActive: true, // Keep chat mode active - don't return to homepage
+      isChatActive: false, // Return to default homepage state
       translatedQuestions: undefined,
     });
     

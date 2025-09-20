@@ -251,11 +251,11 @@ export const useTranslationManager = () => {
           const hadithText = hadithTextElement ? hadithTextElement.textContent?.trim() || '' : '';
           
           // Try to find the narrator
-          const narratorElement = hadithTextElement?.parentElement?.querySelector('.mt-2');
-          const narrator = narratorElement ? narratorElement.textContent?.replace('—', '').trim() || '' : '';
+          const narratorElement = hadithBox.querySelector('.hadith-narrator');
+          const narrator = narratorElement ? narratorElement.textContent?.replace(/^—\s*/, '').trim() || '' : '';
           
           // Try to find the AI summary
-          const summaryElement = hadithBox.querySelector('.mt-3');
+          const summaryElement = hadithBox.querySelector('.hadith-ai-summary');
           const aiSummary = summaryElement ? summaryElement.textContent?.trim() || '' : '';
           
           // Try to find the status (Sahih, Hasan, etc.)
@@ -282,82 +282,199 @@ export const useTranslationManager = () => {
   // Function to copy only AI-generated content (excluding API components)
   const copyAIContentOnly = useCallback(async (displayedContent: string, summary: string, setCopied: (copied: boolean) => void) => {
     try {
-      // Extract ayah and hadith info before processing
-      const ayahInfo = extractAyahInfoForCopy(displayedContent || summary);
-      const hadithInfo = extractHadithInfoForCopy(displayedContent || summary);
+      // Create structured copy: AI content → Ayah + explanation → Hadith + explanation
+      let structuredContent = '';
       
-      // Extract AI content without placeholders - get the text content directly
-      let aiContentToCopy = '';
       try {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = displayedContent || summary;
         
-        // Remove ayah and hadith boxes to get only AI content
-        const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
-        ayahBoxes.forEach(box => box.remove());
-        
-        const hadithBoxes = tempDiv.querySelectorAll('.stylish-hadith-reference');
-        hadithBoxes.forEach(box => box.remove());
-        
-        // Also remove suggested questions section
+        // Remove suggested questions section
         const suggestedQuestionsSection = tempDiv.querySelector('.suggested-questions-section, .related-questions-section');
         if (suggestedQuestionsSection) {
           suggestedQuestionsSection.remove();
         }
         
-        aiContentToCopy = tempDiv.innerHTML;
+        // Get all content elements and process them in order
+        const allElements = Array.from(tempDiv.children);
+        
+        // First, collect general AI content and ayah/hadith with their explanations
+        const ayahWithExplanations: Array<{
+          text: string;
+          surahName: string;
+          ayahNumber: string;
+          surahNumber: string;
+          aiExplanation: string;
+        }> = [];
+        const hadithWithExplanations: Array<{
+          text: string;
+          narrator: string;
+          bookName: string;
+          hadithNumber: string;
+          status: string;
+          aiSummary: string;
+        }> = [];
+        let generalAIContent = '';
+        
+        allElements.forEach((element, index) => {
+          if (element.classList.contains('stylish-ayah-reference')) {
+            // Process ayah box
+            const surahName = element.getAttribute('data-surah-name') || 'Unknown';
+            const ayahNumber = element.getAttribute('data-ayah-number') || 'Unknown';
+            const surahNumber = element.getAttribute('data-surah-number') || 'Unknown';
+            
+            // Extract ayah text from blockquote
+            const blockquote = element.querySelector('blockquote');
+            let ayahText = '';
+            if (blockquote) {
+              ayahText = blockquote.textContent?.trim() || '';
+              ayahText = ayahText.replace(/\s+/g, ' ').trim();
+            }
+            
+            if (ayahText) {
+              // Look for AI explanation that follows this ayah box
+              let aiExplanation = '';
+              for (let i = index + 1; i < Math.min(index + 3, allElements.length); i++) {
+                const nextElement = allElements[i];
+                if (nextElement.classList.contains('stylish-ayah-reference') || 
+                    nextElement.classList.contains('stylish-hadith-reference')) {
+                  break; // Stop if we hit another ayah or hadith box
+                }
+                
+                const textContent = nextElement.textContent?.trim() || '';
+                if (textContent && textContent.length > 20) { // Only include substantial text
+                  aiExplanation = textContent;
+                  break; // Only take the first substantial text block after the ayah
+                }
+              }
+              
+              ayahWithExplanations.push({
+                text: ayahText,
+                surahName,
+                ayahNumber,
+                surahNumber,
+                aiExplanation
+              });
+            }
+          } else if (element.classList.contains('stylish-hadith-reference')) {
+            // Process hadith box
+            const bookName = element.getAttribute('data-book-name') || 'Unknown';
+            const hadithNumber = element.getAttribute('data-hadith-number') || 'Unknown';
+            const status = element.getAttribute('data-status') || '';
+            
+            // Extract hadith text from blockquote
+            const blockquote = element.querySelector('blockquote');
+            let hadithText = '';
+            if (blockquote) {
+              hadithText = blockquote.textContent?.trim() || '';
+              hadithText = hadithText.replace(/\s+/g, ' ').trim();
+            }
+            
+            // Extract narrator if available
+            const narratorElement = element.querySelector('.hadith-narrator');
+            let narrator = '';
+            if (narratorElement) {
+              narrator = narratorElement.textContent?.trim() || '';
+              narrator = narrator.replace(/^—\s*/, '').trim(); // Remove leading dash
+            }
+            
+            // Extract AI summary if available
+            const summaryElement = element.querySelector('.hadith-ai-summary');
+            let aiSummary = '';
+            if (summaryElement) {
+              aiSummary = summaryElement.textContent?.trim() || '';
+              aiSummary = aiSummary.replace(/\s+/g, ' ').trim();
+            }
+            
+            if (hadithText) {
+              hadithWithExplanations.push({
+                text: hadithText,
+                narrator,
+                bookName,
+                hadithNumber,
+                status,
+                aiSummary
+              });
+            }
+          } else {
+            // Collect general AI content (before ayah/hadith sections)
+            const textContent = element.textContent?.trim() || '';
+            if (textContent && textContent.length > 20) {
+              if (generalAIContent.trim()) {
+                generalAIContent += '\n\n';
+              }
+              generalAIContent += textContent.replace(/\s+/g, ' ').trim();
+            }
+          }
+        });
+        
+        // Build the structured content in the desired order: AI content → Ayahs → Hadiths
+        
+        // 1. Add general AI content first
+        if (generalAIContent.trim()) {
+          structuredContent += generalAIContent.trim();
+        }
+        
+        // 2. Add ayah references with their explanations (always before hadiths)
+        if (ayahWithExplanations.length > 0) {
+          if (structuredContent.trim()) {
+            structuredContent += '\n\n';
+          }
+          ayahWithExplanations.forEach((ayah, index) => {
+            if (index > 0) {
+              structuredContent += '\n';
+            }
+            structuredContent += `"${ayah.text}"\n---Surah ${ayah.surahNumber}: ${ayah.surahName}, Ayah ${ayah.ayahNumber}`;
+            if (ayah.aiExplanation) {
+              structuredContent += `\n\n${ayah.aiExplanation}`;
+            }
+          });
+        }
+        
+        // 3. Add hadith references with their explanations (always after ayahs)
+        if (hadithWithExplanations.length > 0) {
+          if (structuredContent.trim()) {
+            structuredContent += '\n\n';
+          }
+          structuredContent += 'Related Hadiths:';
+          hadithWithExplanations.forEach((hadith, index) => {
+            structuredContent += `\n\n"${hadith.text}"`;
+            if (hadith.narrator) {
+              structuredContent += ` — ${hadith.narrator}`;
+            }
+            structuredContent += `\n---${hadith.bookName}, Hadith #${hadith.hadithNumber}`;
+            if (hadith.status && hadith.status !== 'Unknown') {
+              structuredContent += ` (${hadith.status})`;
+            }
+            if (hadith.aiSummary) {
+              structuredContent += `\n\n${hadith.aiSummary}`;
+            }
+          });
+        }
+        
       } catch (error) {
         // Fallback to simple text extraction
-        aiContentToCopy = (displayedContent || summary).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        structuredContent = (displayedContent || summary)
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
+          .replace(/^\s+|\s+$/gm, '') // Trim lines
+          .trim();
       }
       
-      if (!aiContentToCopy.trim()) {
-        // Fallback to summary if no AI content extracted
+      // Final cleanup to remove any remaining HTML artifacts
+      structuredContent = structuredContent
+        .replace(/<[^>]*>/g, '') // Remove any remaining HTML tags
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra line breaks
+        .replace(/^\s+|\s+$/gm, '') // Trim each line
+        .trim();
+      
+      if (!structuredContent.trim()) {
+        // Fallback to summary if no content extracted
         await navigator.clipboard.writeText(summary);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
         return;
-      }
-
-      // Clean up the AI content for copying (remove HTML tags, etc.)
-      let cleanAIContent = aiContentToCopy
-        .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
-        .replace(/^\s+|\s+$/gm, '') // Trim lines
-        .trim();
-
-      // Start building the structured content
-      let structuredContent = cleanAIContent;
-
-      // Add ayah references if available
-      if (ayahInfo.length > 0) {
-        structuredContent += '\n\n---Related Ayahs\n\n';
-        
-        ayahInfo.forEach((ayah, index) => {
-          const surahRef = ayah.surahNumber ? `Surah ${ayah.surahNumber}: ${ayah.surahName}` : ayah.surahName;
-          structuredContent += `---${surahRef}, Ayah ${ayah.ayahNumber}\n\n"${ayah.text}"\n\n`;
-        });
-      }
-
-      // Add hadith references if available
-      if (hadithInfo.length > 0) {
-        structuredContent += '\n---Related Hadiths\n\n';
-        
-        hadithInfo.forEach((hadith, index) => {
-          structuredContent += `---${hadith.bookName}, Hadith #${hadith.hadithNumber}`;
-          if (hadith.status && hadith.status !== 'Unknown') {
-            structuredContent += ` (${hadith.status})`;
-          }
-          structuredContent += '\n\n';
-          
-          if (hadith.text) {
-            structuredContent += `"${hadith.text}"\n\n`;
-          }
-          
-          if (hadith.aiSummary) {
-            structuredContent += `${hadith.aiSummary}\n\n`;
-          }
-        });
       }
 
       await navigator.clipboard.writeText(structuredContent);
@@ -374,7 +491,7 @@ export const useTranslationManager = () => {
         // Failed to copy summary as fallback
       }
     }
-  }, [extractAyahInfoForCopy, extractHadithInfoForCopy]);
+  }, []);
 
   // Function to translate only hadith summaries while preserving hadith boxes
   const translateHadithSummaries = useCallback(async (formattedResponse: string, targetLanguage: string, sourceLanguage?: string): Promise<string> => {

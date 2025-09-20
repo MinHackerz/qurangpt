@@ -7,15 +7,19 @@ import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import { detectLanguage } from './utils/languageDetection';
 import {
-  HeroSection,
-  ChatSectionOutput,
-  ResponseSection,
+  ChatSection,
   MinimalHeader,
   SourcesSection,
-  ThemeToggle,
-  WaveAnimationContainer,
-  UserMenu
+    ThemeToggle,
+    WaveAnimationContainer,
+    VerticalActionBar,
+    TimeDashboard,
+    ReadQuran,
+    QiblaFinder,
+    MosqueFinder
 } from './components';
+import ShareModal from './components/ShareModal';
+import { useTheme } from './contexts/ThemeContext';
 import InstallPrompt from './components/InstallPrompt';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import DynamicThemeColor from './components/DynamicThemeColor';
@@ -23,8 +27,9 @@ import DynamicThemeColor from './components/DynamicThemeColor';
 
 import { useChatManager } from './hooks/useChatManager';
 import { useAIResponse } from './hooks/useAIResponse';
-import { useTranslationManager } from './hooks/useTranslationManager';
+import { useGlobalEventDelegation } from './hooks/useGlobalEventDelegation';
 import { getGlobalAbortManager } from './hooks/useAbortManager';
+import { useTranslationManager } from './hooks/useTranslationManager';
 
 
 // Extend Window interface for tafsir functionality
@@ -38,41 +43,179 @@ declare global {
 function HomeContent() {
   // Use custom hooks for better organization
   const chatManager = useChatManager();
-  const { copyAIContentOnly, extractAIContentForTranslation, extractAyahInfoForCopy, extractHadithInfoForCopy, mergeTranslatedContent, translateAIContent, translateHadithSummaries } = useTranslationManager();
+  const { setTheme } = useTheme();
   const searchParams = useSearchParams();
   const hasProcessedUrlQuestion = useRef(false);
+  const { copyAIContentOnly } = useTranslationManager();
   
+  // Initialize global event delegation for suggested questions and other interactive elements
+  useGlobalEventDelegation();
+  
+  // Sidebar offset state
+  const [sidebarOffset, setSidebarOffset] = useState<number>(0);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [showTimeDashboard, setShowTimeDashboard] = useState<boolean>(false);
+  const [showQiblaFinder, setShowQiblaFinder] = useState<boolean>(false);
+  const [showMosqueFinder, setShowMosqueFinder] = useState<boolean>(false);
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
-  // Prevent scrolling during wave animation
-  useEffect(() => {
-    if (chatManager.isProcessing && chatManager.isChatActive) {
-      // Prevent scrolling
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-    } else {
-      // Restore scrolling
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+  // Define the component switching handler outside useEffect
+  const onShowComponent = useCallback((e: any) => {
+    const component = e?.detail?.component as string;
+    console.log('onShowComponent called with:', component); // Debug log
+    if (component) {
+      // First, hide all other components and views
+      setShowTimeDashboard(false);
+      setShowQiblaFinder(false);
+      setShowMosqueFinder(false);
+      setActiveComponent(null);
+      chatManager.setIsChatActive(false);
+      
+      // Then show only the requested component
+      if (component === 'qibla-finder') {
+        setShowQiblaFinder(true);
+      } else if (component === 'mosque-finder') {
+        setShowMosqueFinder(true);
+      } else if (component === 'read-quran') {
+        setActiveComponent(component);
+      }
+      console.log('Active component set to:', component); // Debug log
     }
-    
-    // Cleanup on unmount
+  }, [chatManager]);
+
+  // Detect mobile devices and handle resize
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = typeof window !== 'undefined' && window.innerWidth < 640;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarOffset(0);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    const onSidebar = (e: any) => {
+      if (e?.detail?.width !== undefined) {
+        // Only apply sidebar offset on desktop (sm and above)
+        if (!isMobile) {
+          setSidebarOffset(e.detail.width);
+        } else {
+          setSidebarOffset(0);
+        }
+      }
+    };
+    const onToggleTime = (e: any) => {
+      const shouldOpen = !!e?.detail?.open;
+      setShowTimeDashboard(shouldOpen);
+      // Hide all other components and views when opening dashboard
+      if (shouldOpen) {
+        chatManager.setIsChatActive(false);
+        setShowQiblaFinder(false);
+        setShowMosqueFinder(false);
+        setActiveComponent(null);
+      }
+    };
+    const onOpenChat = () => {
+      // Hide all components and views first
+      setShowTimeDashboard(false);
+      setShowQiblaFinder(false);
+      setShowMosqueFinder(false);
+      setActiveComponent(null);
+      
+      // Toggle chat state - if chat is already active, close it; if not, open it
+      if (chatManager.isChatActive) {
+        // Chat is active, so close it and reset to default state
+        chatManager.setIsChatActive(false);
+        chatManager.setShowSummary(false);
+        chatManager.setContent('');
+        chatManager.setSubmittedQuestion('');
+        chatManager.setSummary('');
+        chatManager.setDisplayedContent('');
+        chatManager.setError('');
+        chatManager.setIsProcessing(false);
+        // Ensure proper alignment by re-dispatching sidebar event with current offset
+        setTimeout(() => {
+          // Re-dispatch sidebar event to restore proper alignment
+          const sidebarEvent = new CustomEvent('qgpt:sidebar', { detail: { width: sidebarOffset } });
+          window.dispatchEvent(sidebarEvent);
+          // Focus the input in the hero section and scroll to top
+          const evt = new CustomEvent('qgpt:focus-chat-input');
+          window.dispatchEvent(evt);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100); // Slightly longer delay to ensure state is fully reset
+      } else {
+        // Chat is not active, so open it
+        chatManager.setIsChatActive(true);
+        // Focus the input in the chat section
+        setTimeout(() => {
+          const evt = new CustomEvent('qgpt:focus-chat-input');
+          window.dispatchEvent(evt);
+        }, 100);
+      }
+    };
+
+    const onResetToDefault = () => {
+      // Hide all components and views first
+      setShowTimeDashboard(false);
+      setShowQiblaFinder(false);
+      setShowMosqueFinder(false);
+      setActiveComponent(null);
+      // Reset chat state to default (like clicking Clear and Reset)
+      chatManager.resetForm();
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    const onSetTheme = (e: any) => {
+      const mode = e?.detail?.mode as 'system' | 'light' | 'dark' | undefined;
+      if (!mode) return;
+      try {
+        setTheme(mode);
+      } catch (error) {
+        console.error('Failed to set theme:', error);
+      }
+    };
+    const onCloseComponent = () => {
+      setActiveComponent(null);
+    };
+
+    window.addEventListener('qgpt:sidebar', onSidebar as EventListener);
+    window.addEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
+    window.addEventListener('qgpt:open-chat', onOpenChat as EventListener);
+    window.addEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
+    window.addEventListener('qgpt:set-theme', onSetTheme as EventListener);
+    window.addEventListener('qgpt:show-component', onShowComponent as EventListener);
+    window.addEventListener('qgpt:close-component', onCloseComponent as EventListener);
+    return () => {
+      window.removeEventListener('qgpt:sidebar', onSidebar as EventListener);
+      window.removeEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
+      window.removeEventListener('qgpt:open-chat', onOpenChat as EventListener);
+      window.removeEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
+      window.removeEventListener('qgpt:set-theme', onSetTheme as EventListener);
+      window.removeEventListener('qgpt:show-component', onShowComponent as EventListener);
+      window.removeEventListener('qgpt:close-component', onCloseComponent as EventListener);
+    };
+  }, [onShowComponent, chatManager, showTimeDashboard, isMobile, setTheme, sidebarOffset]);
+
+  // Allow page to remain scrollable while chat input is fixed at the bottom
+  useEffect(() => {
+    // No scroll lock needed; ensure defaults are cleared
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    (document.documentElement as HTMLElement).style.overscrollBehavior = '';
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      (document.documentElement as HTMLElement).style.overscrollBehavior = '';
     };
   }, [chatManager.isProcessing, chatManager.isChatActive]);
   
   // Audio functionality is now handled directly in ResponseSection component
   
-  // Cache for original language output to restore when switching back
-  const [originalLanguageCache, setOriginalLanguageCache] = useState<{
-    content: string;
-    questions: string[];
-    language: string;
-  } | null>(null);
-  
-  // Store the original AI-generated questions for translation
-  const [originalAIQuestions, setOriginalAIQuestions] = useState<string[]>([]);
   
   // Text size toggle state - using three-state system for consistency
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('small');
@@ -85,6 +228,8 @@ function HomeContent() {
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>('');
   const [showShareSuccess, setShowShareSuccess] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [pendingShareModal, setPendingShareModal] = useState(false);
   
   // Content type selection state
   const [selectedContentTypes, setSelectedContentTypes] = useState({
@@ -142,8 +287,8 @@ function HomeContent() {
           chatManager.setShowSummary,
           chatManager.setError,
           chatManager.setDisplayedContent,
-          chatManager.setCurrentLanguage,
-          chatManager.setShowTranslateSection,
+          () => {}, // setCurrentLanguage - no longer needed
+          undefined, // setShowTranslateSection - no longer needed  
           urlContentTypes
         );
       }, 100);
@@ -172,8 +317,6 @@ function HomeContent() {
         chatManager.setError('');
         chatManager.setCopied(false);
         chatManager.setDisplayedContent('');
-        chatManager.setIsTranslating(false);
-        chatManager.setTranslationProgress(0);
         
         // Process the question directly
         askQuran(
@@ -183,8 +326,8 @@ function HomeContent() {
           chatManager.setShowSummary,
           chatManager.setError,
           chatManager.setDisplayedContent,
-          chatManager.setCurrentLanguage,
-          chatManager.setShowTranslateSection,
+          () => {}, // setCurrentLanguage - no longer needed
+          undefined, // setShowTranslateSection - no longer needed  
           selectedContentTypes,
         );
         
@@ -201,6 +344,14 @@ function HomeContent() {
   
   // Audio management
   // Audio functionality is now handled directly in ResponseSection component
+
+  // Open share modal when share URL is generated (same as mobile functionality)
+  useEffect(() => {
+    if (pendingShareModal && shareUrl && !isSharing) {
+      setShowShareModal(true);
+      setPendingShareModal(false);
+    }
+  }, [shareUrl, isSharing, pendingShareModal]);
 
   // AbortController for stopping operations
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -259,8 +410,8 @@ function HomeContent() {
         chatManager.setShowSummary,
         chatManager.setError,
         chatManager.setDisplayedContent,
-        chatManager.setCurrentLanguage,
-        chatManager.setShowTranslateSection, // Pass the new setter function
+        () => {}, // setCurrentLanguage - no longer needed
+        undefined, // setShowTranslateSection - no longer needed
         selectedContentTypes, // Pass content type selection
         abortControllerRef.current, // Pass AbortController
         () => abortManager.isAborted() // Pass abort check function
@@ -268,16 +419,7 @@ function HomeContent() {
       
       // Only proceed if operation wasn't aborted
       if (!isAbortingRef.current) {
-        // Cache the original output for future restoration
-        const detectedLanguage = chatManager.currentLanguage;
-        if (detectedLanguage && detectedLanguage !== 'en') {
-          // Cache non-English output for restoration
-          setOriginalLanguageCache({
-            content: chatManager.summary,
-            questions: chatManager.translatedQuestions || [],
-            language: detectedLanguage
-          });
-        }
+        // Translation feature removed - no caching needed
         
         chatManager.setIsChatActive(true);
         // Question processed successfully
@@ -332,8 +474,6 @@ function HomeContent() {
     chatManager.setCopied(false);
     chatManager.setDisplayedContent('');
     // Language will be set by askQuran based on detected language
-    chatManager.setIsTranslating(false);
-    chatManager.setTranslationProgress(0);
     
     // Audio is now handled in ResponseSection component
     
@@ -375,8 +515,8 @@ function HomeContent() {
           chatManager.setShowSummary,
           chatManager.setError,
           chatManager.setDisplayedContent,
-          chatManager.setCurrentLanguage,
-          chatManager.setShowTranslateSection,
+          () => {}, // setCurrentLanguage - no longer needed
+          undefined, // setShowTranslateSection - no longer needed  
           selectedContentTypes, // Pass content type selection
           abortControllerRef.current, // Pass AbortController
           () => abortManager.isAborted() // Pass abort check function
@@ -407,145 +547,27 @@ function HomeContent() {
   
   // Handle when new AI questions are generated
   const handleQuestionsGenerated = useCallback((questions: string[]) => {
-    // Handle questions generated
-    setOriginalAIQuestions(questions);
+    // Handle questions generated - No longer needed since translate section is removed
     
-    // Also store in chatManager for immediate access
-    if (questions && questions.length > 0) {
-      chatManager.setTranslatedQuestions(questions);
-      // Questions stored in chatManager
-    }
-  }, [chatManager]);
+  }, []); // No dependencies needed since function does nothing
 
-  // Handle copying AI content (both question and response) with proper structure
+  // Handle copying AI content using the standardized copyAIContentOnly function
   const handleCopyAIContent = useCallback(async () => {
-    try {
-      // Extract ayah and hadith info before processing
-      const ayahInfo = extractAyahInfoForCopy(chatManager.displayedContent || chatManager.summary);
-      const hadithInfo = extractHadithInfoForCopy(chatManager.displayedContent || chatManager.summary);
-      
-      
-      // Create a structured copy that places ayah boxes directly above their AI explanations
-      let structuredContent = `Question: ${chatManager.submittedQuestion}\n\nAnswer:\n\n`;
-      
-      try {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = chatManager.displayedContent || chatManager.summary;
-        
-        // Remove suggested questions section
-        const suggestedQuestionsSection = tempDiv.querySelector('.suggested-questions-section, .related-questions-section');
-        if (suggestedQuestionsSection) {
-          suggestedQuestionsSection.remove();
-        }
-        
-        // Remove hadith sections from the main content to avoid duplication
-        const hadithSections = tempDiv.querySelectorAll('.stylish-hadith-reference, .related-hadiths-section');
-        hadithSections.forEach(section => section.remove());
-        
-        // Use DOM parsing to extract ayah boxes and their corresponding AI explanations
-        const ayahBoxes = tempDiv.querySelectorAll('.stylish-ayah-reference');
-        let previousPosition = 0;
-        
-        // Process the content sequentially, extracting text between ayah boxes
-        ayahBoxes.forEach((ayahBox, index) => {
-          // Find the position of this ayah box in the original content
-          const ayahBoxHTML = ayahBox.outerHTML;
-          const currentPosition = tempDiv.innerHTML.indexOf(ayahBoxHTML, previousPosition);
-          
-          if (currentPosition > previousPosition) {
-            // Extract the text content before this ayah box (AI explanation)
-            const beforeAyahDiv = document.createElement('div');
-            beforeAyahDiv.innerHTML = tempDiv.innerHTML.substring(previousPosition, currentPosition);
-            
-            const textContent = beforeAyahDiv.textContent?.trim() || '';
-            if (textContent) {
-              structuredContent += textContent.replace(/\s+/g, ' ').trim() + '\n\n';
-            }
-          }
-          
-          // Extract only the essential ayah information (no tafsirs, audio, etc.)
-          const surahName = ayahBox.getAttribute('data-surah-name') || 'Unknown';
-          const ayahNumber = ayahBox.getAttribute('data-ayah-number') || 'Unknown';
-          const surahNumber = ayahBox.getAttribute('data-surah-number') || 'Unknown';
-          
-          // Extract only the pure ayah text from the blockquote
-          const blockquote = ayahBox.querySelector('blockquote');
-          let ayahText = '';
-          if (blockquote) {
-            // Get all text content from the blockquote, including nested elements
-            ayahText = blockquote.textContent?.trim() || '';
-            
-            // Clean up any extra whitespace and normalize
-            ayahText = ayahText.replace(/\s+/g, ' ').trim();
-          }
-          
-          if (ayahText) {
-            structuredContent += `"${ayahText}"\n\n---Surah ${surahNumber}: ${surahName}, Ayah ${ayahNumber}\n\n`;
-          }
-          
-          // Update position for next iteration
-          previousPosition = currentPosition + ayahBoxHTML.length;
-        });
-        
-        // Add any remaining content after the last ayah box (excluding hadith sections)
-        if (previousPosition < tempDiv.innerHTML.length) {
-          const remainingDiv = document.createElement('div');
-          remainingDiv.innerHTML = tempDiv.innerHTML.substring(previousPosition);
-          
-          // Remove any remaining hadith content from the remaining text
-          const remainingHadithSections = remainingDiv.querySelectorAll('.stylish-hadith-reference, .related-hadiths-section');
-          remainingHadithSections.forEach(section => section.remove());
-          
-          const remainingText = remainingDiv.textContent?.trim() || '';
-          if (remainingText) {
-            structuredContent += remainingText.replace(/\s+/g, ' ').trim() + '\n\n';
-          }
-        }
-        
-        // Add hadith references if available (with reduced spacing)
-        if (hadithInfo.length > 0) {
-          structuredContent += '---Related Hadiths\n\n';
-          
-          hadithInfo.forEach((hadith, index) => {
-            if (hadith.text) {
-              structuredContent += `"${hadith.text}"\n\n`;
-            }
-            
-            if (hadith.aiSummary) {
-              structuredContent += `${hadith.aiSummary}\n\n`;
-            }
-            
-            structuredContent += `---${hadith.bookName}, Hadith #${hadith.hadithNumber}`;
-            if (hadith.status && hadith.status !== 'Unknown') {
-              structuredContent += ` (${hadith.status})`;
-            }
-            structuredContent += '\n\n';
-          });
-        }
-        
-      } catch (error) {
-        // Fallback to simple text extraction
-        const fallbackContent = (chatManager.displayedContent || chatManager.summary)
-          .replace(/<[^>]*>/g, '') // Remove HTML tags
-          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up extra whitespace
-          .replace(/^\s+|\s+$/gm, '') // Trim lines
-          .trim();
-        
-        structuredContent += fallbackContent;
-      }
-      
-      await navigator.clipboard.writeText(structuredContent);
-      chatManager.setCopied(true);
-      setTimeout(() => chatManager.setCopied(false), 2000);
-    } catch (error) {
-      // Fallback to copying just the AI content
-      await copyAIContentOnly(
-        chatManager.displayedContent,
-        chatManager.summary,
-        chatManager.setCopied
-      );
+    await copyAIContentOnly(
+      chatManager.displayedContent || chatManager.summary,
+      chatManager.summary,
+      chatManager.setCopied
+    );
+    
+    // Track copy event
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'content_copied', {
+        event_category: 'engagement',
+        event_label: 'copy_ai_content',
+        custom_parameter_1: chatManager.submittedQuestion ? chatManager.submittedQuestion.substring(0, 100) : 'unknown_question'
+      });
     }
-  }, [copyAIContentOnly, extractAyahInfoForCopy, extractHadithInfoForCopy, chatManager]);
+  }, [chatManager, copyAIContentOnly]);
 
   // Handle sharing AI content
   const handleShareContent = useCallback(async () => {
@@ -557,8 +579,20 @@ function HomeContent() {
     setShowShareSuccess(false);
 
     try {
-      // Prepare the content for sharing
-      const responseContent = chatManager.displayedContent || chatManager.summary;
+      // Prepare the content for sharing - remove suggested questions
+      let responseContent = chatManager.displayedContent || chatManager.summary;
+      
+      // Create a temporary DOM element to parse and clean the content
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = responseContent;
+      
+      // Remove suggested questions sections from shared content
+      const suggestedQuestionsElements = tempDiv.querySelectorAll('.suggested-questions-section, .related-questions-section, [class*="suggested-question"], [data-suggested-question]');
+      suggestedQuestionsElements.forEach(element => element.remove());
+      
+      // Get the cleaned content
+      responseContent = tempDiv.innerHTML;
+      
       const title = chatManager.submittedQuestion.length > 50 
         ? chatManager.submittedQuestion.substring(0, 50) + '...' 
         : chatManager.submittedQuestion;
@@ -843,220 +877,6 @@ function HomeContent() {
     setTimeout(() => updateExistingTafsirTextSize(), 100);
   }, [textSize]);
 
-  // Handle translation changes
-  const handleTranslationChange = useCallback(async (translatedText: string, language: string) => {
-    // Check if we're switching back to the original language (restore from cache)
-    if (originalLanguageCache && language === originalLanguageCache.language) {
-      // Restore original content and questions from cache (no API call needed)
-      chatManager.setDisplayedContent(originalLanguageCache.content);
-      chatManager.setCurrentLanguage(originalLanguageCache.language);
-      chatManager.setTranslatedQuestions(originalLanguageCache.questions);
-      chatManager.setIsTranslating(false);
-      chatManager.setTranslationProgress(0);
-      return;
-    }
-
-    if (language === 'en' || language === 'original') {
-      // Only translate to English if current content is NOT already in English
-      if (chatManager.currentLanguage === 'en') {
-        // Content is already in English, no need to translate
-        chatManager.setCurrentLanguage('en');
-        chatManager.setIsTranslating(false);
-        chatManager.setTranslationProgress(0);
-        return;
-      }
-      
-      // When English is selected, we need to translate the current content TO English
-      // The current content might be in Hindi/Bengali/etc., so we need to translate it
-      try {
-        // Start translation progress animation
-        chatManager.setIsTranslating(true);
-        chatManager.setTranslationProgress(0);
-        
-        // Advanced progress simulation with realistic stages
-        const progressStages = [
-          { stage: 'Analyzing content', progress: 15 },
-          { stage: 'Extracting AI text', progress: 35 },
-          { stage: 'Translating to English', progress: 70 },
-          { stage: 'Processing', progress: 85 },
-          { stage: 'Finalizing', progress: 95 }
-        ];
-        
-        let currentStage = 0;
-        const progressInterval = setInterval(() => {
-          if (currentStage < progressStages.length) {
-            const { progress } = progressStages[currentStage];
-            chatManager.setTranslationProgress(progress);
-            currentStage++;
-          } else {
-            // Smooth progress to completion
-            const currentProgress = chatManager.translationProgress;
-            if (currentProgress < 95) {
-              chatManager.setTranslationProgress(currentProgress + 0.5);
-            }
-          }
-        }, 300);
-
-        // Extract only AI-generated content for translation (much faster)
-        // Use the current displayed content (which might be in Hindi/Bengali/etc.)
-        const aiContentToTranslate = extractAIContentForTranslation(chatManager.displayedContent || chatManager.summary);
-        
-        if (!aiContentToTranslate.trim()) {
-          // No AI content to translate, show original
-          chatManager.setDisplayedContent(chatManager.summary);
-          chatManager.setCurrentLanguage('en');
-          chatManager.setIsTranslating(false);
-          chatManager.setTranslationProgress(0);
-          clearInterval(progressInterval);
-          return;
-        }
-
-        // Use optimized translation for AI content only - translate TO English
-        // Use the current language as source (since we know what language the content is currently in)
-        const sourceLanguage = chatManager.currentLanguage || detectLanguage(aiContentToTranslate);
-        
-        // If source language is English, no need to translate
-        if (sourceLanguage === 'en') {
-          chatManager.setCurrentLanguage('en');
-          chatManager.setIsTranslating(false);
-          chatManager.setTranslationProgress(0);
-          clearInterval(progressInterval);
-          return;
-        }
-        
-        const translation = await translateAIContent(aiContentToTranslate, 'en', sourceLanguage);
-        
-        // Complete progress with smooth animation
-        chatManager.setTranslationProgress(100);
-        
-        // Merge translated AI content with preserved API components
-        const mergedContent = await mergeTranslatedContent(chatManager.displayedContent || chatManager.summary, translation, 'en');
-        
-        // Also translate hadith summaries to English
-        const contentWithTranslatedHadithSummaries = await translateHadithSummaries(mergedContent, 'en', sourceLanguage);
-        
-        chatManager.setDisplayedContent(contentWithTranslatedHadithSummaries);
-        chatManager.setCurrentLanguage('en');
-        
-        // When going back to English, we need to restore the original English questions
-        // If we have original AI questions, use them; otherwise clear translated questions
-        if (originalAIQuestions && originalAIQuestions.length > 0) {
-          // Restore original English questions
-          chatManager.setTranslatedQuestions(originalAIQuestions);
-        } else {
-          // Clear translated questions to show original English questions
-          chatManager.setTranslatedQuestions(undefined);
-        }
-        
-        // Hide progress after a short delay
-        setTimeout(() => {
-          chatManager.setIsTranslating(false);
-          chatManager.setTranslationProgress(0);
-        }, 800);
-        
-        clearInterval(progressInterval);
-        return;
-      } catch (error) {
-        // Translation to English error
-        // Fallback to original content on error
-        chatManager.setDisplayedContent(chatManager.summary);
-        chatManager.setCurrentLanguage('en');
-        chatManager.setIsTranslating(false);
-        chatManager.setTranslationProgress(0);
-        chatManager.setTranslatedQuestions(undefined);
-        return;
-      }
-    }
-
-    // For other languages (not English), translate to that language
-    try {
-      // Start translation progress
-      chatManager.setIsTranslating(true);
-      chatManager.setTranslationProgress(10); // Start at 10%
-      
-      // Extract only AI-generated content for translation (much faster)
-      // Use current displayed content if available, otherwise fall back to summary
-      const contentToExtract = chatManager.displayedContent || chatManager.summary;
-      const aiContentToTranslate = extractAIContentForTranslation(contentToExtract);
-      
-      // Translation processing
-      
-      if (!aiContentToTranslate.trim()) {
-        // No AI content to translate, show original
-        chatManager.setDisplayedContent(chatManager.summary);
-        chatManager.setCurrentLanguage(language);
-        chatManager.setIsTranslating(false);
-        chatManager.setTranslationProgress(0);
-        return;
-      }
-      
-      // Update progress to show we're starting translation
-      chatManager.setTranslationProgress(30);
-      
-      // Use optimized translation for AI content only
-      // Source language is English (original content)
-      const translation = await translateAIContent(aiContentToTranslate, language, 'en');
-      
-      // Update progress to show translation is complete
-      chatManager.setTranslationProgress(80);
-      
-      // Translation result
-      
-            // Merge translated AI content with preserved API components
-      const mergedContent = await mergeTranslatedContent(contentToExtract, translation, language);
-      
-      // Also translate hadith summaries to target language
-      const contentWithTranslatedHadithSummaries = await translateHadithSummaries(mergedContent, language, 'en');
-      
-      chatManager.setDisplayedContent(contentWithTranslatedHadithSummaries);
-      chatManager.setCurrentLanguage(language);
-      
-      // Also translate suggested questions for the new language
-      try {
-        // First try to translate questions from the current displayed questions
-        let questionsToTranslate: string[] = [];
-        
-        // Check if we have questions from the SuggestedQuestions API
-        if (chatManager.translatedQuestions && chatManager.translatedQuestions.length > 0) {
-          questionsToTranslate = chatManager.translatedQuestions;
-        } else if (originalAIQuestions && originalAIQuestions.length > 0) {
-          // Fallback to original AI questions if no API questions
-          questionsToTranslate = originalAIQuestions;
-        }
-        
-        if (questionsToTranslate.length > 0) {
-          // Translating questions to target language
-          const questionsToTranslateText = questionsToTranslate.join('\n\n');
-          const translatedQuestionsText = await translateAIContent(questionsToTranslateText, language, 'en');
-          const translatedQuestionsArray = translatedQuestionsText.split('\n\n').filter(q => q.trim());
-          
-          // Questions translation result
-          
-          chatManager.setTranslatedQuestions(translatedQuestionsArray);
-        } else {
-          // No questions to translate, clear translated questions
-          chatManager.setTranslatedQuestions(undefined);
-        }
-      } catch (error) {
-        // Failed to translate suggested questions
-        // Keep original questions if translation fails
-        chatManager.setTranslatedQuestions(undefined);
-      }
-      
-      // Hide progress after a short delay
-      setTimeout(() => {
-        chatManager.setIsTranslating(false);
-        chatManager.setTranslationProgress(0);
-      }, 800);
-    } catch (error) {
-      // Translation error
-      // Fallback to original content on error
-      chatManager.setDisplayedContent(chatManager.summary);
-      // Language will be set by askQuran based on detected language
-      chatManager.setIsTranslating(false);
-      chatManager.setTranslationProgress(0);
-    }
-  }, [chatManager, extractAIContentForTranslation, mergeTranslatedContent, translateAIContent, translateHadithSummaries, originalLanguageCache, originalAIQuestions]);
 
   // Audio management functions are now handled directly in ResponseSection component
 
@@ -1153,32 +973,36 @@ function HomeContent() {
       
 
       
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
+      <div 
+        className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden" 
+        style={{ 
+          paddingLeft: isMobile ? '0px' : `${sidebarOffset}px` 
+        }}
+      >
 
-        {/* User Menu - Fixed top right - Only visible in home state */}
-        <div className="fixed top-4 right-4 z-50">
-          <UserMenu isVisible={!chatManager.isChatActive} />
-        </div>
+        {/* Vertical Action Bar - visible on desktop (both default page and when chat is active), hidden on mobile */}
+        {!isMobile && (
+          <div className="hidden sm:block">
+            <VerticalActionBar />
+          </div>
+        )}
         
-        {/* Minimal Header - Only visible when chat is active */}
+        {/* Minimal Header - Always visible on mobile, hidden on desktop when chat is active */}
         <MinimalHeader 
-          isVisible={chatManager.isChatActive}
+          isVisible={isMobile}
           userQuestion={chatManager.submittedQuestion}
           textSize={textSize}
           onTextSizeChange={setTextSize}
-          onShareContent={handleShareContent}
+          onShareContent={chatManager.showSummary && (chatManager.displayedContent || chatManager.summary) ? handleShareContent : undefined}
           shareUrl={shareUrl}
           isSharing={isSharing}
           showShareSuccess={showShareSuccess}
-          onCopyContent={handleCopyAIContent}
-          copied={chatManager.copied}
-          content={chatManager.displayedContent || chatManager.summary}
         />
 
 
-        {/* Hero Section - Hidden when chat is active */}
-        {!chatManager.isChatActive && (
-          <HeroSection 
+        {/* Comprehensive Chat Section - Handles all states: hero, processing, and output */}
+        {!showTimeDashboard && !showQiblaFinder && !showMosqueFinder && !activeComponent && (
+          <ChatSection 
             getGreetingMessage={getGreetingMessage}
             content={chatManager.content}
             setContent={chatManager.setContent}
@@ -1187,22 +1011,40 @@ function HomeContent() {
             isProcessing={chatManager.isProcessing}
             error={chatManager.error}
             showSummary={chatManager.showSummary}
-            originalText={chatManager.summary}
-            onTranslationChange={handleTranslationChange}
-            isTranslating={chatManager.isTranslating}
-            translationProgress={chatManager.translationProgress}
-            currentLanguage={chatManager.currentLanguage}
             selectedContentTypes={selectedContentTypes}
             onContentTypeChange={handleContentTypeChange}
             onStopOperation={handleStopOperation}
           />
         )}
 
-        {/* Main Content */}
-        <main className={`relative z-10 ${chatManager.isChatActive ? 'pt-20 pb-60 sm:pb-64 chat-active-content-spacing' : 'pb-8'} mt-16 sm:mt-0`}>
+
+        {/* Component Display - Show when activeComponent is set (for non-native components) */}
+        {activeComponent && !showTimeDashboard && !showQiblaFinder && !showMosqueFinder && (
+          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
+            {activeComponent === 'read-quran' && <ReadQuran key="read-quran" />}
+          </div>
+        )}
+
+        {/* Main Content or Native Components */}
+        {showTimeDashboard ? (
+          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
+            <TimeDashboard />
+          </div>
+        ) : showQiblaFinder ? (
+          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
+            <QiblaFinder />
+          </div>
+        ) : showMosqueFinder ? (
+          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
+            <MosqueFinder />
+          </div>
+        ) : (
+        <main className="relative z-10 pb-56 mt-16 sm:mt-0">
 
           
-          <div className="container max-w-7xl mx-auto px-6">
+          <div className="w-full max-w-4xl mx-auto px-6 sm:px-0">
+            
+            
             
 
 
@@ -1210,30 +1052,130 @@ function HomeContent() {
 
 
 
-            {/* Chat Section - Fixed at bottom when chat is active */}
-            {chatManager.isChatActive && (
-              <div className="fixed left-0 right-0 z-30 w-full" style={{ bottom: '0px' }}>
-                <ChatSectionOutput 
-                  content={chatManager.content}
-                  setContent={chatManager.setContent}
-                  askQuran={handleAskQuran}
-                  resetForm={chatManager.resetForm}
-                  isProcessing={chatManager.isProcessing}
-                  error={chatManager.error}
-                  showSummary={chatManager.showSummary}
-                  showTranslateSection={chatManager.showTranslateSection}
-                  // Language translation props
-                  originalText={chatManager.summary}
-                  onTranslationChange={handleTranslationChange}
-                  isTranslating={chatManager.isTranslating}
-                  translationProgress={chatManager.translationProgress}
-                  currentLanguage={chatManager.currentLanguage}
-                  // Content type selection props
-                  selectedContentTypes={selectedContentTypes}
-                  onContentTypeChange={handleContentTypeChange}
-                  // Stop operation functionality
-                  onStopOperation={handleStopOperation}
+            {/* Floating Wavy Animation - Show when processing */}
+            {chatManager.isProcessing && (
+              <div className="flex items-center justify-center min-h-[400px] py-20">
+                <WaveAnimationContainer 
+                  isVisible={true} 
+                  className="bg-transparent"
                 />
+              </div>
+            )}
+
+            {/* Chat Output - Show when there's content to display */}
+            {!chatManager.isProcessing && chatManager.showSummary && (
+              <div className="relative">
+                {/* Vertical Action Bar - Fixed Position on Right Side, Mobile & Desktop */}
+                <div 
+                  className="flex flex-col items-center space-y-3 fixed z-20"
+                  style={{
+                    right: '16px', // Fixed position from right edge on all devices
+                    top: `calc(50% - 80px)` // Slightly higher than center
+                  }}
+                >
+                  {/* Share Button - On Top with Heartbeat Animation */}
+                  <button
+                    onClick={() => {
+                      // Track share button click in Google Analytics
+                      if (typeof window !== 'undefined' && (window as any).gtag) {
+                        (window as any).gtag('event', 'share_button_click', {
+                          event_category: 'engagement',
+                          event_label: 'share_button',
+                          custom_parameter_1: chatManager.submittedQuestion ? chatManager.submittedQuestion.substring(0, 100) : 'unknown_question',
+                          custom_parameter_2: 'vertical_action_bar'
+                        });
+                      }
+
+                      // If we have a share URL, open modal directly
+                      if (shareUrl) {
+                        setShowShareModal(true);
+                      } else {
+                        // If no share URL, trigger the share creation first
+                        setPendingShareModal(true);
+                        handleShareContent();
+                      }
+                    }}
+                    disabled={isSharing}
+                    className={`p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 hover:animate-none ${
+                      showShareSuccess 
+                        ? 'text-green-700 dark:text-green-300' 
+                        : isSharing
+                        ? 'text-green-400 dark:text-green-600 cursor-not-allowed'
+                        : 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40'
+                    }`}
+                    style={{ animation: 'bounce 4s infinite' }}
+                    title={showShareSuccess ? "Share link copied!" : "Share this content"}
+                  >
+                    {isSharing ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Text Size Toggle */}
+                  <button
+                    onClick={() => {
+                      const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+                      const currentIndex = sizes.indexOf(textSize);
+                      const nextIndex = (currentIndex + 1) % sizes.length;
+                      setTextSize(sizes[nextIndex]);
+                    }}
+                    className="p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40"
+                    title={`Text size: ${textSize} (click to change)`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </button>
+
+                </div>
+
+                {/* Original Content Container - Width Unchanged */}
+                <div className="space-y-6 py-6">
+                {/* User Question Display */}
+                {chatManager.submittedQuestion && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg p-4 shadow-sm"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mt-0.5">
+                        <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono uppercase tracking-wide mb-1">
+                          Question
+                        </div>
+                        <div className={`text-gray-800 dark:text-gray-200 leading-relaxed ${
+                          textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+                        }`}>
+                          {chatManager.submittedQuestion}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                  {/* AI Response Content - Original Width */}
+                <div 
+                    className={`text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed transition-all duration-200 ${
+                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+                  }`}
+                  style={{ 
+                    zIndex: 4,
+                    position: 'relative',
+                    pointerEvents: 'auto'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: chatManager.displayedContent || chatManager.summary }}
+                />
+                </div>
               </div>
             )}
 
@@ -1241,38 +1183,6 @@ function HomeContent() {
 
 
 
-            {/* Thinking Process - Above ChatSection when processing */}
-            {/* Removed - Now shows in ChatSection above Translate section */}
-
-            {/* Response Section */}
-            <div className="relative">
-              {/* Wave Animation Container - Shows in center when processing */}
-              {chatManager.isProcessing && chatManager.isChatActive && (
-                <div className="flex items-center justify-center min-h-[400px] py-20">
-                  <WaveAnimationContainer 
-                    isVisible={true} 
-                    className="bg-transparent"
-                  />
-                </div>
-              )}
-              
-              {/* Response Content - Hidden during processing to show animation */}
-              {!chatManager.isProcessing && (
-                <ResponseSection
-                  showSummary={chatManager.showSummary}
-                  summary={chatManager.summary}
-                  copied={chatManager.copied}
-                  displayedContent={chatManager.displayedContent}
-                  onCopyAIContent={handleCopyAIContent}
-                  userQuestion={chatManager.submittedQuestion}
-                  onQuestionEdit={handleSuggestedQuestionClick}
-                  textSize={textSize}
-                  shareUrl={shareUrl}
-                  onShare={handleShareContent}
-                  selectedContentTypes={selectedContentTypes}
-                />
-              )}
-            </div>
 
             {/* Sources Section - Always visible when there's content */}
             {chatManager.showSummary && !chatManager.isProcessing && chatManager.displayedContent && (
@@ -1286,6 +1196,8 @@ function HomeContent() {
             
           </div>
         </main>
+        )}
+
 
         
         {/* PWA Install Prompt */}
@@ -1297,6 +1209,16 @@ function HomeContent() {
         {/* Dynamic Theme Color */}
         <DynamicThemeColor />
       </div>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={shareUrl}
+        title={chatManager.submittedQuestion?.length ? (chatManager.submittedQuestion.length > 50 ? chatManager.submittedQuestion.substring(0, 50) + '...' : chatManager.submittedQuestion) : 'QuranGPT Response'}
+        question={chatManager.submittedQuestion || ''}
+        isCreatingShare={isSharing}
+      />
 
       {/* Tafsir functionality is now handled in ResponseSection component */}
     </>

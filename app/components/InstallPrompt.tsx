@@ -20,7 +20,7 @@ export default function InstallPrompt() {
     // Check if device is mobile
     const checkMobile = () => {
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                            window.innerWidth <= 768;
+                            (typeof window !== 'undefined' && window.innerWidth <= 768);
       setIsMobile(isMobileDevice);
     };
 
