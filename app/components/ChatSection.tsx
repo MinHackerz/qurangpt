@@ -461,7 +461,7 @@ export default function ChatSection({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute -top-12 left-0 z-20 bg-white dark:bg-gray-800 border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg shadow-lg p-1.5 min-w-[200px] content-type-dropdown"
+                  className="absolute -top-12 left-0 z-[9999] bg-white dark:bg-gray-800 border-[0.5px] border-gray-600 dark:border-gray-400 rounded-lg shadow-lg p-1.5 min-w-[200px] content-type-dropdown"
                 >
                   <div className="space-y-1">
                     <button

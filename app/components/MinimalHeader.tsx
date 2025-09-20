@@ -209,7 +209,7 @@ export default function MinimalHeader({
       className="fixed top-0 left-0 right-0 z-40 sm:p-6"
     >
       {/* Mobile: Minimalist horizontal header layout */}
-      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-300 dark:border-gray-500">
+      <div className="flex sm:hidden items-center justify-between w-full px-4 py-3 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50">
         {/* Left side: QuranGPT Title */}
         <div className="flex items-center">
           <h1 className="text-lg font-light tracking-tight text-gray-900 dark:text-white">
@@ -362,41 +362,7 @@ export default function MinimalHeader({
                   {/* Divider */}
                   <div className="h-px bg-gray-200/70 dark:bg-gray-700/70 my-2" />
 
-                  {/* Theme Toggle (Mobile only: Light/Dark) */}
-                  <button
-                    onClick={() => handleMobileMenuAction(() => {
-                      if (!mounted) return;
-                      setTheme?.(theme === 'light' ? 'dark' : 'light');
-                    })}
-                    className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                  >
-                    {mounted && theme === 'light' ? (
-                      <SunIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                    ) : (
-                      <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                    )}
-                    <span className="text-sm text-gray-800 dark:text-gray-200">
-                      {mounted && theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                    </span>
-                  </button>
 
-                  {/* Text Size Toggle - Only show when there's a user question */}
-                  {userQuestion && onTextSizeChange && (
-                    <button
-                      onClick={() => handleMobileMenuAction(() => {
-                        const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
-                        const currentIndex = sizes.indexOf(textSize);
-                        const nextIndex = (currentIndex + 1) % sizes.length;
-                        onTextSizeChange(sizes[nextIndex]);
-                      })}
-                      className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                    >
-                      <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M7 4h10M7 4l-2 16h14l-2-16M10 9v6M14 9v6" />
-                      </svg>
-                      <span className="text-sm text-gray-800 dark:text-gray-200">Text Size: {textSize}</span>
-                    </button>
-                  )}
 
 
                   {/* Transparency Link */}
@@ -419,6 +385,49 @@ export default function MinimalHeader({
                     <Code className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
                     <span className="text-sm text-gray-800 dark:text-gray-200">Contact Developer</span>
                   </button>
+
+                  {/* Divider */}
+                  <div className="h-px bg-gray-200/70 dark:bg-gray-700/70 my-2" />
+
+                  {/* Theme Toggle - Inline Light/Dark Mode Icons */}
+                  <div className="flex items-center justify-center gap-2 px-3 py-2">
+                    <button
+                      onClick={() => handleMobileMenuAction(() => {
+                        if (!mounted) return;
+                        setTheme?.('light');
+                      })}
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                        mounted && theme === 'light'
+                          ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                      title="Light Mode"
+                    >
+                      <SunIcon className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                      onClick={() => handleMobileMenuAction(() => {
+                        if (!mounted) return;
+                        setTheme?.('dark');
+                      })}
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                        mounted && theme === 'dark'
+                          ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                      title="Dark Mode"
+                    >
+                      <MoonIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Free Palestine - Minimal Footer */}
+                  <div className="flex items-center justify-center px-3 py-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-light">
+                      Free Palestine
+                    </span>
+                  </div>
                 </div>
               </div>
             </motion.div>

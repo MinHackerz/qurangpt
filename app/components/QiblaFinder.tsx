@@ -164,8 +164,17 @@ export default function QiblaFinder() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Check compass support
-    checkCompassSupport();
+    // Check compass support and auto-initialize immediately
+    const initCompass = async () => {
+      checkCompassSupport();
+      
+      // Auto-initialize compass immediately if supported
+      if (typeof DeviceOrientationEvent !== 'undefined') {
+        await initializeCompass();
+      }
+    };
+    
+    initCompass();
     
     // Request location permission and get current position
     if (navigator.geolocation) {
@@ -281,15 +290,6 @@ export default function QiblaFinder() {
     return directions[index];
   };
 
-  // Manual compass initialization (requires user gesture)
-  const initializeCompassManually = useCallback(async () => {
-    if (!compassSupported) {
-      setCompassError('Compass not supported on this device.');
-      return;
-    }
-    
-    await initializeCompass();
-  }, [compassSupported, initializeCompass]);
 
   const requestLocation = useCallback(async () => {
     setError(null);
@@ -426,29 +426,15 @@ export default function QiblaFinder() {
                   
                   {/* Compass Status */}
                   <div className="mt-3 flex items-center justify-center space-x-2">
-                    {compassSupported ? (
-                      compassCalibrated ? (
-                        <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs">Compass Active</span>
-                        </div>
-                      ) : orientationHistoryRef.current.length > 0 && orientationHistoryRef.current.length < 5 ? (
-                        <div className="flex items-center space-x-1 text-yellow-600 dark:text-yellow-400">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs">Calibrating...</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={initializeCompassManually}
-                          className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors touch-manipulation"
-                        >
-                          Enable Compass
-                        </button>
-                      )
+                    {compassSupported && compassCalibrated ? (
+                      <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs">Compass Active</span>
+                      </div>
                     ) : (
                       <div className="flex items-center space-x-1 text-gray-500 dark:text-gray-400">
                         <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                        <span className="text-xs">Compass Unavailable</span>
+                        <span className="text-xs">Compass Inactive</span>
                       </div>
                     )}
                   </div>
@@ -554,7 +540,7 @@ export default function QiblaFinder() {
                         </li>
                         <li className="flex items-start space-x-2">
                           <span className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0">•</span>
-                          <span>Tap "Enable Compass" for real-time direction</span>
+                          <span>Compass automatically tracks your device orientation</span>
                         </li>
                       </>
                     ) : (
