@@ -1,6 +1,6 @@
 # Google Maps API Setup Guide
 
-This guide will help you set up Google Maps API for the Qibla Finder and Mosque Finder components.
+This guide will help you set up Google Maps API for the Mosque Finder component.
 
 ## Quick Start
 
@@ -66,18 +66,7 @@ GOOGLE_MAPS_API_KEY=AIzaSyB1234567890abcdefghijklmnopqrstuvwxyz
 
 ## Features Enabled
 
-With Google Maps API, both Qibla Finder and Mosque Finder components include:
-
-### Qibla Finder:
-- **Interactive Map**: Shows your current location and Qibla direction
-- **Custom Styling**: Minimalistic map design that matches the app theme
-- **Qibla Direction Line**: Visual line pointing to the Kaaba
-- **Mosque Icon**: Custom mosque icon marking the Qibla direction
-- **Location Marker**: Blue dot showing your current position
-- **Modern Markers**: Uses AdvancedMarkerElement API with fallback to traditional markers
-- **Performance Optimized**: Async loading with proper error handling
-
-### Mosque Finder:
+With Google Maps API, the Mosque Finder component includes:
 - **Interactive Map**: Displays nearby mosques with custom markers
 - **Real-time Directions**: Shows driving directions to selected mosques
 - **Mosque Details**: Phone numbers, websites, ratings, and opening hours

@@ -15,7 +15,6 @@ import {
     VerticalActionBar,
     TimeDashboard,
     ReadQuran,
-    QiblaFinder,
     MosqueFinder
 } from './components';
 import ShareModal from './components/ShareModal';
@@ -55,7 +54,6 @@ function HomeContent() {
   const [sidebarOffset, setSidebarOffset] = useState<number>(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [showTimeDashboard, setShowTimeDashboard] = useState<boolean>(false);
-  const [showQiblaFinder, setShowQiblaFinder] = useState<boolean>(false);
   const [showMosqueFinder, setShowMosqueFinder] = useState<boolean>(false);
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
@@ -66,15 +64,12 @@ function HomeContent() {
     if (component) {
       // First, hide all other components and views
       setShowTimeDashboard(false);
-      setShowQiblaFinder(false);
       setShowMosqueFinder(false);
       setActiveComponent(null);
       chatManager.setIsChatActive(false);
       
       // Then show only the requested component
-      if (component === 'qibla-finder') {
-        setShowQiblaFinder(true);
-      } else if (component === 'mosque-finder') {
+      if (component === 'mosque-finder') {
         setShowMosqueFinder(true);
       } else if (component === 'read-quran') {
         setActiveComponent(component);
@@ -115,7 +110,6 @@ function HomeContent() {
       // Hide all other components and views when opening dashboard
       if (shouldOpen) {
         chatManager.setIsChatActive(false);
-        setShowQiblaFinder(false);
         setShowMosqueFinder(false);
         setActiveComponent(null);
       }
@@ -123,7 +117,6 @@ function HomeContent() {
     const onOpenChat = () => {
       // Hide all components and views first
       setShowTimeDashboard(false);
-      setShowQiblaFinder(false);
       setShowMosqueFinder(false);
       setActiveComponent(null);
       
@@ -162,7 +155,6 @@ function HomeContent() {
     const onResetToDefault = () => {
       // Hide all components and views first
       setShowTimeDashboard(false);
-      setShowQiblaFinder(false);
       setShowMosqueFinder(false);
       setActiveComponent(null);
       // Reset chat state to default (like clicking Clear and Reset)
@@ -1001,7 +993,7 @@ function HomeContent() {
 
 
         {/* Comprehensive Chat Section - Handles all states: hero, processing, and output */}
-        {!showTimeDashboard && !showQiblaFinder && !showMosqueFinder && !activeComponent && (
+        {!showTimeDashboard && !showMosqueFinder && !activeComponent && (
           <ChatSection 
             getGreetingMessage={getGreetingMessage}
             content={chatManager.content}
@@ -1019,7 +1011,7 @@ function HomeContent() {
 
 
         {/* Component Display - Show when activeComponent is set (for non-native components) */}
-        {activeComponent && !showTimeDashboard && !showQiblaFinder && !showMosqueFinder && (
+        {activeComponent && !showTimeDashboard && !showMosqueFinder && (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
             {activeComponent === 'read-quran' && <ReadQuran key="read-quran" />}
           </div>
@@ -1029,10 +1021,6 @@ function HomeContent() {
         {showTimeDashboard ? (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
             <TimeDashboard />
-          </div>
-        ) : showQiblaFinder ? (
-          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
-            <QiblaFinder />
           </div>
         ) : showMosqueFinder ? (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
