@@ -297,6 +297,34 @@ export default function ReadQuran() {
     }
   };
 
+  // Navigate to the next surah directly from ayah view
+  const goToNextSurah = () => {
+    if (!selectedSurah) return;
+    const currentIndex = surahs.findIndex((s) => s.number === selectedSurah.number);
+    const nextSurah = currentIndex >= 0 ? surahs[currentIndex + 1] : null;
+    if (!nextSurah) return;
+
+    stopCurrentAudio();
+    setSelectedSurah(nextSurah);
+    setShowSurahList(false);
+    setCurrentAyah(0);
+    fetchAyahs(nextSurah.number);
+  };
+
+  // Navigate to the previous surah directly from ayah view
+  const goToPreviousSurah = () => {
+    if (!selectedSurah) return;
+    const currentIndex = surahs.findIndex((s) => s.number === selectedSurah.number);
+    const prevSurah = currentIndex > 0 ? surahs[currentIndex - 1] : null;
+    if (!prevSurah) return;
+
+    stopCurrentAudio();
+    setSelectedSurah(prevSurah);
+    setShowSurahList(false);
+    setCurrentAyah(0);
+    fetchAyahs(prevSurah.number);
+  };
+
   const prevAyah = () => {
     stopCurrentAudio(); // Stop audio when navigating to previous ayah
     if (currentAyah > 0) {
@@ -1013,34 +1041,66 @@ export default function ReadQuran() {
                           </div>
                         </div>
                       </div>
+
                     </div>
 
                     {/* Navigation Controls - Bottom */}
-                    <div className="flex items-center justify-center space-x-3 mt-8">
-                      <button
+                    <div className="flex items-center justify-between mt-8 w-full">
+                      {/* Previous Surah (left-aligned) */}
+                      {selectedSurah && surahs.findIndex(s => s.number === selectedSurah.number) > 0 ? (
+                        <button
+                          onClick={goToPreviousSurah}
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          title="Go to previous surah"
+                        >
+                          <ChevronLeftIcon className="w-4 h-4" />
+                          <span className="hidden sm:inline">Previous Surah</span>
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+
+                      {/* Ayah navigation and progress (center) */}
+                      <div className="flex items-center space-x-3">
+                        <button
                         onClick={prevAyah}
                         disabled={currentAyah === 0}
                         className="p-2 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
                         <ChevronLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                      </button>
+                        </button>
 
-                      <div className="flex-1 max-w-xs">
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
-                          <div
-                            className="bg-gray-500 h-1 rounded-full transition-all duration-500"
-                            style={{ width: `${((currentAyah + 1) / ayahs.length) * 100}%` }}
-                          ></div>
+                        <div className="flex-1 max-w-xs">
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                            <div
+                              className="bg-gray-500 h-1 rounded-full transition-all duration-500"
+                              style={{ width: `${((currentAyah + 1) / ayahs.length) * 100}%` }}
+                            ></div>
+                          </div>
                         </div>
-                      </div>
 
-                      <button
+                        <button
                         onClick={nextAyah}
                         disabled={currentAyah === ayahs.length - 1}
                         className="p-2 rounded-full border border-gray-400 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                       >
                         <ChevronRightIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                      </button>
+                        </button>
+                      </div>
+
+                      {/* Next Surah (right-aligned) */}
+                      {selectedSurah && surahs.findIndex(s => s.number === selectedSurah.number) < surahs.length - 1 ? (
+                        <button
+                          onClick={goToNextSurah}
+                          className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          title="Go to next surah"
+                        >
+                          <span className="hidden sm:inline">Next Surah</span>
+                          <ChevronRightIcon className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <div />
+                      )}
                     </div>
                   </div>
                 </div>

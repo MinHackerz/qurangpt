@@ -42,11 +42,12 @@ body {
   
   /* PWA optimizations */
   -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+  /* Allow text selection globally */
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
   
   /* Prevent zoom on input focus (iOS) */
   -webkit-text-size-adjust: 100%;
@@ -682,7 +683,7 @@ body {
   font-weight: 500;
   opacity: 0.95;
   transition: all 0.2s ease-in-out;
-  user-select: none;
+  user-select: text;
   pointer-events: none;
   z-index: 20;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -1161,6 +1162,7 @@ body {
   .ayah-audio-play-btn {
     cursor: pointer !important;
     pointer-events: auto !important;
+    /* Keep buttons non-selectable, but don't affect general text */
     user-select: none !important;
     -webkit-user-select: none !important;
     -moz-user-select: none !important;
@@ -1341,7 +1343,8 @@ body {
   @media (display-mode: standalone) {
     /* Hide browser UI elements when in standalone mode */
     body {
-      -webkit-user-select: none;
+      /* Allow selection in PWA too */
+      -webkit-user-select: text;
       -webkit-touch-callout: none;
     }
     

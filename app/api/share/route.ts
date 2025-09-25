@@ -160,8 +160,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clean up old entries first
-    await cleanupOldEntries();
+    // Trigger cleanup in the background to avoid delaying share creation
+    // This preserves functionality while reducing response latency
+    cleanupOldEntries().catch(() => {});
 
     // Generate unique share ID
     const shareId = uuidv4();

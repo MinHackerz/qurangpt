@@ -882,7 +882,7 @@ export default function SharePage() {
                   }}
                 >
                   {/* Main Input Field - Minimalist Professional - Exact ChatSection Design */}
-                  <div className="relative bg-transparent rounded-xl border-[0.5px] border-gray-400 dark:border-gray-400 transition-all duration-200 px-3 sm:px-4">
+                  <div className="relative bg-transparent rounded-xl border-[0.5px] border-gray-400 dark:border-gray-400 shadow-md dark:shadow-[0_8px_24px_rgba(255,255,255,0.18)] dark:ring-1 dark:ring-white/10 transition-all duration-200 px-3 sm:px-4">
                     
                     {/* Placeholder Text - At the top, hidden when typing */}
                     {!inputValue.trim() && (

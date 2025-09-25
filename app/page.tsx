@@ -15,7 +15,7 @@ import {
     VerticalActionBar,
     TimeDashboard,
     ReadQuran,
-    MosqueFinder
+    MosqueFinder,
 } from './components';
 import ShareModal from './components/ShareModal';
 import { useTheme } from './contexts/ThemeContext';
@@ -54,7 +54,7 @@ function HomeContent() {
   const [sidebarOffset, setSidebarOffset] = useState<number>(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [showTimeDashboard, setShowTimeDashboard] = useState<boolean>(false);
-  const [showMosqueFinder, setShowMosqueFinder] = useState<boolean>(false);
+  
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
   // Define the component switching handler outside useEffect
@@ -64,14 +64,11 @@ function HomeContent() {
     if (component) {
       // First, hide all other components and views
       setShowTimeDashboard(false);
-      setShowMosqueFinder(false);
       setActiveComponent(null);
       chatManager.setIsChatActive(false);
       
       // Then show only the requested component
-      if (component === 'mosque-finder') {
-        setShowMosqueFinder(true);
-      } else if (component === 'read-quran') {
+      if (component === 'read-quran' || component === 'mosque-finder') {
         setActiveComponent(component);
       }
       console.log('Active component set to:', component); // Debug log
@@ -110,14 +107,12 @@ function HomeContent() {
       // Hide all other components and views when opening dashboard
       if (shouldOpen) {
         chatManager.setIsChatActive(false);
-        setShowMosqueFinder(false);
         setActiveComponent(null);
       }
     };
     const onOpenChat = () => {
       // Hide all components and views first
       setShowTimeDashboard(false);
-      setShowMosqueFinder(false);
       setActiveComponent(null);
       
       // Toggle chat state - if chat is already active, close it; if not, open it
@@ -155,7 +150,6 @@ function HomeContent() {
     const onResetToDefault = () => {
       // Hide all components and views first
       setShowTimeDashboard(false);
-      setShowMosqueFinder(false);
       setActiveComponent(null);
       // Reset chat state to default (like clicking Clear and Reset)
       chatManager.resetForm();
@@ -589,7 +583,7 @@ function HomeContent() {
         ? chatManager.submittedQuestion.substring(0, 50) + '...' 
         : chatManager.submittedQuestion;
 
-      // Call the share API
+      // Call the share API (no-cache to avoid any stale intermediaries)
       const response = await fetch('/api/share', {
         method: 'POST',
         headers: {
@@ -599,7 +593,8 @@ function HomeContent() {
           question: chatManager.submittedQuestion,
           response: responseContent,
           title: title
-        })
+        }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -993,7 +988,7 @@ function HomeContent() {
 
 
         {/* Comprehensive Chat Section - Handles all states: hero, processing, and output */}
-        {!showTimeDashboard && !showMosqueFinder && !activeComponent && (
+        {!showTimeDashboard && !activeComponent && (
           <ChatSection 
             getGreetingMessage={getGreetingMessage}
             content={chatManager.content}
@@ -1011,9 +1006,10 @@ function HomeContent() {
 
 
         {/* Component Display - Show when activeComponent is set (for non-native components) */}
-        {activeComponent && !showTimeDashboard && !showMosqueFinder && (
+        {activeComponent && !showTimeDashboard && (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
             {activeComponent === 'read-quran' && <ReadQuran key="read-quran" />}
+            {activeComponent === 'mosque-finder' && <MosqueFinder key="mosque-finder" />}
           </div>
         )}
 
@@ -1021,10 +1017,6 @@ function HomeContent() {
         {showTimeDashboard ? (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
             <TimeDashboard />
-          </div>
-        ) : showMosqueFinder ? (
-          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
-            <MosqueFinder />
           </div>
         ) : (
         <main className="relative z-10 pb-56 mt-16 sm:mt-0">
