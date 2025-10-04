@@ -169,6 +169,20 @@ function HomeContent() {
       setActiveComponent(null);
     };
 
+    const onModalState = (e: any) => {
+      const isOpen = e?.detail?.isOpen || false;
+      setIsModalOpen(isOpen);
+      if (isOpen && e.detail.selectedDate && e.detail.selectedEvents) {
+        setModalData({
+          selectedDate: e.detail.selectedDate,
+          selectedEvents: e.detail.selectedEvents
+        });
+      } else if (!isOpen) {
+        // Clear modal data when closing
+        setModalData({ selectedDate: null, selectedEvents: [] });
+      }
+    };
+
     window.addEventListener('qgpt:sidebar', onSidebar as EventListener);
     window.addEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
     window.addEventListener('qgpt:open-chat', onOpenChat as EventListener);
@@ -176,6 +190,7 @@ function HomeContent() {
     window.addEventListener('qgpt:set-theme', onSetTheme as EventListener);
     window.addEventListener('qgpt:show-component', onShowComponent as EventListener);
     window.addEventListener('qgpt:close-component', onCloseComponent as EventListener);
+    window.addEventListener('qgpt:modal-state', onModalState as EventListener);
     return () => {
       window.removeEventListener('qgpt:sidebar', onSidebar as EventListener);
       window.removeEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
@@ -184,6 +199,7 @@ function HomeContent() {
       window.removeEventListener('qgpt:set-theme', onSetTheme as EventListener);
       window.removeEventListener('qgpt:show-component', onShowComponent as EventListener);
       window.removeEventListener('qgpt:close-component', onCloseComponent as EventListener);
+      window.removeEventListener('qgpt:modal-state', onModalState as EventListener);
     };
   }, [onShowComponent, chatManager, showTimeDashboard, isMobile, setTheme, sidebarOffset]);
 
@@ -216,6 +232,11 @@ function HomeContent() {
   const [showShareSuccess, setShowShareSuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [pendingShareModal, setPendingShareModal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalData, setModalData] = useState<{
+    selectedDate: { gDate: Date; hDay: number } | null;
+    selectedEvents: any[];
+  }>({ selectedDate: null, selectedEvents: [] });
   
   // Content type selection state
   const [selectedContentTypes, setSelectedContentTypes] = useState({
@@ -961,7 +982,7 @@ function HomeContent() {
 
       
       <div 
-        className="min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden" 
+        className={`min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden transition-all duration-300 ${isModalOpen ? 'blur-sm pointer-events-none' : ''}`}
         style={{ 
           paddingLeft: isMobile ? '0px' : `${sidebarOffset}px` 
         }}
@@ -1271,6 +1292,119 @@ function HomeContent() {
         question={chatManager.submittedQuestion || ''}
         isCreatingShare={isSharing}
       />
+
+      {/* Event Details Modal - Outside of blurred container */}
+      {isModalOpen && modalData.selectedDate && modalData.selectedEvents.length > 0 && (
+        <div className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4" onClick={() => {
+          const event = new CustomEvent('qgpt:modal-state', { detail: { isOpen: false, clearSelectedDate: true } });
+          window.dispatchEvent(event);
+        }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[75vh] overflow-hidden border border-gray-200/50 dark:border-gray-700/50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header with Gradient */}
+            <div className="relative bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-mono tracking-wide text-white">
+                    {modalData.selectedDate && new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+                      timeZone: 'UTC',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    }).format(modalData.selectedDate.gDate)}
+                  </h3>
+                  <p className="text-emerald-100 text-sm mt-1 font-mono tracking-wide">Islamic Calendar Event</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('qgpt:modal-state', { detail: { isOpen: false, clearSelectedDate: true } });
+                    window.dispatchEvent(event);
+                  }}
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-all duration-200 touch-manipulation"
+                  aria-label="Close"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[65vh] sm:max-h-[55vh]">
+              {modalData.selectedEvents.length > 0 ? (
+                <div className="space-y-6">
+                  {modalData.selectedEvents.map((event, index) => (
+                    <div key={index} className="relative">
+                      {/* Event Type Badge */}
+                      <div className="mb-4">
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                          event.type === 'major' 
+                            ? 'bg-red-500 text-white shadow-lg shadow-red-500/25' 
+                            : event.type === 'religious'
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                            : event.type === 'historical'
+                            ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/25'
+                            : 'bg-gray-500 text-white shadow-lg shadow-gray-500/25'
+                        }`}>
+                          {event.type}
+                        </span>
+                      </div>
+
+                      {/* Event Title */}
+                      <h4 className="text-xl sm:text-2xl font-mono tracking-wide text-gray-900 dark:text-gray-100 mb-4 leading-tight">
+                        {event.name}
+                      </h4>
+
+                      {/* Description */}
+                      <div className="mb-6">
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base font-mono tracking-wide">
+                          {event.description}
+                        </p>
+                      </div>
+
+                      {/* Significance Card */}
+                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                              <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="text-sm font-mono tracking-wide font-semibold text-gray-900 dark:text-gray-100 mb-2">Significance</h5>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-mono tracking-wide">
+                              {event.significance}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-mono tracking-wide font-semibold text-gray-900 dark:text-gray-100 mb-2">No Events</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-mono tracking-wide">No notable events found for this date.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Tafsir functionality is now handled in ResponseSection component */}
     </>

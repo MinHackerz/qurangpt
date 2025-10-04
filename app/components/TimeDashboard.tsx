@@ -36,6 +36,24 @@ interface IslamicData {
   };
 }
 
+// 7-Segment LED Display Logic
+const getSegmentState = (char: string, segment: string): boolean => {
+  const segments: { [key: string]: string[] } = {
+    '0': ['A', 'B', 'C', 'D', 'E', 'F'],
+    '1': ['B', 'C'],
+    '2': ['A', 'B', 'G', 'E', 'D'],
+    '3': ['A', 'B', 'G', 'C', 'D'],
+    '4': ['F', 'G', 'B', 'C'],
+    '5': ['A', 'F', 'G', 'C', 'D'],
+    '6': ['A', 'F', 'G', 'E', 'C', 'D'],
+    '7': ['A', 'B', 'C'],
+    '8': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+    '9': ['A', 'B', 'C', 'D', 'F', 'G']
+  };
+  
+  return segments[char]?.includes(segment) || false;
+};
+
 export default function TimeDashboard() {
   const { theme } = useTheme();
   const [islamicData, setIslamicData] = useState<IslamicData | null>(null);
@@ -46,6 +64,31 @@ export default function TimeDashboard() {
   const [selectedDate, setSelectedDate] = useState<{ gDate: Date; hDay: number } | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState<IslamicEvent[]>([]);
+
+  // Notify parent component about modal state for global blur effect
+  useEffect(() => {
+    const event = new CustomEvent('qgpt:modal-state', { 
+      detail: { 
+        isOpen: showEventModal && selectedDate && selectedEvents.length > 0,
+        selectedDate,
+        selectedEvents
+      } 
+    });
+    window.dispatchEvent(event);
+  }, [showEventModal, selectedDate, selectedEvents]);
+
+  // Listen for modal close events to clear selected date
+  useEffect(() => {
+    const handleModalState = (e: any) => {
+      if (e.detail?.clearSelectedDate && !e.detail?.isOpen) {
+        setSelectedDate(null);
+        setSelectedEvents([]);
+      }
+    };
+    
+    window.addEventListener('qgpt:modal-state', handleModalState);
+    return () => window.removeEventListener('qgpt:modal-state', handleModalState);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -102,8 +145,9 @@ export default function TimeDashboard() {
 
   const formatHijriParts = (date: Date) => {
     // Use locale with calendar extension for islamic-umalqura
+    // Use UTC to avoid timezone-related date shifts
     const formatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
-      timeZone,
+      timeZone: 'UTC',
       year: 'numeric',
       month: 'numeric',
       day: 'numeric'
@@ -125,41 +169,50 @@ export default function TimeDashboard() {
 
   const getHijriMonthInfo = (refDate: Date) => {
     // Find the Gregorian date corresponding to day 1 of the Hijri month containing refDate
+    // Use UTC to avoid timezone-related date shifts
     const today = new Date(refDate.getTime());
     const todayParts = formatHijriParts(today);
     let cursor = new Date(today.getTime());
+    
+    // Search backwards to find the first day of the current Hijri month
     for (let i = 0; i < 35; i++) {
       const p = formatHijriParts(cursor);
       if (p.day === 1 && p.month === todayParts.month && p.year === todayParts.year) break;
-      cursor.setDate(cursor.getDate() - 1);
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
     }
     const monthStart = new Date(cursor.getTime());
 
     // Collect days until next month (max 31 defensive)
     const days: { gDate: Date; hDay: number }[] = [];
     let d = new Date(monthStart.getTime());
+    let currentMonth = todayParts.month;
+    let currentYear = todayParts.year;
+    
     for (let i = 0; i < 31; i++) {
       const p = formatHijriParts(d);
-      if (i > 0) {
-        const prev = formatHijriParts(new Date(d.getTime() - 24 * 60 * 60 * 1000));
-        if (p.month !== prev.month) break;
+      
+      // Check if we've moved to the next month
+      if (i > 0 && (p.month !== currentMonth || p.year !== currentYear)) {
+        break;
       }
+      
       days.push({ gDate: new Date(d.getTime()), hDay: p.day });
-      d.setDate(d.getDate() + 1);
+      d.setUTCDate(d.getUTCDate() + 1);
     }
 
     // Weekday offset for first cell (0=Sun..6=Sat)
-    const firstWeekday = parseInt(new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).formatToParts(monthStart).find(p => p.type === 'weekday') ? new Date(monthStart.toLocaleString('en-US', { timeZone })).getDay().toString() : monthStart.getDay().toString());
+    // Simplified weekday calculation using UTC to avoid timezone issues
+    const firstWeekday = monthStart.getUTCDay();
 
     // Hijri month/year label
     const monthLabel = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
-      timeZone,
+      timeZone: 'UTC',
       month: 'long',
       year: 'numeric'
     }).format(monthStart);
 
     const monthParts = formatHijriParts(monthStart);
-    return { monthStart, monthLabel, days, firstWeekday: new Date(monthStart.toLocaleString('en-US', { timeZone })).getDay(), hijriYear: monthParts.year, hijriMonth: monthParts.month };
+    return { monthStart, monthLabel, days, firstWeekday, hijriYear: monthParts.year, hijriMonth: monthParts.month };
   };
 
   const hijri = getHijriMonthInfo(calendarRefDate);
@@ -332,13 +385,14 @@ export default function TimeDashboard() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
-      className="min-h-[70vh] flex items-start justify-center"
-    >
-      <div className="w-full mx-auto px-6 sm:px-8 py-8">
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className="min-h-[70vh] flex items-start justify-center"
+      >
+        <div className="w-full mx-auto px-6 sm:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-xl font-mono tracking-wide text-gray-700 dark:text-gray-300">Time Dashboard</h2>
@@ -349,55 +403,332 @@ export default function TimeDashboard() {
           )}
         </div>
 
-        {/* Grid */
-        }
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Time */}
-          <div className="rounded-xl border border-gray-300 dark:border-gray-600 p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Time</div>
-            <div className="text-3xl font-mono text-gray-900 dark:text-gray-100">{loading ? '— — : — — : — —' : timeString}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{loading ? '—' : dateString}</div>
+          {/* LED Clock */}
+          <div className="rounded-xl border border-gray-300 dark:border-gray-600 p-3 bg-transparent">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Time</div>
+            <div className="relative">
+              {/* LED Clock Display */}
+              <div className="bg-transparent rounded-lg p-2">
+                <div className="flex justify-center items-center space-x-1">
+                  {loading ? (
+                    <div className="flex space-x-1">
+                      {[1,2,3,4,5,6,7,8].map((i) => (
+                        <div key={i} className="w-8 h-12 bg-gray-300 dark:bg-gray-700 rounded-sm opacity-30"></div>
+                      ))}
+                    </div>
+                  ) : (
+                    timeString.split('').map((char, index) => (
+                      <div key={index} className="flex items-center">
+                        {char === ':' ? (
+                          <div className="w-2 h-12 flex flex-col justify-center items-center space-y-1">
+                            <div className="w-1 h-1 bg-red-500 rounded-full" style={{
+                              boxShadow: '0 0 8px #ef4444, 0 0 16px #ef4444'
+                            }}></div>
+                            <div className="w-1 h-1 bg-red-500 rounded-full" style={{
+                              boxShadow: '0 0 8px #ef4444, 0 0 16px #ef4444'
+                            }}></div>
+                          </div>
+                        ) : (
+                          <div className="w-8 h-12 relative">
+                            {/* 7-Segment LED Display */}
+                            <div className="absolute inset-0">
+                              {/* Segment A (Top) */}
+                              <div className={`absolute top-0 left-1 right-1 h-1 rounded-sm ${getSegmentState(char, 'A') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'A') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'A') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                              
+                              {/* Segment B (Top Right) */}
+                              <div className={`absolute top-1 right-0 bottom-1/2 w-1 rounded-sm ${getSegmentState(char, 'B') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'B') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'B') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                              
+                              {/* Segment C (Bottom Right) */}
+                              <div className={`absolute top-1/2 right-0 bottom-1 w-1 rounded-sm ${getSegmentState(char, 'C') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'C') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'C') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                              
+                              {/* Segment D (Bottom) */}
+                              <div className={`absolute bottom-0 left-1 right-1 h-1 rounded-sm ${getSegmentState(char, 'D') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'D') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'D') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                              
+                              {/* Segment E (Bottom Left) */}
+                              <div className={`absolute top-1/2 left-0 bottom-1 w-1 rounded-sm ${getSegmentState(char, 'E') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'E') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'E') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                              
+                              {/* Segment F (Top Left) */}
+                              <div className={`absolute top-1 left-0 bottom-1/2 w-1 rounded-sm ${getSegmentState(char, 'F') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'F') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'F') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                              
+                              {/* Segment G (Middle) */}
+                              <div className={`absolute top-1/2 left-1 right-1 h-1 rounded-sm ${getSegmentState(char, 'G') ? 'bg-red-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'G') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'G') ? {boxShadow: 'inset 0 0 2px #ef4444'} : {}}></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              
+              {/* Date Display */}
+              <div className="mt-2 text-center">
+                <div className="text-xs font-mono text-gray-400 dark:text-gray-500 bg-transparent rounded px-2 py-1 inline-block">
+                  {loading ? '—' : dateString}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Prayer */}
-          <div className="rounded-xl border border-gray-300 dark:border-gray-600 p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Prayer</div>
+          <div className="rounded-xl border border-gray-300 dark:border-gray-600 p-3 bg-transparent">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Prayer Times</div>
             {loading ? (
-              <div className="text-xs text-gray-400">Loading...</div>
+              <div className="text-center py-2">
+                <div className="text-xs text-gray-400">Loading prayer times...</div>
+              </div>
             ) : islamicData?.currentPrayer ? (
-              <div className="space-y-1">
-                <div className="text-sm text-emerald-700 dark:text-emerald-300">{islamicData.currentPrayer.name} (active)</div>
-                <div className="text-xs text-emerald-600 dark:text-emerald-400">Until {islamicData.currentPrayer.endTimeString}</div>
-                <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
-                <div className="text-xs text-gray-600 dark:text-gray-400">Next: {islamicData.nextPrayer.name}</div>
-                <div className="text-xs font-mono text-gray-700 dark:text-gray-300">{islamicData.nextPrayer.timeString}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Current Prayer */}
+                <div className="bg-transparent rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Current Prayer</span>
+                    </div>
+                  </div>
+                  <div className="text-base font-mono font-bold text-gray-800 dark:text-gray-200 mb-2">
+                    {islamicData.currentPrayer.name}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    Until {islamicData.currentPrayer.endTimeString}
+                  </div>
+                  {/* Spacer to match Eid section height */}
+                  <div className="h-8 flex items-center justify-center">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">Active Now</div>
+                  </div>
+                </div>
+
+                {/* Next Prayer */}
+                <div className="bg-transparent rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Next Prayer</div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                    {islamicData.nextPrayer.name}
+                  </div>
+                  {/* LED Time Display for Next Prayer - Matching Eid sections */}
+                  <div className="flex justify-center items-center space-x-1 mb-1">
+                    {islamicData.nextPrayer.timeString.split('').filter(char => /[0-9:]/.test(char)).map((char, index) => (
+                      <div key={index} className="flex items-center">
+                        {char === ':' ? (
+                          <div className="w-1 h-8 flex flex-col justify-center items-center space-y-1">
+                            <div className="w-0.5 h-0.5 bg-gray-500 rounded-full" style={{
+                              boxShadow: '0 0 4px #6b7280, 0 0 8px #6b7280'
+                            }}></div>
+                            <div className="w-0.5 h-0.5 bg-gray-500 rounded-full" style={{
+                              boxShadow: '0 0 4px #6b7280, 0 0 8px #6b7280'
+                            }}></div>
+                          </div>
+                        ) : (
+                          <div className="w-5 h-8 relative">
+                            {/* 7-Segment LED Display - Matching Eid sections */}
+                            <div className="absolute inset-0">
+                              {/* Segment A (Top) */}
+                              <div className={`absolute top-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'A') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'A') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'A') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              
+                              {/* Segment B (Top Right) */}
+                              <div className={`absolute top-0.5 right-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'B') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'B') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'B') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              
+                              {/* Segment C (Bottom Right) */}
+                              <div className={`absolute top-1/2 right-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'C') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'C') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'C') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              
+                              {/* Segment D (Bottom) */}
+                              <div className={`absolute bottom-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'D') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'D') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'D') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              
+                              {/* Segment E (Bottom Left) */}
+                              <div className={`absolute top-1/2 left-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'E') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'E') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'E') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              
+                              {/* Segment F (Top Left) */}
+                              <div className={`absolute top-0.5 left-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'F') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'F') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'F') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              
+                              {/* Segment G (Middle) */}
+                              <div className={`absolute top-1/2 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'G') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'G') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'G') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Spacer to match Eid section height */}
+                  <div className="h-4 flex items-center justify-center">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">Upcoming</div>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="space-y-1">
-                <div className="text-xs text-gray-500 dark:text-gray-500">No active prayer</div>
-                <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
-                <div className="text-xs text-gray-600 dark:text-gray-400">Next: {islamicData?.nextPrayer?.name || '—'}</div>
-                <div className="text-xs font-mono text-gray-700 dark:text-gray-300">{islamicData?.nextPrayer?.timeString || '—'}</div>
+              <div className="space-y-2">
+                <div className="text-center py-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-500 mb-1">No active prayer</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Next: {islamicData?.nextPrayer?.name || '—'}</div>
+                </div>
+                {/* Compact LED Time Display for Next Prayer */}
+                {islamicData?.nextPrayer?.timeString && (
+                  <div className="bg-transparent rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">Next Prayer Time</div>
+                    <div className="flex justify-center items-center space-x-1">
+                      {islamicData.nextPrayer.timeString.split('').filter(char => /[0-9:]/.test(char)).map((char, index) => (
+                        <div key={index} className="flex items-center">
+                          {char === ':' ? (
+                            <div className="w-1 h-8 flex flex-col justify-center items-center space-y-1">
+                              <div className="w-0.5 h-0.5 bg-gray-500 rounded-full" style={{
+                                boxShadow: '0 0 4px #6b7280, 0 0 8px #6b7280'
+                              }}></div>
+                              <div className="w-0.5 h-0.5 bg-gray-500 rounded-full" style={{
+                                boxShadow: '0 0 4px #6b7280, 0 0 8px #6b7280'
+                              }}></div>
+                            </div>
+                          ) : (
+                            <div className="w-5 h-8 relative">
+                              {/* 7-Segment LED Display - Matching Eid sections */}
+                              <div className="absolute inset-0">
+                                {/* Segment A (Top) */}
+                                <div className={`absolute top-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'A') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'A') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'A') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                                
+                                {/* Segment B (Top Right) */}
+                                <div className={`absolute top-0.5 right-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'B') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'B') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'B') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                                
+                                {/* Segment C (Bottom Right) */}
+                                <div className={`absolute top-1/2 right-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'C') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'C') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'C') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                                
+                                {/* Segment D (Bottom) */}
+                                <div className={`absolute bottom-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'D') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'D') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'D') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                                
+                                {/* Segment E (Bottom Left) */}
+                                <div className={`absolute top-1/2 left-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'E') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'E') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'E') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                                
+                                {/* Segment F (Top Left) */}
+                                <div className={`absolute top-0.5 left-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'F') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'F') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'F') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                                
+                                {/* Segment G (Middle) */}
+                                <div className={`absolute top-1/2 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'G') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'G') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'G') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* Eids */}
-          <div className="rounded-xl border border-gray-300 dark:border-gray-600 p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Eid</div>
+          <div className="rounded-xl border border-gray-300 dark:border-gray-600 p-3 bg-transparent">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Eid Celebrations</div>
             {loading ? (
-              <div className="text-xs text-gray-400">Loading...</div>
+              <div className="text-center py-2">
+                <div className="text-xs text-gray-400">Loading Eid dates...</div>
+              </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">Eid-ul-Fitr</div>
-                  <div className="text-2xl font-mono text-gray-900 dark:text-gray-100">{islamicData?.eidFitr?.daysRemaining ?? '—'}</div>
-                  <div className="text-[11px] text-gray-600 dark:text-gray-400">{islamicData?.eidFitr?.dateString || '—'}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {/* Eid-ul-Fitr */}
+                <div className="bg-transparent rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Eid-ul-Fitr</span>
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    {islamicData?.eidFitr?.dateString || 'Date not available'}
+                  </div>
+                  {/* LED Countdown Display for Eid-ul-Fitr */}
+                  <div className="flex justify-center items-center space-x-1 mb-1">
+                    {islamicData?.eidFitr?.daysRemaining ? 
+                      islamicData.eidFitr.daysRemaining.toString().split('').map((char, index) => (
+                        <div key={index} className="w-5 h-8 relative">
+                          {/* 7-Segment LED Display */}
+                          <div className="absolute inset-0">
+                            {/* Segment A (Top) */}
+                            <div className={`absolute top-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'A') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'A') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'A') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment B (Top Right) */}
+                            <div className={`absolute top-0.5 right-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'B') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'B') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'B') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment C (Bottom Right) */}
+                            <div className={`absolute top-1/2 right-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'C') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'C') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'C') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment D (Bottom) */}
+                            <div className={`absolute bottom-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'D') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'D') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'D') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment E (Bottom Left) */}
+                            <div className={`absolute top-1/2 left-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'E') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'E') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'E') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment F (Top Left) */}
+                            <div className={`absolute top-0.5 left-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'F') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'F') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'F') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment G (Middle) */}
+                            <div className={`absolute top-1/2 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'G') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'G') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'G') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                          </div>
+                        </div>
+                      )) : 
+                      <div className="text-gray-500 dark:text-gray-400">—</div>
+                    }
+                  </div>
+                  <div className="text-xs text-center text-gray-600 dark:text-gray-400 mb-2">
+                    {islamicData?.eidFitr?.daysRemaining ? 
+                      `${islamicData.eidFitr.daysRemaining} days remaining` : 
+                      'Date not available'
+                    }
+                  </div>
+                  {/* Spacer to match prayer section height */}
+                  <div className="h-4 flex items-center justify-center">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">Celebration</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">Eid-al-Adha</div>
-                  <div className="text-2xl font-mono text-gray-900 dark:text-gray-100">{islamicData?.eidAdha?.daysRemaining ?? '—'}</div>
-                  <div className="text-[11px] text-gray-600 dark:text-gray-400">{islamicData?.eidAdha?.dateString || '—'}</div>
+
+                {/* Eid-al-Adha */}
+                <div className="bg-transparent rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Eid-al-Adha</span>
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    {islamicData?.eidAdha?.dateString || 'Date not available'}
+                  </div>
+                  {/* LED Countdown Display for Eid-al-Adha */}
+                  <div className="flex justify-center items-center space-x-1 mb-1">
+                    {islamicData?.eidAdha?.daysRemaining ? 
+                      islamicData.eidAdha.daysRemaining.toString().split('').map((char, index) => (
+                        <div key={index} className="w-5 h-8 relative">
+                          {/* 7-Segment LED Display */}
+                          <div className="absolute inset-0">
+                            {/* Segment A (Top) */}
+                            <div className={`absolute top-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'A') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'A') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'A') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment B (Top Right) */}
+                            <div className={`absolute top-0.5 right-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'B') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'B') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'B') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment C (Bottom Right) */}
+                            <div className={`absolute top-1/2 right-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'C') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'C') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'C') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment D (Bottom) */}
+                            <div className={`absolute bottom-0 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'D') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'D') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'D') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment E (Bottom Left) */}
+                            <div className={`absolute top-1/2 left-0 bottom-0.5 w-0.5 rounded-sm ${getSegmentState(char, 'E') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'E') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'E') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment F (Top Left) */}
+                            <div className={`absolute top-0.5 left-0 bottom-1/2 w-0.5 rounded-sm ${getSegmentState(char, 'F') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'F') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'F') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                            
+                            {/* Segment G (Middle) */}
+                            <div className={`absolute top-1/2 left-0.5 right-0.5 h-0.5 rounded-sm ${getSegmentState(char, 'G') ? 'bg-gray-500' : 'bg-gray-400 dark:bg-gray-600'} ${getSegmentState(char, 'G') ? '' : 'opacity-20'}`} style={getSegmentState(char, 'G') ? {boxShadow: 'inset 0 0 1px #6b7280'} : {}}></div>
+                          </div>
+                        </div>
+                      )) : 
+                      <div className="text-gray-500 dark:text-gray-400">—</div>
+                    }
+                  </div>
+                  <div className="text-xs text-center text-gray-600 dark:text-gray-400 mb-2">
+                    {islamicData?.eidAdha?.daysRemaining ? 
+                      `${islamicData.eidAdha.daysRemaining} days remaining` : 
+                      'Date not available'
+                    }
+                  </div>
+                  {/* Spacer to match prayer section height */}
+                  <div className="h-4 flex items-center justify-center">
+                    <div className="text-xs text-gray-500 dark:text-gray-500">Celebration</div>
+                  </div>
                 </div>
               </div>
             )}
@@ -405,45 +736,61 @@ export default function TimeDashboard() {
         </div>
 
         {/* Islamic Calendar */}
-        <div className="mt-6 rounded-xl border border-gray-300 dark:border-gray-600 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Islamic Calendar</div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={goToPrevMonth}
-                className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50/60 dark:hover:bg-gray-800/50"
-                aria-label="Previous month"
-                title="Previous month"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
-              </button>
-              <div className="text-sm text-gray-700 dark:text-gray-300 min-w-[10ch] text-center">{hijri.monthLabel}</div>
-              <button
-                onClick={goToNextMonth}
-                className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50/60 dark:hover:bg-gray-800/50"
-                aria-label="Next month"
-                title="Next month"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5L15.75 12l-7.5 7.5"/></svg>
-              </button>
+        <div className="mt-6 rounded-xl border border-gray-300 dark:border-gray-600 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Islamic Calendar</div>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-300">Today</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-2">
+              <div className="text-sm text-gray-700 dark:text-gray-300 text-center font-medium flex-1 sm:flex-none sm:min-w-[10ch]">{hijri.monthLabel}</div>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={goToPrevMonth}
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50/60 dark:hover:bg-gray-800/50 transition-colors touch-manipulation"
+                  aria-label="Previous month"
+                  title="Previous month"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                </button>
+                <button
+                  onClick={goToNextMonth}
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50/60 dark:hover:bg-gray-800/50 transition-colors touch-manipulation"
+                  aria-label="Next month"
+                  title="Next month"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5L15.75 12l-7.5 7.5"/></svg>
+                </button>
+                <button
+                  onClick={() => setCalendarRefDate(new Date())}
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 rounded-md border border-emerald-300 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors touch-manipulation"
+                  aria-label="Go to today"
+                  title="Go to today"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m9-9H3"/></svg>
+                </button>
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-[11px] text-gray-500 dark:text-gray-400 mb-1">
-            <div className="text-center">Sun</div>
-            <div className="text-center">Mon</div>
-            <div className="text-center">Tue</div>
-            <div className="text-center">Wed</div>
-            <div className="text-center">Thu</div>
-            <div className="text-center">Fri</div>
-            <div className="text-center">Sat</div>
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mb-1">
+            <div className="text-center py-1">Sun</div>
+            <div className="text-center py-1">Mon</div>
+            <div className="text-center py-1">Tue</div>
+            <div className="text-center py-1">Wed</div>
+            <div className="text-center py-1">Thu</div>
+            <div className="text-center py-1">Fri</div>
+            <div className="text-center py-1">Sat</div>
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {Array.from({ length: hijri.firstWeekday }).map((_, i) => (
-              <div key={`pad-${i}`} className="h-16 rounded-lg border border-transparent" />
+              <div key={`pad-${i}`} className="h-12 sm:h-16 rounded-md sm:rounded-lg border border-transparent" />
             ))}
             {hijri.days.map(({ gDate, hDay }) => {
               const isToday = sameHijriMonth(gDate, now) && hDay === formatHijriParts(now).day;
-              const gDay = gDate.toLocaleDateString('en-US', { day: 'numeric', timeZone });
+              const gDay = gDate.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' });
               const dayEvents = monthEvents[hDay] || [];
               const hasEvents = dayEvents.length > 0;
               const hasMajorEvent = dayEvents.some(e => e.type === 'major');
@@ -462,114 +809,62 @@ export default function TimeDashboard() {
                   type="button"
                   onClick={handleDateClick}
                   key={gDate.toISOString()}
-                  className={`h-16 rounded-lg border p-2 flex flex-col justify-between text-left transition ${isSelected ? 'border-emerald-400 ring-1 ring-emerald-300/50' : isToday ? 'border-emerald-300' : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'} ${hasEvents ? 'cursor-pointer' : ''}`}
+                  className={`h-12 sm:h-16 rounded-md sm:rounded-lg border p-1 sm:p-2 flex flex-col justify-between text-left transition-all duration-200 touch-manipulation ${
+                    isSelected 
+                      ? 'border-emerald-400 ring-2 ring-emerald-300/50 bg-emerald-50/50 dark:bg-emerald-900/20 shadow-md' 
+                      : isToday 
+                        ? 'border-emerald-500 ring-2 ring-emerald-400/60 shadow-lg shadow-emerald-200/50 dark:shadow-emerald-900/30' 
+                        : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 hover:border-gray-400 dark:hover:border-gray-500 active:scale-95'
+                  } ${hasEvents ? 'cursor-pointer' : ''}`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className={`text-sm ${isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>{hDay}</div>
+                    <div className={`text-xs sm:text-sm font-medium ${
+                      isToday 
+                        ? 'text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-emerald-800/40 rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center shadow-sm' 
+                        : isSelected
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-gray-800 dark:text-gray-200'
+                    }`}>
+                      {hDay}
+                    </div>
                     {hasEvents && (
-                      <span className={`w-2 h-2 rounded-full ${hasMajorEvent ? 'bg-red-500' : 'bg-amber-500'}`} title={dayEvents.map(e => e.name).join(', ')} />
+                      <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${hasMajorEvent ? 'bg-red-500' : 'bg-amber-500'}`} title={dayEvents.map(e => e.name).join(', ')} />
                     )}
                   </div>
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400 self-end">{gDay}</div>
+                  <div className={`text-[9px] sm:text-[10px] self-end ${
+                    isToday 
+                      ? 'text-emerald-600 dark:text-emerald-400 font-medium' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {gDay}
+                  </div>
                 </button>
               );
             })}
           </div>
           {/* Event summary */}
-          <div className="mt-3 min-h-[2.5rem]">
+          <div className="mt-3 min-h-[2rem] sm:min-h-[2.5rem]">
             {selectedDate ? (
               monthEvents[selectedDate.hDay]?.length ? (
-                <div className="text-[12px] text-gray-700 dark:text-gray-300">
+                <div className="text-[11px] sm:text-[12px] text-gray-700 dark:text-gray-300">
                   <span className="font-semibold">Events:</span> {monthEvents[selectedDate.hDay].map(e => e.name).join(', ')}
                   {monthEvents[selectedDate.hDay].length > 0 && (
-                    <span className="block text-[11px] text-gray-500 dark:text-gray-400 mt-1">Click for detailed information</span>
+                    <span className="block text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1">Tap for detailed information</span>
                   )}
                 </div>
               ) : (
-                <div className="text-[12px] text-gray-500 dark:text-gray-400">No notable events on this date.</div>
+                <div className="text-[11px] sm:text-[12px] text-gray-500 dark:text-gray-400">No notable events on this date.</div>
               )
             ) : (
-              <div className="text-[12px] text-gray-500 dark:text-gray-400">Click a date to see events and details.</div>
+              <div className="text-[11px] sm:text-[12px] text-gray-500 dark:text-gray-400">Tap a date to see events and details.</div>
             )}
           </div>
         </div>
+        </div>
 
-        {/* Event Details Modal - Minimal Design */}
-        {showEventModal && (
-          <div className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={() => setShowEventModal(false)}>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="bg-white/60 dark:bg-gray-900/40 backdrop-blur-xl rounded-lg border border-gray-300 dark:border-gray-600 shadow-lg max-w-md w-full max-h-[70vh] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-4 border-b border-gray-300 dark:border-gray-600">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">
-                    {selectedDate && new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
-                      timeZone: timeZone,
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    }).format(selectedDate.gDate)}
-                  </h3>
-                  <button
-                    onClick={() => setShowEventModal(false)}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
-                    aria-label="Close"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+      </motion.div>
 
-              {/* Content */}
-              <div className="p-4 overflow-y-auto max-h-[50vh]">
-                {selectedEvents.length > 0 ? (
-                  <div className="space-y-4">
-                    {selectedEvents.map((event, index) => (
-                      <div key={index}>
-                        <div className="mb-2">
-                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                            event.type === 'major' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300' :
-                            event.type === 'religious' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' :
-                            event.type === 'historical' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300' :
-                            'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
-                          }`}>
-                            {event.type}
-                          </span>
-                        </div>
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                          {event.name}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-2">
-                          {event.description}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-500 leading-relaxed">
-                          {event.significance}
-                        </p>
-                        {index < selectedEvents.length - 1 && (
-                          <div className="mt-4 h-px bg-gray-200/70 dark:bg-gray-700/70" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No events recorded for this date.</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </div>
-    </motion.div>
+    </>
   );
 }
 
