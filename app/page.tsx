@@ -66,7 +66,9 @@ function HomeContent() {
       // First, hide all other components and views
       setShowTimeDashboard(false);
       setActiveComponent(null);
-      chatManager.setIsChatActive(false);
+      
+      // Reset chat state completely to prevent chat outputs from appearing in new tabs
+      chatManager.resetForm();
       
       // Then show only the requested component
       if (component === 'read-quran' || component === 'mosque-finder' || component === 'zakat-calculator') {
@@ -107,8 +109,9 @@ function HomeContent() {
       setShowTimeDashboard(shouldOpen);
       // Hide all other components and views when opening dashboard
       if (shouldOpen) {
-        chatManager.setIsChatActive(false);
         setActiveComponent(null);
+        // Reset chat state completely when opening time dashboard
+        chatManager.resetForm();
       }
     };
     const onOpenChat = () => {
@@ -168,6 +171,8 @@ function HomeContent() {
     };
     const onCloseComponent = () => {
       setActiveComponent(null);
+      // Reset chat state when closing components to prevent chat outputs from persisting
+      chatManager.resetForm();
     };
 
     const onModalState = (e: any) => {
