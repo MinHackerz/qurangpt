@@ -324,6 +324,24 @@ export default function MinimalHeader({
                     <span className="text-sm text-gray-800 dark:text-gray-200">Nearest Mosque</span>
                   </button>
 
+                  {/* Zakat Calculator */}
+                  <button
+                    onClick={() => handleMobileMenuAction(() => {
+                      const event = new CustomEvent('qgpt:show-component', { detail: { component: 'zakat-calculator' } });
+                      window.dispatchEvent(event);
+                    })}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-3 transition ${
+                      activeButton === 'zakat-calculator' 
+                        ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span className="text-sm text-gray-800 dark:text-gray-200">Zakat Calculator</span>
+                  </button>
+
                   {/* Time Dashboard */}
                   <button
                     onClick={() => handleMobileMenuAction(() => {
