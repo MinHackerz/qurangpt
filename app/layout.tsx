@@ -65,7 +65,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
-        <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
+        <meta name="google-site-verification" content="pjFBcUhiuE4esK2biRVNFKN4IEWJ8v0h1KRznI9HPJ0" />
         <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
         
         {/* PWA Meta Tags */}
