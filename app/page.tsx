@@ -16,6 +16,7 @@ import {
     TimeDashboard,
     ReadQuran,
     MosqueFinder,
+    ZakatCalculator,
 } from './components';
 import ShareModal from './components/ShareModal';
 import { useTheme } from './contexts/ThemeContext';
@@ -68,7 +69,7 @@ function HomeContent() {
       chatManager.setIsChatActive(false);
       
       // Then show only the requested component
-      if (component === 'read-quran' || component === 'mosque-finder') {
+      if (component === 'read-quran' || component === 'mosque-finder' || component === 'zakat-calculator') {
         setActiveComponent(component);
       }
       console.log('Active component set to:', component); // Debug log
@@ -1031,6 +1032,7 @@ function HomeContent() {
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
             {activeComponent === 'read-quran' && <ReadQuran key="read-quran" />}
             {activeComponent === 'mosque-finder' && <MosqueFinder key="mosque-finder" />}
+            {activeComponent === 'zakat-calculator' && <ZakatCalculator key="zakat-calculator" />}
           </div>
         )}
 

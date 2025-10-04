@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '../contexts/ThemeContext';
-import { ClockIcon, EyeIcon, UserIcon, SunIcon, MoonIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, EyeIcon, UserIcon, SunIcon, MoonIcon, EnvelopeIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { Shield, Monitor } from 'lucide-react';
 
 interface IslamicData {
@@ -165,7 +165,7 @@ export default function VerticalActionBar() {
     console.log('handleComponentSwitch called with:', componentName); // Debug log
     
     // Extra protection: ensure we're not accidentally dispatching wrong events
-    if (componentName === 'mosque-finder' || componentName === 'read-quran') {
+    if (componentName === 'mosque-finder' || componentName === 'read-quran' || componentName === 'zakat-calculator') {
       const event = new CustomEvent('qgpt:show-component', { detail: { component: componentName } });
       window.dispatchEvent(event);
       console.log('Component switch event dispatched:', event); // Debug log
@@ -373,6 +373,30 @@ export default function VerticalActionBar() {
                 <ClockIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </button>
 
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Zakat Calculator button clicked (collapsed)');
+                  const event = new CustomEvent('qgpt:show-component', { detail: { component: 'zakat-calculator' } });
+                  window.dispatchEvent(event);
+                }}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Zakat Calculator button double-clicked (collapsed) - preventing default');
+                }}
+                className={`flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 backdrop-blur transition mx-auto ${
+                  activeButton === 'zakat-calculator' 
+                    ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                    : 'bg-transparent hover:bg-white/60 dark:hover:bg-gray-900/40'
+                }`}
+                aria-label="Zakat Calculator"
+                title="Zakat Calculator"
+              >
+                <CurrencyDollarIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </button>
+
               <Link
                 href="/transparency"
                 className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition mx-auto"
@@ -526,6 +550,30 @@ export default function VerticalActionBar() {
               >
                 <ClockIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                 <span className="text-sm text-gray-800 dark:text-gray-200">Time and Calendar</span>
+              </button>
+
+              {/* Zakat Calculator */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Zakat Calculator button clicked (expanded)');
+                  const event = new CustomEvent('qgpt:show-component', { detail: { component: 'zakat-calculator' } });
+                  window.dispatchEvent(event);
+                }}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Zakat Calculator button double-clicked (expanded) - preventing default');
+                }}
+                className={`w-full flex items-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-3 backdrop-blur transition ${
+                  activeButton === 'zakat-calculator' 
+                    ? 'bg-gray-200/80 dark:bg-gray-700/80' 
+                    : 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <CurrencyDollarIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <span className="text-sm text-gray-800 dark:text-gray-200">Zakat Calculator</span>
               </button>
 
               {/* Contact Developer */}

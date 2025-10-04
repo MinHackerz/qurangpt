@@ -47,6 +47,7 @@ export default function MosqueFinder() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchRadius, setSearchRadius] = useState(5000); // 5km default
+  const [autoAdjustedRadius, setAutoAdjustedRadius] = useState<number | null>(null);
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   const [directionsInfo, setDirectionsInfo] = useState<{
@@ -716,7 +717,7 @@ export default function MosqueFinder() {
         const { latitude, longitude, accuracy } = position.coords;
         const newLocation = { latitude, longitude, accuracy };
         setLocation(newLocation);
-        fetchNearbyMosques(latitude, longitude, searchRadius);
+        fetchNearbyMosques(latitude, longitude, searchRadius, true); // Mark as initial search
       },
       (error) => {
         setError('Unable to get your location. Please enable location services.');
@@ -731,12 +732,12 @@ export default function MosqueFinder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchNearbyMosques = async (lat: number, lon: number, radius: number) => {
+  const fetchNearbyMosques = async (lat: number, lon: number, radius: number, isInitialSearch: boolean = false) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/mosques?lat=${lat}&lon=${lon}&radius=${radius}`);
+      const response = await fetch(`/api/mosques?lat=${lat}&lon=${lon}&radius=${radius}&enhanced=true`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: response.statusText }));
@@ -749,7 +750,34 @@ export default function MosqueFinder() {
         throw new Error(data.error);
       }
       
-      setMosques(data.mosques || []);
+      const fetchedMosques = data.mosques || [];
+      setMosques(fetchedMosques);
+      
+      // Auto-adjust radius based on nearest mosque distance for initial search
+      if (isInitialSearch && fetchedMosques.length > 0) {
+        const nearestMosque = fetchedMosques[0];
+        const nearestDistance = nearestMosque.distance || 0;
+        
+        // Auto-adjust radius to be slightly larger than the nearest mosque
+        let suggestedRadius = 5000; // Default 5km
+        
+        if (nearestDistance <= 1) {
+          suggestedRadius = 2000; // 2km if nearest is within 1km
+        } else if (nearestDistance <= 3) {
+          suggestedRadius = 5000; // 5km if nearest is within 3km
+        } else if (nearestDistance <= 10) {
+          suggestedRadius = 15000; // 15km if nearest is within 10km
+        } else {
+          suggestedRadius = 25000; // 25km if nearest is further
+        }
+        
+        // Only auto-adjust if the suggested radius is different from current
+        if (suggestedRadius !== radius) {
+          setAutoAdjustedRadius(suggestedRadius);
+          // Don't automatically change the search radius, just suggest it
+        }
+      }
+      
     } catch (error) {
       console.error('Error fetching mosques:', error);
       let errorMessage = 'Failed to fetch nearby mosques';
@@ -772,11 +800,20 @@ export default function MosqueFinder() {
 
   const handleRadiusChange = useCallback((newRadius: number) => {
     setSearchRadius(newRadius);
+    setAutoAdjustedRadius(null); // Clear auto-adjustment when manually changing
     if (location) {
-      fetchNearbyMosques(location.latitude, location.longitude, newRadius);
+      fetchNearbyMosques(location.latitude, location.longitude, newRadius, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const applySuggestedRadius = useCallback(() => {
+    if (autoAdjustedRadius && location) {
+      setSearchRadius(autoAdjustedRadius);
+      setAutoAdjustedRadius(null);
+      fetchNearbyMosques(location.latitude, location.longitude, autoAdjustedRadius, false);
+    }
+  }, [autoAdjustedRadius, location]);
 
 
   const formatRating = (rating: number, total: number) => {
@@ -809,18 +846,23 @@ export default function MosqueFinder() {
         {/* Controls - Single Line Layout */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           {/* Radius Selector */}
-          <select
-            value={searchRadius}
-            onChange={(e) => handleRadiusChange(Number(e.target.value))}
-            className="flex-1 sm:flex-none sm:min-w-[140px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            style={{ backgroundColor: 'transparent' }}
-          >
-            <option value={1000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">1 km radius</option>
-            <option value={3000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">3 km radius</option>
-            <option value={5000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">5 km radius</option>
-            <option value={10000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">10 km radius</option>
-            <option value={20000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">20 km radius</option>
-          </select>
+          <div className="flex-1 sm:flex-none sm:min-w-[140px]">
+            <select
+              value={searchRadius}
+              onChange={(e) => handleRadiusChange(Number(e.target.value))}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              style={{ backgroundColor: 'transparent' }}
+            >
+              <option value={1000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">1 km radius</option>
+              <option value={2000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">2 km radius</option>
+              <option value={3000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">3 km radius</option>
+              <option value={5000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">5 km radius</option>
+              <option value={10000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">10 km radius</option>
+              <option value={15000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">15 km radius</option>
+              <option value={20000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">20 km radius</option>
+              <option value={25000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">25 km radius</option>
+            </select>
+          </div>
           
           {/* Mosque Selection */}
           {mosques.length > 0 && (
@@ -878,6 +920,39 @@ export default function MosqueFinder() {
               <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                 Auto-selected nearest mosque for your journey
               </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Auto-adjustment suggestion */}
+        {autoAdjustedRadius && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                  Suggested radius: {(autoAdjustedRadius / 1000).toFixed(0)} km for better results
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={applySuggestedRadius}
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => setAutoAdjustedRadius(null)}
+                  className="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

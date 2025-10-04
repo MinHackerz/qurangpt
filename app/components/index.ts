@@ -8,3 +8,4 @@ export { default as VerticalActionBar } from './VerticalActionBar';
 export { default as TimeDashboard } from './TimeDashboard';
 export { default as ReadQuran } from './ReadQuran';
 export { default as MosqueFinder } from './MosqueFinder';
+export { default as ZakatCalculator } from './ZakatCalculator';
