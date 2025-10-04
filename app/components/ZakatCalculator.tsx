@@ -165,27 +165,27 @@ export default function ZakatCalculator() {
       transition={{ duration: 0.2 }}
       className="min-h-[70vh] flex items-start justify-center"
     >
-      <div className="w-full mx-auto px-6 sm:px-8 py-8 space-y-8">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center border-2 border-green-200 dark:border-green-700">
             <CurrencyDollarIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Zakat Calculator</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Zakat Calculator</h1>
         </div>
-        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">
           Calculate your Zakat obligation based on wealth held for one full lunar year (Hawl). Zakat is 2.5% of your net zakatable wealth above the Nisab threshold. Only include assets that exceed your basic needs and necessities.
         </p>
       </div>
 
       {/* Nisab Settings */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Nisab Calculation</h2>
         
         {/* Currency Selection */}
-        <div className="mb-6 p-4 bg-transparent dark:bg-transparent rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
+        <div className="mb-6 p-3 sm:p-4 bg-transparent dark:bg-transparent rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Currency</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -196,7 +196,7 @@ export default function ZakatCalculator() {
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-transparent dark:bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full sm:w-auto min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent touch-manipulation"
               >
                 <option value="USD">USD - US Dollar</option>
                 <option value="EUR">EUR - Euro</option>
@@ -267,7 +267,7 @@ export default function ZakatCalculator() {
             <select
               value={nisabType}
               onChange={(e) => setNisabType(e.target.value as 'gold' | 'silver')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent touch-manipulation"
             >
               <option value="gold">Gold (87.48g / 3 oz)</option>
               <option value="silver">Silver (612.36g / 20 oz)</option>
@@ -281,15 +281,15 @@ export default function ZakatCalculator() {
               <button
                 onClick={fetchMetalPrices}
                 disabled={isLoadingPrices}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-2 min-h-[44px] min-w-[44px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors touch-manipulation"
                 title="Refresh prices"
               >
-                <svg className={`w-4 h-4 ${isLoadingPrices ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-5 h-5 ${isLoadingPrices ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
             </div>
-            <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white">
+            <div className="min-h-[44px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white flex items-center">
               {isLoadingPrices ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
@@ -304,7 +304,7 @@ export default function ZakatCalculator() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Nisab Threshold
             </label>
-            <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-green-700 dark:text-green-400 font-semibold">
+            <div className="min-h-[44px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-green-700 dark:text-green-400 font-semibold flex items-center">
               {formatCurrency(calculateNisab())}
             </div>
           </div>
@@ -312,7 +312,7 @@ export default function ZakatCalculator() {
       </div>
 
       {/* Assets Section */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Your Assets</h2>
         <div className="space-y-4">
           {assets.map((asset) => (
@@ -320,26 +320,26 @@ export default function ZakatCalculator() {
               key={asset.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors gap-4"
             >
               <div className="flex-1">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                   <h3 className="font-medium text-gray-900 dark:text-white">{asset.name}</h3>
                   {asset.isZakatable && (
-                    <span className="px-2 py-1 text-xs bg-transparent dark:bg-transparent text-green-700 dark:text-green-400 rounded-full">
+                    <span className="px-2 py-1 text-xs bg-transparent dark:bg-transparent text-green-700 dark:text-green-400 rounded-full w-fit">
                       Zakatable
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{asset.description}</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <span className="text-sm text-gray-500 dark:text-gray-400">{currency}</span>
                 <input
                   type="number"
                   value={asset.amount}
                   onChange={(e) => updateAsset(asset.id, parseFloat(e.target.value) || 0)}
-                  className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right"
+                  className="w-full sm:w-32 min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -351,7 +351,7 @@ export default function ZakatCalculator() {
       </div>
 
       {/* Liabilities Section */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Your Liabilities</h2>
         <div className="space-y-4">
           {liabilities.map((liability) => (
@@ -359,19 +359,19 @@ export default function ZakatCalculator() {
               key={liability.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors gap-4"
             >
               <div className="flex-1">
                 <h3 className="font-medium text-gray-900 dark:text-white">{liability.name}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{liability.description}</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <span className="text-sm text-gray-500 dark:text-gray-400">{currency}</span>
                 <input
                   type="number"
                   value={liability.amount}
                   onChange={(e) => updateLiability(liability.id, parseFloat(e.target.value) || 0)}
-                  className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right"
+                  className="w-full sm:w-32 min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -387,7 +387,7 @@ export default function ZakatCalculator() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-transparent dark:bg-transparent rounded-xl border border-green-200 dark:border-green-700 p-6"
+          className="bg-transparent dark:bg-transparent rounded-xl border border-green-200 dark:border-green-700 p-4 sm:p-6"
         >
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Zakat Calculation</h2>
           
@@ -437,7 +437,7 @@ export default function ZakatCalculator() {
       )}
 
       {/* Hawl Warning */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-amber-200 dark:border-amber-700 p-6">
+      <div className="bg-transparent dark:bg-transparent rounded-xl border border-amber-200 dark:border-amber-700 p-4 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
             <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
@@ -456,7 +456,7 @@ export default function ZakatCalculator() {
       </div>
 
       {/* Information Section */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-blue-200 dark:border-blue-700 p-6">
+      <div className="bg-transparent dark:bg-transparent rounded-xl border border-blue-200 dark:border-blue-700 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">Important Notes</h3>
         <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
           <li>• <strong>Hawl (Lunar Year):</strong> Zakat is only due on wealth held for one complete lunar year</li>
