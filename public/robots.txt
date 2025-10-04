@@ -1,4 +1,14 @@
 User-agent: *
 Allow: /
+Allow: /zakat
+Allow: /quran
+Allow: /mosques
+Allow: /transparency
+
+# Disallow temporary share pages (7-day expiration)
+Disallow: /share/
+
+# Explicitly allow all other pages
+Disallow:
 
 Sitemap: https://quran-gpt.netlify.app/sitemap.xml 

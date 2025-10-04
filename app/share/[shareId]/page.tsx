@@ -682,6 +682,8 @@ export default function SharePage() {
         <meta name="twitter:image" content="https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png" />
         <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
         <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="googlebot" content="noindex, nofollow" />
       </Head>
 
       {/* Google Analytics */}

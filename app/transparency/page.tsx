@@ -4,12 +4,18 @@ import { useTheme } from '../contexts/ThemeContext';
 import { motion } from 'framer-motion';
 import { ArrowLeftIcon, EyeIcon, ShieldCheckIcon, CpuChipIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import Head from 'next/head';
 
 export default function TransparencyPage() {
   const { theme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-transparent relative">
+    <>
+      <Head>
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      </Head>
+      <div className="min-h-screen bg-transparent relative">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-50/30 via-transparent to-gray-100/20 dark:from-gray-950/30 dark:via-transparent dark:to-gray-900/20"></div>
       
@@ -192,5 +198,6 @@ export default function TransparencyPage() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

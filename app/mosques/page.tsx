@@ -6,6 +6,17 @@ export const metadata: Metadata = {
   title: 'Find Nearby Mosques & Islamic Centers | Mosque Finder | QuranGPT',
   description:
     'Discover nearby mosques and Islamic centers with directions, distance, and contact info. Works on mobile and desktop with precise location support.',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   alternates: {
     canonical: 'https://quran-gpt.netlify.app/mosques',
   },

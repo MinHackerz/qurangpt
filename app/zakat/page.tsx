@@ -6,6 +6,17 @@ export const metadata: Metadata = {
   title: 'Zakat Calculator - Calculate Your Islamic Charity Obligation | QuranGPT',
   description:
     'Calculate your Zakat obligation accurately with our comprehensive Islamic charity calculator. Includes assets, liabilities, and current Nisab thresholds.',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   alternates: {
     canonical: 'https://quran-gpt.netlify.app/zakat',
   },
