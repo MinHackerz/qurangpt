@@ -4,21 +4,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import { motion } from 'framer-motion';
 import { ArrowLeftIcon, EyeIcon, ShieldCheckIcon, CpuChipIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import Head from 'next/head';
 
 export default function TransparencyPage() {
   const { theme } = useTheme();
 
   return (
     <>
-      <Head>
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-      </Head>
-      <div className="min-h-screen bg-transparent relative">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-50/30 via-transparent to-gray-100/20 dark:from-gray-950/30 dark:via-transparent dark:to-gray-900/20"></div>
-      
       {/* Minimal Back Button - Fixed top left */}
       <div className="fixed top-4 left-4 z-50">
         <div className="p-1 rounded-xl border border-gray-200/30 dark:border-gray-700/30 bg-white/5 dark:bg-gray-900/5 backdrop-blur-sm">
@@ -39,13 +30,6 @@ export default function TransparencyPage() {
           transition={{ duration: 0.6 }}
           className="space-y-6"
         >
-          {/* Page Title */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-light text-gray-900 dark:text-white tracking-tight mb-2">
-              Transparency
-            </h1>
-            <div className="w-16 h-px bg-gray-300 dark:bg-gray-600 mx-auto"></div>
-          </div>
 
           {/* Introduction */}
           <div className="backdrop-blur-md bg-white/5 dark:bg-gray-900/5 rounded-2xl p-8 border border-gray-300/30 dark:border-gray-600/30">
@@ -197,7 +181,6 @@ export default function TransparencyPage() {
           </div>
         </motion.div>
       </div>
-    </div>
     </>
   );
 }

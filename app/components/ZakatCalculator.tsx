@@ -163,9 +163,9 @@ export default function ZakatCalculator() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
-      className="min-h-[70vh] flex items-start justify-center"
+      className="min-h-[70vh] w-full"
     >
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <div className="w-full space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -192,11 +192,11 @@ export default function ZakatCalculator() {
                 Select your preferred currency for calculations
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full sm:w-auto min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent touch-manipulation"
+                className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent touch-manipulation"
               >
                 <option value="USD">USD - US Dollar</option>
                 <option value="EUR">EUR - Euro</option>
@@ -259,7 +259,7 @@ export default function ZakatCalculator() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Nisab Type
@@ -333,13 +333,13 @@ export default function ZakatCalculator() {
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{asset.description}</p>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <span className="text-sm text-gray-500 dark:text-gray-400">{currency}</span>
                 <input
                   type="number"
                   value={asset.amount}
                   onChange={(e) => updateAsset(asset.id, parseFloat(e.target.value) || 0)}
-                  className="w-full sm:w-32 min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
+                  className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -365,13 +365,13 @@ export default function ZakatCalculator() {
                 <h3 className="font-medium text-gray-900 dark:text-white">{liability.name}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{liability.description}</p>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 <span className="text-sm text-gray-500 dark:text-gray-400">{currency}</span>
                 <input
                   type="number"
                   value={liability.amount}
                   onChange={(e) => updateLiability(liability.id, parseFloat(e.target.value) || 0)}
-                  className="w-full sm:w-32 min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
+                  className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
                   placeholder="0.00"
                   min="0"
                   step="0.01"
@@ -391,7 +391,7 @@ export default function ZakatCalculator() {
         >
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Zakat Calculation</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Summary */}
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
