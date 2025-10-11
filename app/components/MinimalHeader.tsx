@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { SunIcon, MoonIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, ClockIcon, UserIcon } from '@heroicons/react/24/outline';
 import { Code, Shield, Monitor } from 'lucide-react';
 import ShareModal from './ShareModal';
 import TextSizeToggle from './TextSizeToggle';
@@ -377,11 +377,11 @@ export default function MinimalHeader({
                   {/* Contact Developer */}
                   <button
                     onClick={() => handleMobileMenuAction(() => {
-                      window.open('https://www.linkedin.com/in/menajul-hoque/', '_blank');
+                      window.open('https://menajul.vercel.app', '_blank');
                     })}
                     className="w-full flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                   >
-                    <Code className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
+                    <UserIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                     <span className="text-sm text-gray-800 dark:text-gray-200">Contact Developer</span>
                   </button>
 

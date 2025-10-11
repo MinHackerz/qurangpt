@@ -163,7 +163,7 @@ export default function TransparencyPage() {
                 Have questions about our transparency practices?
               </p>
               <a
-                href="https://www.linkedin.com/in/menajul-hoque/"
+                href="https://menajul.vercel.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100/80 dark:bg-gray-800/80 hover:bg-gray-200/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 text-sm font-medium"

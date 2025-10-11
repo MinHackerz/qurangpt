@@ -579,12 +579,12 @@ export default function VerticalActionBar() {
               {/* Contact Developer */}
               <button
                 onClick={() => {
-                  window.open('https://www.linkedin.com/in/menajul-hoque/', '_blank');
+                  window.open('https://menajul.vercel.app', '_blank');
                 }}
                 className="w-full flex items-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-3 bg-transparent backdrop-blur hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                 title="Contact Developer"
               >
-                <EnvelopeIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <UserIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                 <span className="text-sm text-gray-800 dark:text-gray-200">Contact Developer</span>
               </button>
 
