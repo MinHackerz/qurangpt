@@ -73,6 +73,7 @@ export default function SourcesSection({ content, textSize = 'small' }: SourcesS
           }
         }
       });
+      
       setSources(extractedSources);
     };
     

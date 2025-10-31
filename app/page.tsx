@@ -664,9 +664,9 @@ function HomeContent() {
   }, [textSize]);
 
   // Handle content type change
-  const handleContentTypeChange = useCallback((contentTypes: {
-    tafsir: boolean;
-    hadith: boolean;
+  const handleContentTypeChange = useCallback((contentTypes: { 
+    tafsir: boolean; 
+    hadith: boolean; 
     suggestedQuestions: boolean;
   }) => {
     setSelectedContentTypes(contentTypes);

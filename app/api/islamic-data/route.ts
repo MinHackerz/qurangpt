@@ -567,16 +567,40 @@ export async function GET(request: NextRequest) {
     const daysToEidFitr = Math.ceil((eidFitr.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysToEidAdha = Math.ceil((eidAdha.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
 
+    // Get current hour in user's timezone properly using formatToParts for reliable parsing
+    const getCurrentHourInTimezone = () => {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: userTimezone,
+        hour: '2-digit',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(now);
+      const hourPart = parts.find(part => part.type === 'hour');
+      return hourPart ? parseInt(hourPart.value, 10) : null;
+    };
+    
+    const currentHourInTimezone = getCurrentHourInTimezone();
+    
+    // Check if Isha and it's after midnight (12:00 AM) 
+    // Hours 0-11 (midnight to before noon) indicate it's after midnight
+    // Since Isha typically starts in evening (7-9 PM), hours 0-11 means after midnight
+    const isIshaAfterMidnight = currentPrayer === 'Isha' && currentHourInTimezone !== null && currentHourInTimezone >= 0 && currentHourInTimezone < 12;
+
     const response = {
       currentPrayer: currentPrayer ? {
         name: getPrayerDisplayName(currentPrayer),
         endTime: currentPrayerEndTime?.toISOString(),
-        endTimeString: currentPrayerEndTime?.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: true
-        }) + ` ${timezoneAbbr}`,
-        isActive: true
+        endTimeString: currentPrayer === 'Isha' 
+          ? 'Until Midnight'
+          : currentPrayerEndTime?.toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: true
+            }) + ` ${timezoneAbbr}`,
+        // For Isha: show as active only if it's NOT after midnight (i.e., evening Isha before midnight)
+        // For all other prayers: always show as active
+        isActive: currentPrayer === 'Isha' ? !isIshaAfterMidnight : true
       } : null,
       nextPrayer: {
         name: getPrayerDisplayName(nextPrayer),

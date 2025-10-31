@@ -165,7 +165,7 @@ export default function ZakatCalculator() {
       transition={{ duration: 0.2 }}
       className="min-h-[70vh] w-full"
     >
-      <div className="w-full space-y-6 sm:space-y-8">
+      <div className="w-full mx-auto px-6 sm:px-8 py-8 space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -467,7 +467,7 @@ export default function ZakatCalculator() {
           <li>• <strong>Liabilities:</strong> Only deduct immediate, short-term debts due within the Zakat year</li>
           <li>• <strong>Nisab:</strong> Based on 87.48g gold or 612.36g silver at current market prices</li>
           <li>• <strong>Rate:</strong> 2.5% of net zakatable wealth above Nisab threshold</li>
-          <li>• <strong>Important:</strong> Consult a qualified Islamic scholar for complex situations</li>
+          <li>• <strong>Important:</strong> Always verify calculations and consult authentic Islamic scholars for complex situations and religious rulings</li>
         </ul>
       </div>
       </div>

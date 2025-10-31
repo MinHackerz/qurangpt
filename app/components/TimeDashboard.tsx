@@ -493,12 +493,19 @@ export default function TimeDashboard() {
                     {islamicData.currentPrayer.name}
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                    Until {islamicData.currentPrayer.endTimeString}
+                    {islamicData.currentPrayer.name === 'Isha' 
+                      ? islamicData.currentPrayer.endTimeString
+                      : `Until ${islamicData.currentPrayer.endTimeString}`}
                   </div>
                   {/* Spacer to match Eid section height */}
-                  <div className="h-8 flex items-center justify-center">
-                    <div className="text-xs text-gray-500 dark:text-gray-500">Active Now</div>
-                  </div>
+                  {islamicData.currentPrayer.isActive && (
+                    <div className="h-8 flex items-center justify-center">
+                      <div className="text-xs text-gray-500 dark:text-gray-500">Active Now</div>
+                    </div>
+                  )}
+                  {!islamicData.currentPrayer.isActive && (
+                    <div className="h-8"></div>
+                  )}
                 </div>
 
                 {/* Next Prayer */}

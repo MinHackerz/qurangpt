@@ -147,7 +147,7 @@ export default function TransparencyPage() {
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Limitations</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  AI responses are starting points for learning. Verify with qualified scholars for important matters.
+                  AI responses are educational starting points only. Always verify with authentic Islamic scholars and trusted sources before making any religious decisions.
                 </p>
               </div>
             </div>
