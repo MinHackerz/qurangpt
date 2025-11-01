@@ -90,7 +90,7 @@ export default function SharePage() {
     return processContentBasedOnSelection(formattedResponse || sharedContent?.response || '');
   }, [formattedResponse, sharedContent?.response, processContentBasedOnSelection]);
 
-  // Format response when shared content changes
+  // Format response when shared content changes (only when content/question changes, not when options toggle)
   useEffect(() => {
     if (sharedContent?.response) {
       // Check if content is already formatted (contains HTML elements like ayah boxes)
@@ -110,7 +110,11 @@ export default function SharePage() {
           .finally(() => setIsFormatting(false));
       }
     }
-  }, [sharedContent?.response, sharedContent?.question, formatResponse, selectedContentTypes, textSize]);
+    // Intentionally excluding selectedContentTypes and textSize from dependencies:
+    // We only want to format when content/question changes, not when options are toggled.
+    // Toggling options should only filter the already-formatted content (handled by filteredContent memo).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedContent?.response, sharedContent?.question, formatResponse]);
 
   // Handle sharing current page content
   const handleShareContent = useCallback(async () => {
