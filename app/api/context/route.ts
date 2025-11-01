@@ -137,10 +137,84 @@ export async function POST(request: NextRequest) {
         ? `${surahNumber}:${ayahNumber || reference.split(':')[1]}`
         : reference;
       
+      // Controversial keywords and domains to exclude - only religious/scholarly interpretations allowed
+      const controversialKeywords = [
+        'extremist', 'terrorism', 'terrorist', 'radical', 'jihadist', 'militant',
+        'violence', 'hate', 'discrimination', 'prejudice', 'islamophobia',
+        'controversy', 'debate', 'criticism', 'attack', 'offensive', 'banned',
+        'condemned', 'denounced', 'scandal', 'outrage', 'propaganda', 'false',
+        'misconception', 'misquote', 'rejector', 'refutation', 'refute',
+        'disprove', 'falsehood', 'lie', 'hoax', 'fake'
+      ];
+      
+      // Anti-Islamic/propaganda keywords to exclude
+      const antiIslamicKeywords = [
+        'prophet rejector', 'quran reject', 'islam reject', 'anti-islam',
+        'anti-muslim', 'islamic terrorism', 'violent islam', 'extremist islam'
+      ];
+      
+      // Community post indicators to exclude
+      const communityPostIndicators = [
+        'comment', 'reply', 'response', 'discussion', 'forum', 'thread',
+        'posted by', 'user said', 'member', 'community', 'ask question',
+        'leave a comment', 'add your comment', 'join the discussion'
+      ];
+      
+      // Exclude non-scholarly discussion platforms, social media, and blogging platforms
+      const controversialDomains = [
+        'reddit.com',
+        'quora.com',
+        'stackexchange.com',
+        'wikipedia.org/wiki/controversy',
+        'facebook.com',
+        'twitter.com',
+        'x.com',
+        'instagram.com',
+        'linkedin.com',
+        'tiktok.com',
+        'youtube.com',
+        'pinterest.com',
+        'snapchat.com',
+        'tumblr.com',
+        'discord.com',
+        'telegram.org',
+        'wordpress.com',
+        'blogger.com',
+        'medium.com',
+        'substack.com',
+        'patreon.com'
+      ];
+
       const contexts = (data.results || [])
         .map((result) => {
           const content = (result.content || '').toLowerCase();
           const title = (result.title || '').toLowerCase();
+          const url = (result.url || '').toLowerCase();
+          const combinedText = `${content} ${title}`.toLowerCase();
+          
+          // Filter out controversial content
+          const isControversial = controversialKeywords.some(keyword => 
+            content.includes(keyword) || title.includes(keyword)
+          ) || controversialDomains.some(domain => url.includes(domain));
+          
+          // Filter out anti-Islamic/propaganda content
+          const isAntiIslamic = antiIslamicKeywords.some(keyword => 
+            combinedText.includes(keyword)
+          );
+          
+          // Filter out community posts (comments, forums, discussions)
+          const isCommunityPost = communityPostIndicators.some(indicator => 
+            combinedText.includes(indicator) || url.includes('/comment') || 
+            url.includes('/reply') || url.includes('/discussion') ||
+            url.includes('/forum') || url.includes('/thread')
+          );
+          
+          // Filter out WordPress blogs (except trusted Islamic sites)
+          const isWordPressBlog = url.includes('wordpress.com') || url.includes('blogspot.com');
+          
+          if (isControversial || isAntiIslamic || isCommunityPost || isWordPressBlog) {
+            return null;
+          }
           
           // Check if result actually mentions the exact reference (strict matching)
           const ayahNum = ayahNumber || reference.split(':')[1];
@@ -163,42 +237,59 @@ export async function POST(request: NextRequest) {
                hadithNumber && content.includes(hadithNumber.toLowerCase()))
             ));
           
+          // Calculate content quality indicators
+          const contentLength = result.content?.length || 0;
+          const hasDetailedContent = contentLength > 500; // Longer content indicates more thorough explanation
+          
           return {
             title: result.title || 'Untitled',
             url: result.url || '#',
             snippet: (result.content?.substring(0, 200) || '') + (result.content && result.content.length > 200 ? '...' : ''),
             score: result.score || 0,
             relevance: mentionsReference ? 1 : 0,
+            contentLength: contentLength,
+            hasDetailedContent: hasDetailedContent,
+            fullContent: content || '', // Used for quality scoring only
           };
         })
-        .filter(context => context.relevance > 0); // Only include results that mention the exact reference
+        .filter((context): context is NonNullable<typeof context> => context !== null && context.relevance > 0); // Only include results that mention the exact reference and are not controversial
 
-      // Prioritize trusted Islamic sources with scoring (only relevant contexts remain)
+      // Prioritize trusted Islamic sources with enhanced quality scoring
       const scoredContexts = contexts.map(context => {
-        if (!context.url || context.url === '#') return { ...context, trustScore: 0 };
+        if (!context.url || context.url === '#') return { ...context, trustScore: 0, qualityScore: 0 };
         
         const url = context.url.toLowerCase();
         const title = (context.title || '').toLowerCase();
+        const fullContent = (context.fullContent || '').toLowerCase();
         let trustScore = 0;
+        let qualityScore = 0;
         
-        // Highly trusted domains (score: 100)
+        // Highly trusted scholarly domains (score: 100)
         const highlyTrustedDomains = [
           'islamqa.info', 'islamqa.org', 'islamqa.com', 'islamweb.net', 
           'islamway.net', 'islamhouse.com', 'dar-alifta.org', 'al-islam.org',
-          'quran.com', 'sunnah.com'
+          'quran.com', 'sunnah.com', 'islamqa.info/en', 'islamqa.org/en'
         ];
         
-        // Medium trusted domains (score: 75)
+        // Medium trusted scholarly domains (score: 75)
         const mediumTrustedDomains = [
           'islamicfinder.org', 'muslim.or.id', 'islamreligion.com',
           'islamicity.org', 'islamonline.net', 'discoverislam.com'
         ];
         
+        // Academic and institutional domains (extra trust)
+        const academicDomains = [
+          '.edu', 'university', 'academic', 'institute', 'research', 'scholar',
+          'oxford', 'harvard', 'stanford', 'cambridge', 'princeton'
+        ];
+        
         // Check highly trusted first
         if (highlyTrustedDomains.some(domain => url.includes(domain))) {
           trustScore = 100;
+          qualityScore += 30; // Bonus for highly trusted domain
         } else if (mediumTrustedDomains.some(domain => url.includes(domain))) {
           trustScore = 75;
+          qualityScore += 20; // Bonus for medium trusted domain
         } else if (url.includes('islam') || url.includes('quran') || url.includes('hadith') || 
                    url.includes('tafsir') || url.includes('mufti') || url.includes('sheikh')) {
           trustScore = 50;
@@ -209,23 +300,78 @@ export async function POST(request: NextRequest) {
           trustScore = 10;
         }
         
-        // Boost score if title is relevant
-        if (title.includes('tafsir') || title.includes('explanation')) trustScore += 10;
+        // Academic domain bonus
+        if (academicDomains.some(domain => url.includes(domain))) {
+          qualityScore += 25;
+        }
         
-        return { ...context, trustScore };
+        // Quality indicators in content
+        const scholarlyTerms = [
+          'ibn', 'al-', 'scholarly opinion', 'islamic jurisprudence', 'fiqh',
+          'hadith scholar', 'tafsir scholar', 'islamic scholar', 'mufti',
+          'sheikh', 'imam', 'fatwa', 'ijtihad', 'ijma', 'qiyas',
+          'sahih', 'authentic', 'narrated', 'chain of narration', 'isnad',
+          'exegesis', 'commentary', 'interpretation', 'explanation'
+        ];
+        
+        const scholarlyTermCount = scholarlyTerms.filter(term => 
+          fullContent.includes(term) || title.includes(term)
+        ).length;
+        
+        // Boost quality score based on scholarly terminology
+        qualityScore += Math.min(scholarlyTermCount * 5, 25); // Max 25 points
+        
+        // Content depth bonus (longer, more detailed content)
+        if (context.hasDetailedContent) {
+          qualityScore += 15;
+        } else if (context.contentLength > 200) {
+          qualityScore += 5;
+        }
+        
+        // Title relevance bonus
+        if (title.includes('tafsir') || title.includes('explanation') || title.includes('commentary')) {
+          trustScore += 10;
+          qualityScore += 5;
+        }
+        
+        // Exact reference mention bonus in content (beyond just title)
+        if (fullContent.includes(exactReference.toLowerCase())) {
+          qualityScore += 10;
+        }
+        
+        // URL pattern quality indicators
+        if (url.includes('/tafsir/') || url.includes('/explanation/') || 
+            url.includes('/commentary/') || url.includes('/scholar/') ||
+            url.includes('/fatwa/') || url.includes('/question/')) {
+          qualityScore += 10;
+        }
+        
+        return { ...context, trustScore, qualityScore };
       });
       
-      // Filter out low-trust contexts and sort by trust score + relevance score
+      // Filter out low-trust contexts - only allow highly and medium trusted scholarly sources
+      // Minimum trust score of 50 required (scholarly Islamic domains with tafsir/mufti/sheikh)
       const filteredContexts = scoredContexts
-        .filter(context => context.trustScore > 0)
+        .filter(context => context.trustScore >= 50) // Only scholarly sources with islam/quran/hadith/tafsir/mufti/sheikh
         .sort((a, b) => {
-          // Sort by trust score first, then by relevance score
-          const scoreDiff = b.trustScore - a.trustScore;
-          if (scoreDiff !== 0) return scoreDiff;
+          // Multi-tier sorting for highest quality:
+          // 1. Trust score (highest priority)
+          const trustDiff = b.trustScore - a.trustScore;
+          if (trustDiff !== 0) return trustDiff;
+          
+          // 2. Quality score (content depth, scholarly terms, academic sources)
+          const qualityDiff = (b.qualityScore || 0) - (a.qualityScore || 0);
+          if (qualityDiff !== 0) return qualityDiff;
+          
+          // 3. Content depth (longer, more detailed content preferred)
+          const contentDiff = (b.contentLength || 0) - (a.contentLength || 0);
+          if (contentDiff !== 0) return contentDiff;
+          
+          // 4. Original relevance score from search engine
           return (b.score || 0) - (a.score || 0);
         });
 
-      // Return top 3 most trusted contexts
+      // Return top 3 highest quality contexts
       const finalContexts = filteredContexts.slice(0, 3);
 
       return NextResponse.json({
@@ -348,10 +494,84 @@ async function handleBatchRequest(
           ? `${surahNumber}:${ayahNumber || reference.split(':')[1]}`
           : reference;
         
+        // Controversial keywords and domains to exclude - only religious/scholarly interpretations allowed
+        const controversialKeywords = [
+          'extremist', 'terrorism', 'terrorist', 'radical', 'jihadist', 'militant',
+          'violence', 'hate', 'discrimination', 'prejudice', 'islamophobia',
+          'controversy', 'debate', 'criticism', 'attack', 'offensive', 'banned',
+          'condemned', 'denounced', 'scandal', 'outrage', 'propaganda', 'false',
+          'misconception', 'misquote', 'rejector', 'refutation', 'refute',
+          'disprove', 'falsehood', 'lie', 'hoax', 'fake'
+        ];
+        
+        // Anti-Islamic/propaganda keywords to exclude
+        const antiIslamicKeywords = [
+          'prophet rejector', 'quran reject', 'islam reject', 'anti-islam',
+          'anti-muslim', 'islamic terrorism', 'violent islam', 'extremist islam'
+        ];
+        
+        // Community post indicators to exclude
+        const communityPostIndicators = [
+          'comment', 'reply', 'response', 'discussion', 'forum', 'thread',
+          'posted by', 'user said', 'member', 'community', 'ask question',
+          'leave a comment', 'add your comment', 'join the discussion'
+        ];
+        
+        // Exclude non-scholarly discussion platforms, social media, and blogging platforms
+        const controversialDomains = [
+          'reddit.com',
+          'quora.com',
+          'stackexchange.com',
+          'wikipedia.org/wiki/controversy',
+          'facebook.com',
+          'twitter.com',
+          'x.com',
+          'instagram.com',
+          'linkedin.com',
+          'tiktok.com',
+          'youtube.com',
+          'pinterest.com',
+          'snapchat.com',
+          'tumblr.com',
+          'discord.com',
+          'telegram.org',
+          'wordpress.com',
+          'blogger.com',
+          'medium.com',
+          'substack.com',
+          'patreon.com'
+        ];
+
         const contexts = (data.results || [])
           .map((result) => {
             const content = (result.content || '').toLowerCase();
             const title = (result.title || '').toLowerCase();
+            const url = (result.url || '').toLowerCase();
+            const combinedText = `${content} ${title}`.toLowerCase();
+            
+            // Filter out controversial content
+            const isControversial = controversialKeywords.some(keyword => 
+              content.includes(keyword) || title.includes(keyword)
+            ) || controversialDomains.some(domain => url.includes(domain));
+            
+            // Filter out anti-Islamic/propaganda content
+            const isAntiIslamic = antiIslamicKeywords.some(keyword => 
+              combinedText.includes(keyword)
+            );
+            
+            // Filter out community posts (comments, forums, discussions)
+            const isCommunityPost = communityPostIndicators.some(indicator => 
+              combinedText.includes(indicator) || url.includes('/comment') || 
+              url.includes('/reply') || url.includes('/discussion') ||
+              url.includes('/forum') || url.includes('/thread')
+            );
+            
+            // Filter out WordPress blogs (except trusted Islamic sites)
+            const isWordPressBlog = url.includes('wordpress.com') || url.includes('blogspot.com');
+            
+            if (isControversial || isAntiIslamic || isCommunityPost || isWordPressBlog) {
+              return null;
+            }
             
             // Check if result actually mentions the exact reference (strict matching)
             const ayahNum = ayahNumber || reference.split(':')[1];
@@ -374,39 +594,59 @@ async function handleBatchRequest(
                  hadithNumber && content.includes(hadithNumber.toLowerCase()))
               ));
             
+            // Calculate content quality indicators
+            const contentLength = result.content?.length || 0;
+            const hasDetailedContent = contentLength > 500; // Longer content indicates more thorough explanation
+            
             return {
               title: result.title || 'Untitled',
               url: result.url || '#',
               snippet: (result.content?.substring(0, 200) || '') + (result.content && result.content.length > 200 ? '...' : ''),
               score: result.score || 0,
               relevance: mentionsReference ? 1 : 0,
+              contentLength: contentLength,
+              hasDetailedContent: hasDetailedContent,
+              fullContent: content || '',
             };
           })
-          .filter(context => context.relevance > 0); // Only include results that mention the exact reference
+          .filter((context): context is NonNullable<typeof context> => context !== null && context.relevance > 0); // Only include results that mention the exact reference and are not controversial
 
-        // Prioritize trusted sources (only relevant contexts remain from filtering)
+        // Prioritize trusted sources with enhanced quality scoring
         const scoredContexts = contexts.map(context => {
-          if (!context.url || context.url === '#') return { ...context, trustScore: 0 };
+          if (!context.url || context.url === '#') return { ...context, trustScore: 0, qualityScore: 0 };
           
           const url = context.url.toLowerCase();
           const title = (context.title || '').toLowerCase();
+          const fullContent = (context.fullContent || '').toLowerCase();
           let trustScore = 0;
+          let qualityScore = 0;
           
+          // Highly trusted scholarly domains (score: 100)
           const highlyTrustedDomains = [
             'islamqa.info', 'islamqa.org', 'islamqa.com', 'islamweb.net', 
             'islamway.net', 'islamhouse.com', 'dar-alifta.org', 'al-islam.org',
-            'quran.com', 'sunnah.com'
+            'quran.com', 'sunnah.com', 'islamqa.info/en', 'islamqa.org/en'
           ];
           
+          // Medium trusted scholarly domains (score: 75)
           const mediumTrustedDomains = [
             'islamicfinder.org', 'muslim.or.id', 'islamreligion.com',
             'islamicity.org', 'islamonline.net', 'discoverislam.com'
           ];
           
+          // Academic and institutional domains (extra trust)
+          const academicDomains = [
+            '.edu', 'university', 'academic', 'institute', 'research', 'scholar',
+            'oxford', 'harvard', 'stanford', 'cambridge', 'princeton'
+          ];
+          
+          // Check highly trusted first
           if (highlyTrustedDomains.some(domain => url.includes(domain))) {
             trustScore = 100;
+            qualityScore += 30; // Bonus for highly trusted domain
           } else if (mediumTrustedDomains.some(domain => url.includes(domain))) {
             trustScore = 75;
+            qualityScore += 20; // Bonus for medium trusted domain
           } else if (url.includes('islam') || url.includes('quran') || url.includes('hadith') || 
                      url.includes('tafsir') || url.includes('mufti') || url.includes('sheikh')) {
             trustScore = 50;
@@ -417,16 +657,74 @@ async function handleBatchRequest(
             trustScore = 10;
           }
           
-          if (title.includes('tafsir') || title.includes('explanation')) trustScore += 10;
+          // Academic domain bonus
+          if (academicDomains.some(domain => url.includes(domain))) {
+            qualityScore += 25;
+          }
           
-          return { ...context, trustScore };
+          // Quality indicators in content
+          const scholarlyTerms = [
+            'ibn', 'al-', 'scholarly opinion', 'islamic jurisprudence', 'fiqh',
+            'hadith scholar', 'tafsir scholar', 'islamic scholar', 'mufti',
+            'sheikh', 'imam', 'fatwa', 'ijtihad', 'ijma', 'qiyas',
+            'sahih', 'authentic', 'narrated', 'chain of narration', 'isnad',
+            'exegesis', 'commentary', 'interpretation', 'explanation'
+          ];
+          
+          const scholarlyTermCount = scholarlyTerms.filter(term => 
+            fullContent.includes(term) || title.includes(term)
+          ).length;
+          
+          // Boost quality score based on scholarly terminology
+          qualityScore += Math.min(scholarlyTermCount * 5, 25); // Max 25 points
+          
+          // Content depth bonus (longer, more detailed content)
+          if (context.hasDetailedContent) {
+            qualityScore += 15;
+          } else if (context.contentLength > 200) {
+            qualityScore += 5;
+          }
+          
+          // Title relevance bonus
+          if (title.includes('tafsir') || title.includes('explanation') || title.includes('commentary')) {
+            trustScore += 10;
+            qualityScore += 5;
+          }
+          
+          // Exact reference mention bonus in content (beyond just title)
+          if (fullContent.includes(exactReference.toLowerCase())) {
+            qualityScore += 10;
+          }
+          
+          // URL pattern quality indicators
+          if (url.includes('/tafsir/') || url.includes('/explanation/') || 
+              url.includes('/commentary/') || url.includes('/scholar/') ||
+              url.includes('/fatwa/') || url.includes('/question/')) {
+            qualityScore += 10;
+          }
+          
+          return { ...context, trustScore, qualityScore };
         });
         
+        // Filter out low-trust contexts - only allow highly and medium trusted scholarly sources
+        // Minimum trust score of 50 required (scholarly Islamic domains with tafsir/mufti/sheikh)
         const filteredContexts = scoredContexts
-          .filter(context => context.trustScore > 0)
+          .filter(context => context.trustScore >= 50) // Only scholarly sources with islam/quran/hadith/tafsir/mufti/sheikh
           .sort((a, b) => {
-            const scoreDiff = b.trustScore - a.trustScore;
-            if (scoreDiff !== 0) return scoreDiff;
+            // Multi-tier sorting for highest quality:
+            // 1. Trust score (highest priority)
+            const trustDiff = b.trustScore - a.trustScore;
+            if (trustDiff !== 0) return trustDiff;
+            
+            // 2. Quality score (content depth, scholarly terms, academic sources)
+            const qualityDiff = (b.qualityScore || 0) - (a.qualityScore || 0);
+            if (qualityDiff !== 0) return qualityDiff;
+            
+            // 3. Content depth (longer, more detailed content preferred)
+            const contentDiff = (b.contentLength || 0) - (a.contentLength || 0);
+            if (contentDiff !== 0) return contentDiff;
+            
+            // 4. Original relevance score from search engine
             return (b.score || 0) - (a.score || 0);
           });
 

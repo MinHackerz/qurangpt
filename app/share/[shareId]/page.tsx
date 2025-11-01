@@ -111,9 +111,16 @@ export default function SharePage() {
         setFormattedResponse(sharedContent.response);
         setIsFormatting(false);
       } else {
-        // Content needs formatting
+        // Content needs formatting - use fixed content types to avoid refetching
+        // Shared content should be displayed as-is, without triggering new API calls
         setIsFormatting(true);
-        formatResponse(sharedContent.response, sharedContent.question, textSize, selectedContentTypes)
+        // Use default content types that don't trigger additional API calls
+        formatResponse(sharedContent.response, sharedContent.question, textSize, {
+          tafsir: true,
+          hadith: true,
+          webSearch: false, // Don't fetch contexts for shared content
+          suggestedQuestions: false // Don't fetch questions for shared content
+        })
           .then(setFormattedResponse)
           .finally(() => setIsFormatting(false));
       }
@@ -122,7 +129,7 @@ export default function SharePage() {
     // We only want to format when content/question changes, not when options are toggled.
     // Toggling options should only filter the already-formatted content (handled by filteredContent memo).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sharedContent?.response, sharedContent?.question, formatResponse]);
+  }, [sharedContent?.response, sharedContent?.question]);
 
   // Handle sharing current page content
   const handleShareContent = useCallback(async () => {
@@ -233,9 +240,10 @@ export default function SharePage() {
     return words.length >= 3;
   };
 
-  // Handle improve question
+  // Handle improve question - only affects the input field, not shared content
   const handleImproveQuestion = async () => {
-    if (!inputValue.trim() || isImproving || hasBeenImproved || !hasMinimumWords(inputValue)) return;
+    // Only allow improving question if input field is shown and has valid input
+    if (!showNewQuestionInput || !inputValue.trim() || isImproving || hasBeenImproved || !hasMinimumWords(inputValue)) return;
 
     setIsImproving(true);
     try {
