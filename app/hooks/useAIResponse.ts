@@ -83,6 +83,7 @@ const validateAndCleanResponse = (response: string): string => {
 export const useAIResponse = (textSize: 'small' | 'medium' | 'large' = 'small', selectedContentTypes?: {
   tafsir: boolean;
   hadith: boolean;
+  webSearch: boolean;
   suggestedQuestions: boolean;
 }) => {
   const isTextLarge = textSize === 'large';
@@ -221,6 +222,7 @@ Question: ${content}`;
   const formatResponse = useCallback(async (response: string, userQuery?: string, currentTextSize?: 'small' | 'medium' | 'large', contentTypes?: {
     tafsir: boolean;
     hadith: boolean;
+    webSearch: boolean;
     suggestedQuestions: boolean;
   }, abortController?: AbortController, isAborted?: () => boolean) => {
     // Get global abort manager
@@ -244,9 +246,20 @@ Question: ${content}`;
       return response;
     }
 
-    // Process each ayah with tafsir data
+    // Collect all ayah references for batch context fetching
+    const ayahContextRequests: Array<{
+      type: 'ayah';
+      reference: string;
+      surahName: string;
+      ayahNumber: string;
+      surahNumber: string;
+      match: AyahMatch;
+      index: number;
+    }> = [];
+    
+    // Process each ayah with tafsir data (without contexts first)
     const ayahReplacements = await Promise.all(
-      ayahMatches.map(async (match: AyahMatch) => {
+      ayahMatches.map(async (match: AyahMatch, index: number) => {
         // Check if operation was aborted before processing each ayah
         if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {
           console.log('formatResponse - Ayah processing aborted, skipping ayah:', match.surahName);
@@ -368,6 +381,23 @@ Question: ${content}`;
           }
         }
         
+        // Create reference for this ayah
+        const ayahReference = `${finalSurahNumber}:${ayahNumberStr}`;
+        
+        // Store context request for batch fetching
+        ayahContextRequests.push({
+          type: 'ayah',
+          reference: ayahReference,
+          surahName: surahName,
+          ayahNumber: ayahNumberStr,
+          surahNumber: finalSurahNumber.toString(),
+          match,
+          index,
+        });
+        
+        // Return replacement without context for now
+        let contextHTML = '';
+
         // Generate tafsir buttons and content
         let tafsirButtonsHTML = '';
         let tafsirContentHTML = '';
@@ -603,14 +633,129 @@ Question: ${content}`;
                 </div>
               </div>
             </div>
-          </div>`
+            __CONTEXT_PLACEHOLDER__
+          </div>`,
+          reference: ayahReference, // Store reference for matching contexts
         };
       })
     );
     
+    // Fetch all ayah contexts in a single batch request (only if webSearch is enabled)
+    const ayahContextMap = new Map<string, any[]>();
+    const isAyahWebSearchEnabled = contentTypes?.webSearch === true || selectedContentTypes?.webSearch === true;
+    if (ayahContextRequests.length > 0 && isAyahWebSearchEnabled) {
+      try {
+        const batchResponse = await fetch('/api/context', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            batch: ayahContextRequests.map(req => ({
+              type: req.type,
+              reference: req.reference,
+              surahName: req.surahName,
+              ayahNumber: req.ayahNumber,
+              surahNumber: req.surahNumber,
+            })),
+          }),
+        });
+
+        if (batchResponse.ok) {
+          const batchData = await batchResponse.json();
+          if (batchData.success && batchData.results) {
+            batchData.results.forEach((result: any) => {
+              if (result.contexts && result.contexts.length > 0) {
+                ayahContextMap.set(result.reference, result.contexts);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.log('Batch context fetch failed for ayahs:', error);
+      }
+    }
+
+    // Helper function to generate context HTML
+    const generateContextHTML = (contexts: any[]) => {
+      if (!contexts || contexts.length === 0) return '';
+      
+      const getHostname = (url: string) => {
+        try {
+          return new URL(url).hostname.replace('www.', '');
+        } catch {
+          return url.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace('www.', '');
+        }
+      };
+      
+      return `
+            <div class="ayah-context-section mt-4 w-full">
+              <div class="flex gap-2.5 w-full">
+                ${contexts.map((context: any) => `
+                  <a 
+                    href="${context.url}" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    class="flex-1 min-w-0 h-32 p-2.5 bg-transparent rounded-lg border border-gray-200/50 dark:border-gray-700/50 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-200 group overflow-hidden"
+                  >
+                    <div class="w-full h-full flex flex-col overflow-hidden">
+                      <div class="flex items-start gap-1.5 mb-1.5 flex-shrink-0 overflow-hidden">
+                        <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        <div class="flex-1 min-w-0 overflow-hidden">
+                          <h5 class="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1 line-clamp-2 leading-tight break-words overflow-hidden">
+                            ${context.title}
+                          </h5>
+                        </div>
+                      </div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed flex-1 min-h-0 mb-1.5 overflow-hidden break-words">
+                        ${context.snippet}
+                      </p>
+                      <div class="flex items-center justify-between mt-auto pt-1.5 border-t border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 overflow-hidden">
+                        <span class="text-xs text-gray-400 dark:text-gray-500 truncate flex-1 min-w-0 overflow-hidden">
+                          ${getHostname(context.url)}
+                        </span>
+                        <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </div>
+                    </div>
+                  </a>
+                `).join('')}
+              </div>
+            </div>`;
+    };
+
+    // Update ayah replacements with contexts from batch
+    // Match by reference instead of index to ensure correct mapping
+    const updatedAyahReplacements = ayahReplacements.map((replacement) => {
+      // Find the matching context request by reference stored in replacement
+      const reference = (replacement as any).reference;
+      if (reference) {
+        const contexts = ayahContextMap.get(reference);
+        const contextHTML = contexts ? generateContextHTML(contexts) : '';
+        // Replace placeholder with actual context HTML
+        const updatedReplacement = replacement.replacement.replace(
+          '__CONTEXT_PLACEHOLDER__',
+          contextHTML
+        );
+        return {
+          match: replacement.match,
+          replacement: updatedReplacement,
+        };
+      }
+      // Remove placeholder if no context or no reference
+      const updatedReplacement = replacement.replacement.replace('__CONTEXT_PLACEHOLDER__', '');
+      return {
+        match: replacement.match,
+        replacement: updatedReplacement,
+      };
+    });
+
     // Apply all ayah replacements
     let processedText = response;
-    ayahReplacements.forEach(({ match, replacement }) => {
+    updatedAyahReplacements.forEach(({ match, replacement }) => {
       processedText = processedText.replace(match, replacement);
     });
 
@@ -638,7 +783,17 @@ Question: ${content}`;
       }
     }
 
-    // Process each hadith reference
+    // Collect all hadith references for batch context fetching
+    const hadithContextRequests: Array<{
+      type: 'hadith';
+      reference: string;
+      bookName: string;
+      hadithNumber: string;
+      bookSlug: string;
+    }> = [];
+
+    // Process each hadith reference (collect contexts first)
+    const hadithDataMap = new Map<number, HadithData>();
     const hadithReplacements = await Promise.all(
       hadithReferences.map(async (ref, index) => {
         // Check if operation was aborted before processing each hadith
@@ -655,10 +810,25 @@ Question: ${content}`;
           const hadith = await searchHadiths(`${ref.bookName} ${ref.hadithNumber}`, 1);
           
           if (hadith && hadith.length > 0) {
-            const hadithBoxHTML = generateHadithBoxHTML(hadith[0], index, currentTextSize ?? textSize);
+            const hadithData = hadith[0];
+            hadithDataMap.set(index, hadithData);
+            
+            // Store context request
+            const formatted = hadithData.hadithNumber?.toString() || ref.hadithNumber;
+            // Get book name from formatted hadith or ref
+            const bookNameForContext = (hadithData as any).bookName || ref.bookName || 'Hadith';
+            hadithContextRequests.push({
+              type: 'hadith',
+              reference: `${hadithData.bookSlug}-${hadithData.hadithNumber}`,
+              bookName: bookNameForContext,
+              hadithNumber: formatted,
+              bookSlug: hadithData.bookSlug,
+            });
+            
+            // Return replacement without context for now
             return {
               match: ref.originalMatch,
-              replacement: hadithBoxHTML
+              replacement: '__HADITH_PLACEHOLDER__', // Placeholder to replace later
             };
           } else {
             // Fallback: create a simple reference link
@@ -690,16 +860,77 @@ Question: ${content}`;
       })
     );
 
+    // Add intelligent hadiths context requests
+    intelligentHadiths.forEach((hadith, index) => {
+      const formatted = hadith.hadithNumber?.toString() || '';
+      hadithContextRequests.push({
+        type: 'hadith',
+        reference: `${hadith.bookSlug}-${hadith.hadithNumber}`,
+        bookName: hadith.book?.bookName || hadith.collectionName || 'Hadith',
+        hadithNumber: formatted,
+        bookSlug: hadith.bookSlug,
+      });
+    });
+
+    // Batch fetch all hadith contexts (only if webSearch is enabled)
+    const hadithContextMap = new Map<string, any[]>();
+    const isHadithWebSearchEnabled = contentTypes?.webSearch === true || selectedContentTypes?.webSearch === true;
+    if (hadithContextRequests.length > 0 && isHadithWebSearchEnabled) {
+      try {
+        const batchResponse = await fetch('/api/context', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            batch: hadithContextRequests,
+          }),
+        });
+
+        if (batchResponse.ok) {
+          const batchData = await batchResponse.json();
+          if (batchData.success && batchData.results) {
+            batchData.results.forEach((result: any) => {
+              if (result.contexts && result.contexts.length > 0) {
+                hadithContextMap.set(result.reference, result.contexts);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.log('Batch context fetch failed for hadiths:', error);
+      }
+    }
+
+    // Update hadith replacements with contexts
+    const updatedHadithReplacements = hadithReplacements.map((replacement, index) => {
+      if (replacement.replacement === '__HADITH_PLACEHOLDER__') {
+        const hadithData = hadithDataMap.get(index);
+        if (hadithData) {
+          const reference = `${hadithData.bookSlug}-${hadithData.hadithNumber}`;
+          const contexts = hadithContextMap.get(reference) || [];
+          const hadithBoxHTML = generateHadithBoxHTML(hadithData, index, currentTextSize ?? textSize, contexts);
+          return {
+            match: replacement.match,
+            replacement: hadithBoxHTML,
+          };
+        }
+      }
+      return replacement;
+    });
+
     // Apply hadith replacements
-    hadithReplacements.forEach(({ match, replacement }) => {
+    updatedHadithReplacements.forEach(({ match, replacement }) => {
       processedText = processedText.replace(match, replacement);
     });
 
     // Add intelligent hadiths at the end of the response only if hadith is selected
     if (contentTypes?.hadith !== false && intelligentHadiths.length > 0) {
-      const intelligentHadithsHTML = intelligentHadiths.map((hadith, index) => 
-        generateHadithBoxHTML(hadith, index + 1000, currentTextSize ?? textSize) // Use high index to avoid conflicts
-      ).join('');
+      const intelligentHadithsHTML = intelligentHadiths.map((hadith, index) => {
+        const reference = `${hadith.bookSlug}-${hadith.hadithNumber}`;
+        const contexts = hadithContextMap.get(reference) || [];
+        return generateHadithBoxHTML(hadith, index + 1000, currentTextSize ?? textSize, contexts); // Use high index to avoid conflicts
+      }).join('');
       
       processedText += `
         <div class="mt-8 mb-6">
@@ -868,6 +1099,7 @@ Question: ${content}`;
     contentTypes?: {
       tafsir: boolean;
       hadith: boolean;
+      webSearch: boolean;
       suggestedQuestions: boolean;
     },
     abortController?: AbortController,
@@ -924,7 +1156,13 @@ Question: ${content}`;
       if (!abortManager.isAborted() && !isAborted?.() && !abortController?.signal.aborted) {
         console.log('askQuran - Proceeding with formatting...');
         try {
-          formattedResponse = await formatResponse(response, trimmedContent, textSize, contentTypes || selectedContentTypes, abortController, isAborted);
+          const finalContentTypes = contentTypes || {
+            tafsir: selectedContentTypes?.tafsir ?? false,
+            hadith: selectedContentTypes?.hadith ?? false,
+            webSearch: selectedContentTypes?.webSearch ?? false,
+            suggestedQuestions: selectedContentTypes?.suggestedQuestions ?? false,
+          };
+          formattedResponse = await formatResponse(response, trimmedContent, textSize, finalContentTypes, abortController, isAborted);
         } catch (error) {
           console.log('askQuran - Formatting failed, using original response:', error);
           formattedResponse = response;

@@ -248,6 +248,7 @@ function HomeContent() {
   const [selectedContentTypes, setSelectedContentTypes] = useState({
     tafsir: true,
     hadith: false,
+    webSearch: false,
     suggestedQuestions: false
   });
   
@@ -279,12 +280,14 @@ function HomeContent() {
       // Handle content type parameters from URL
       const tafsirParam = searchParams.get('tafsir');
       const hadithParam = searchParams.get('hadith');
+      const webSearchParam = searchParams.get('webSearch');
       const suggestedQuestionsParam = searchParams.get('suggestedQuestions');
       
       // Create content types object from URL parameters
       const urlContentTypes = {
         tafsir: tafsirParam === 'true',
         hadith: hadithParam === 'true',
+        webSearch: webSearchParam === 'true',
         suggestedQuestions: suggestedQuestionsParam === 'true'
       };
       
@@ -667,6 +670,7 @@ function HomeContent() {
   const handleContentTypeChange = useCallback((contentTypes: { 
     tafsir: boolean; 
     hadith: boolean; 
+    webSearch: boolean;
     suggestedQuestions: boolean;
   }) => {
     setSelectedContentTypes(contentTypes);

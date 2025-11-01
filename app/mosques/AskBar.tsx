@@ -9,12 +9,13 @@ export default function AskBar() {
 
   const handleSend = (
     question: string,
-    options: { tafsir: boolean; hadith: boolean; suggestedQuestions: boolean; textSize: 'small' | 'medium' | 'large' }
+    options: { tafsir: boolean; hadith: boolean; webSearch: boolean; suggestedQuestions: boolean; textSize: 'small' | 'medium' | 'large' }
   ) => {
     const params = new URLSearchParams();
     params.set('question', question);
     params.set('tafsir', String(!!options.tafsir));
     params.set('hadith', String(!!options.hadith));
+    params.set('webSearch', String(!!options.webSearch));
     params.set('suggestedQuestions', String(!!options.suggestedQuestions));
     window.location.href = `/${params.toString() ? `?${params.toString()}` : ''}`;
   };

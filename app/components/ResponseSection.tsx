@@ -26,6 +26,7 @@ interface ResponseSectionProps {
   selectedContentTypes?: {
     tafsir: boolean;
     hadith: boolean;
+    webSearch: boolean;
     suggestedQuestions: boolean;
   };
 }
@@ -39,7 +40,7 @@ export default function ResponseSection({
   textSize = 'small',
   shareUrl,
   onShare,
-  selectedContentTypes = { tafsir: false, hadith: false, suggestedQuestions: false }
+  selectedContentTypes = { tafsir: false, hadith: false, webSearch: false, suggestedQuestions: false }
 }: ResponseSectionProps) {
   const isTextLarge = textSize === 'large';
   const [showCopySuccess, setShowCopySuccess] = useState(false);
@@ -79,6 +80,7 @@ export default function ResponseSection({
   // Use custom hooks
   const questionEditing = useQuestionEditing(userQuestion, onQuestionEdit);
   useGlobalEventDelegation();
+  // Note: useContextManager is disabled - contexts are now fetched during response formatting
   
   // Scroll detection for share button
   const containerRef = useRef<HTMLDivElement>(null);

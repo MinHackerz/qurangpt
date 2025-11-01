@@ -45,6 +45,7 @@ export default function QuranPage() {
                 question: question,
                 tafsir: options.tafsir.toString(),
                 hadith: options.hadith.toString(),
+                webSearch: options.webSearch.toString(),
                 suggestedQuestions: options.suggestedQuestions.toString(),
                 textSize: options.textSize
               });

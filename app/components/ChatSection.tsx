@@ -5,6 +5,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useHadithManager } from '../hooks/useHadithManager';
 import { getGlobalAbortManager } from '../hooks/useAbortManager';
+import { detectLanguage } from '../utils/languageDetection';
 
 interface ChatSectionProps {
   content: string;
@@ -20,11 +21,13 @@ interface ChatSectionProps {
   selectedContentTypes?: {
     tafsir: boolean;
     hadith: boolean;
+    webSearch: boolean;
     suggestedQuestions: boolean;
   };
   onContentTypeChange?: (contentTypes: {
     tafsir: boolean;
     hadith: boolean;
+    webSearch: boolean;
     suggestedQuestions: boolean;
   }) => void;
   // Stop operation functionality
@@ -42,7 +45,7 @@ export default function ChatSection({
   // Hero section props
   getGreetingMessage,
   // Content type selection props
-  selectedContentTypes = { tafsir: false, hadith: false, suggestedQuestions: false },
+  selectedContentTypes = { tafsir: false, hadith: false, webSearch: false, suggestedQuestions: false },
   onContentTypeChange,
   // Stop operation functionality
   onStopOperation
@@ -59,6 +62,11 @@ export default function ChatSection({
   
   // State for content type dropdown
   const [showContentTypeDropdown, setShowContentTypeDropdown] = useState(false);
+  
+  // State for improve question
+  const [isImproving, setIsImproving] = useState(false);
+  const [hasBeenImproved, setHasBeenImproved] = useState(false);
+  const isImprovingRef = useRef(false);
 
   // Determine current state - this is the key logic for the component behavior
   const isDefaultState = !showSummary && !isProcessing; // Show hero section
@@ -123,6 +131,15 @@ export default function ChatSection({
   }, [isMobile]);
   
   
+  // Reset hasBeenImproved when content changes (user is typing new text)
+  // Skip reset if we just improved the question
+  useEffect(() => {
+    if (!isImprovingRef.current) {
+      setHasBeenImproved(false);
+    }
+    isImprovingRef.current = false;
+  }, [content]);
+
   // Show language reminder when user starts typing
   useEffect(() => {
     if (content.trim().length > 0 && content.trim().length <= 20) {
@@ -135,7 +152,7 @@ export default function ChatSection({
   
 
   // Handle content type toggle
-  const handleContentTypeToggle = useCallback((contentType: 'tafsir' | 'hadith' | 'suggestedQuestions') => {
+  const handleContentTypeToggle = useCallback((contentType: 'tafsir' | 'hadith' | 'webSearch' | 'suggestedQuestions') => {
     if (!onContentTypeChange) return;
     
     const newContentTypes = {
@@ -144,6 +161,47 @@ export default function ChatSection({
     };
     onContentTypeChange(newContentTypes);
   }, [selectedContentTypes, onContentTypeChange]);
+
+  // Check if content has minimum words for improvement
+  const hasMinimumWords = (text: string) => {
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    return words.length >= 3;
+  };
+
+  // Handle improve question
+  const handleImproveQuestion = async () => {
+    if (!content.trim() || isImproving || isProcessing || hasBeenImproved || !hasMinimumWords(content)) return;
+
+    setIsImproving(true);
+    try {
+      const language = detectLanguage(content);
+      const response = await fetch('/api/improve-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: content.trim(),
+          language: language
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to improve question');
+      }
+
+      const data = await response.json();
+      if (data.improvedQuestion) {
+        isImprovingRef.current = true; // Mark that we're setting improved value
+        setContent(data.improvedQuestion);
+        setHasBeenImproved(true);
+      }
+    } catch (error) {
+      console.error('Error improving question:', error);
+    } finally {
+      setIsImproving(false);
+    }
+  };
 
   // Auto-resize function with improved mobile support and scrollable behavior
   const autoResize = (target: HTMLTextAreaElement | null) => {
@@ -521,6 +579,32 @@ export default function ChatSection({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        handleContentTypeToggle('webSearch');
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                        selectedContentTypes.webSearch
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                      type="button"
+                    >
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                        selectedContentTypes.webSearch
+                          ? 'border-emerald-500 bg-emerald-500'
+                          : 'border-gray-300 dark:border-gray-600'
+                      }`}>
+                        {selectedContentTypes.webSearch && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      Web Search
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         handleContentTypeToggle('suggestedQuestions');
                       }}
                       className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
@@ -599,6 +683,26 @@ export default function ChatSection({
                 </svg>
               </button>
 
+              {/* Web Search Toggle - Icon only */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleContentTypeToggle('webSearch');
+                }}
+                className={`inline-flex items-center justify-center w-7 h-7 rounded-md cursor-pointer transition-all duration-200 flex-shrink-0 ${
+                  selectedContentTypes.webSearch
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                }`}
+                type="button"
+                title="Web Search"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+              </button>
+
               {/* Suggested Questions Toggle - Icon only */}
               <button
                 onClick={(e) => {
@@ -660,6 +764,26 @@ export default function ChatSection({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
                 <span className="font-medium">Hadith</span>
+              </button>
+
+              {/* Web Search Toggle */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleContentTypeToggle('webSearch');
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md cursor-pointer transition-all duration-200 flex-shrink-0 ${
+                  selectedContentTypes.webSearch
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/40'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+                type="button"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <span className="font-medium">Web Search</span>
               </button>
 
               {/* Suggested Questions Toggle */}
@@ -754,6 +878,43 @@ export default function ChatSection({
 
             {/* Action buttons container */}
             <div className="absolute bottom-2 right-1 sm:right-2 flex items-center gap-1.5 sm:gap-3 z-20">
+              {/* Improve Question Button */}
+              {content.trim() && !isProcessing && hasMinimumWords(content) && (
+                <motion.button
+                  whileHover={!hasBeenImproved && !isImproving ? { scale: 1.05 } : {}}
+                  whileTap={!hasBeenImproved && !isImproving ? { scale: 0.95 } : {}}
+                  style={{ pointerEvents: 'auto', zIndex: 30 }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!hasBeenImproved && !isImproving) {
+                      handleImproveQuestion();
+                    }
+                  }}
+                  disabled={isImproving || hasBeenImproved}
+                  className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                    hasBeenImproved || isImproving
+                      ? 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  }`}
+                  title={hasBeenImproved ? "Question already improved" : "Improve question"}
+                  type="button"
+                >
+                  <div className="relative z-10 flex items-center justify-center">
+                    {isImproving ? (
+                      <svg className="animate-spin w-3.5 h-3.5 sm:w-4 sm:h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      </svg>
+                    )}
+                  </div>
+                </motion.button>
+              )}
+              
               {/* Send/Stop Button - Revolutionary Design */}
               <motion.button
                 whileHover={{ scale: 1.05 }}

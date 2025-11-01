@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { detectLanguage } from '../utils/languageDetection';
 
 interface AskQuranGPTInputProps {
   onSend: (question: string, options: {
     tafsir: boolean;
     hadith: boolean;
+    webSearch: boolean;
     suggestedQuestions: boolean;
     textSize: 'small' | 'medium' | 'large';
   }) => void;
@@ -19,9 +21,22 @@ export default function AskQuranGPTInput({ onSend, onReset }: AskQuranGPTInputPr
   const [selectedContentTypes, setSelectedContentTypes] = useState({
     tafsir: true,
     hadith: false,
+    webSearch: false,
     suggestedQuestions: false
   });
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('small');
+  const [isImproving, setIsImproving] = useState(false);
+  const [hasBeenImproved, setHasBeenImproved] = useState(false);
+  const isImprovingRef = useRef(false);
+
+  // Reset hasBeenImproved when input value changes (user is typing new text)
+  // Skip reset if we just improved the question
+  useEffect(() => {
+    if (!isImprovingRef.current) {
+      setHasBeenImproved(false);
+    }
+    isImprovingRef.current = false;
+  }, [inputValue]);
 
   // Click outside handler to close dropdown
   useEffect(() => {
@@ -61,11 +76,52 @@ export default function AskQuranGPTInput({ onSend, onReset }: AskQuranGPTInputPr
   };
 
   // Handle content type toggle
-  const handleContentTypeToggle = (contentType: 'tafsir' | 'hadith' | 'suggestedQuestions') => {
+  const handleContentTypeToggle = (contentType: 'tafsir' | 'hadith' | 'webSearch' | 'suggestedQuestions') => {
     setSelectedContentTypes(prev => ({
       ...prev,
       [contentType]: !prev[contentType]
     }));
+  };
+
+  // Check if input has minimum words for improvement
+  const hasMinimumWords = (text: string) => {
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    return words.length >= 3;
+  };
+
+  // Handle improve question
+  const handleImproveQuestion = async () => {
+    if (!inputValue.trim() || isImproving || hasBeenImproved || !hasMinimumWords(inputValue)) return;
+
+    setIsImproving(true);
+    try {
+      const language = detectLanguage(inputValue);
+      const response = await fetch('/api/improve-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: inputValue.trim(),
+          language: language
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to improve question');
+      }
+
+      const data = await response.json();
+      if (data.improvedQuestion) {
+        isImprovingRef.current = true; // Mark that we're setting improved value
+        setInputValue(data.improvedQuestion);
+        setHasBeenImproved(true);
+      }
+    } catch (error) {
+      console.error('Error improving question:', error);
+    } finally {
+      setIsImproving(false);
+    }
   };
 
   return (
@@ -137,6 +193,32 @@ export default function AskQuranGPTInput({ onSend, onReset }: AskQuranGPTInputPr
                   )}
                 </div>
                 Hadith
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleContentTypeToggle('webSearch');
+                }}
+                className={`w-full text-left px-2.5 py-1.5 text-sm rounded-md transition-all duration-200 flex items-center gap-2 ${
+                  selectedContentTypes.webSearch
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                type="button"
+              >
+                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                  selectedContentTypes.webSearch
+                    ? 'border-emerald-500 bg-emerald-500'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}>
+                  {selectedContentTypes.webSearch && (
+                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                Web Search
               </button>
               <button
                 onClick={(e) => {
@@ -217,7 +299,7 @@ export default function AskQuranGPTInput({ onSend, onReset }: AskQuranGPTInputPr
 
           {/* Selected Content Types Display */}
           <AnimatePresence>
-            {(selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.suggestedQuestions) && (
+            {(selectedContentTypes.tafsir || selectedContentTypes.hadith || selectedContentTypes.webSearch || selectedContentTypes.suggestedQuestions) && (
               <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -260,6 +342,25 @@ export default function AskQuranGPTInput({ onSend, onReset }: AskQuranGPTInputPr
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                       <span className="text-xs sm:text-xs font-medium">Hadith</span>
+                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </span>
+                  )}
+                  {selectedContentTypes.webSearch && (
+                    <span 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleContentTypeToggle('webSearch');
+                      }}
+                      className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs sm:text-xs rounded-md cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-800/40 transition-colors duration-200 flex-shrink-0"
+                      style={{ pointerEvents: 'auto', position: 'relative', zIndex: 25 }}
+                    >
+                      <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                      </svg>
+                      <span className="text-xs sm:text-xs font-medium">Web Search</span>
                       <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-0.5 sm:ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
@@ -328,6 +429,48 @@ export default function AskQuranGPTInput({ onSend, onReset }: AskQuranGPTInputPr
 
           {/* Action buttons container */}
           <div className="absolute flex items-center gap-1.5 sm:gap-3" style={{ bottom: '12px', right: '16px', zIndex: 50 }}>
+            {/* Improve Question Button */}
+            {inputValue.trim() && hasMinimumWords(inputValue) && (
+              <motion.button
+                whileHover={!hasBeenImproved && !isImproving ? { scale: 1.05 } : {}}
+                whileTap={!hasBeenImproved && !isImproving ? { scale: 0.95 } : {}}
+                style={{ 
+                  pointerEvents: 'auto', 
+                  zIndex: 60,
+                  cursor: hasBeenImproved || isImproving ? 'not-allowed' : 'pointer',
+                  position: 'relative'
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!hasBeenImproved && !isImproving) {
+                    handleImproveQuestion();
+                  }
+                }}
+                disabled={isImproving || hasBeenImproved}
+                className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                  hasBeenImproved || isImproving
+                    ? 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                    : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                }`}
+                title={hasBeenImproved ? "Question already improved" : "Improve question"}
+                type="button"
+              >
+                <div className="relative z-10 flex items-center justify-center">
+                  {isImproving ? (
+                    <svg className="animate-spin w-3.5 h-3.5 sm:w-4 sm:h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  )}
+                </div>
+              </motion.button>
+            )}
+            
             {/* Send Button */}
             <motion.button
               whileHover={{ scale: 1.05 }}

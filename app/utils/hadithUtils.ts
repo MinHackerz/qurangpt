@@ -141,8 +141,8 @@ export function formatHadithForDisplay(hadith: HadithData): {
   };
 }
 
-// Generate hadith box HTML similar to ayah boxes
-export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, textSize: 'small' | 'medium' | 'large' = 'small'): string {
+// Generate hadith box HTML - contexts are passed in (fetched in batch)
+export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, textSize: 'small' | 'medium' | 'large' = 'small', contexts: any[] = []): string {
   const formatted = formatHadithForDisplay(hadith);
   const hadithId = `hadith-${hadith.bookSlug}-${hadith.hadithNumber}-${index}`;
   
@@ -150,6 +150,56 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
   const textSizeClass = textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'; // Professional hadith text sizing
   const headerTextSizeClass = textSize === 'large' ? 'text-xs md:text-sm' : textSize === 'medium' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'; // Match ayah header sizing
   const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'; // Match AI content sizing exactly
+  
+  // Generate context HTML from passed contexts
+  let contextHTML = '';
+  if (contexts && contexts.length > 0) {
+    const getHostname = (url: string) => {
+      try {
+        return new URL(url).hostname.replace('www.', '');
+      } catch {
+        return url.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace('www.', '');
+      }
+    };
+    
+    contextHTML = `
+      <div class="hadith-context-section mt-4 w-full">
+        <div class="flex gap-2.5 w-full">
+          ${contexts.map((context: any) => `
+            <a 
+              href="${context.url}" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="flex-1 min-w-0 h-32 p-2.5 bg-transparent rounded-lg border border-gray-200/50 dark:border-gray-700/50 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-200 group overflow-hidden"
+            >
+              <div class="w-full h-full flex flex-col overflow-hidden">
+                <div class="flex items-start gap-1.5 mb-1.5 flex-shrink-0 overflow-hidden">
+                  <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  <div class="flex-1 min-w-0 overflow-hidden">
+                    <h5 class="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1 line-clamp-2 leading-tight break-words overflow-hidden">
+                      ${context.title}
+                    </h5>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed flex-1 min-h-0 mb-1.5 overflow-hidden break-words">
+                  ${context.snippet}
+                </p>
+                <div class="flex items-center justify-between mt-auto pt-1.5 border-t border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 overflow-hidden">
+                  <span class="text-xs text-gray-400 dark:text-gray-500 truncate flex-1 min-w-0 overflow-hidden">
+                    ${getHostname(context.url)}
+                  </span>
+                  <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      </div>`;
+  }
   
   return `
     <div class="stylish-hadith-reference mb-4 max-w-none w-full" 
@@ -217,6 +267,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
           ${hadith.aiSummary}
         </div>
       ` : ''}
+      ${contextHTML}
     </div>
   `;
 }
