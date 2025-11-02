@@ -109,6 +109,11 @@ export default function ResponseSection({
   // Generate share title
   const shareTitle = userQuestion ? `QuranGPT: ${userQuestion}` : 'QuranGPT Answer';
 
+  // Reset generated share URL when question or content changes
+  useEffect(() => {
+    setGeneratedShareUrl('');
+  }, [userQuestion, contentToShow]);
+
   // Generate share URL when content is available
   useEffect(() => {
     if (userQuestion && contentToShow && !generatedShareUrl && !shareUrl) {
