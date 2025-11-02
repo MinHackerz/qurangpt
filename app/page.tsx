@@ -584,6 +584,13 @@ function HomeContent() {
     }
   }, [chatManager, copyAIContentOnly]);
 
+  // Reset share URL when question or content changes
+  useEffect(() => {
+    setShareUrl('');
+    setShowShareModal(false);
+    setPendingShareModal(false);
+  }, [chatManager.submittedQuestion, chatManager.displayedContent, chatManager.summary]);
+
   // Handle sharing AI content
   const handleShareContent = useCallback(async () => {
     if (!chatManager.submittedQuestion || (!chatManager.displayedContent && !chatManager.summary)) {
