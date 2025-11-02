@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import Head from 'next/head';
 import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processContentLinks } from '../../utils/contentUtils';
@@ -279,6 +278,36 @@ export default function SharePage() {
 
 
 
+  // Format creation date/time
+  const formatCreationTime = useCallback((timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Show relative time if less than 7 days ago
+    if (diffMins < 1) {
+      return 'Just now';
+    } else if (diffMins < 60) {
+      return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+    } else {
+      // Show full date for older posts
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  }, []);
+
   // Calculate time remaining until expiry
   const calculateTimeRemaining = useCallback((timestamp: number) => {
     const now = Date.now();
@@ -399,42 +428,6 @@ export default function SharePage() {
     }
   }, [shareId]);
 
-  // Update document title when shared content is loaded
-  useEffect(() => {
-    if (sharedContent) {
-      document.title = `${sharedContent.title} - QuranGPT`;
-      
-      // Update meta description
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute('content', `QuranGPT answer: ${sharedContent.question}`);
-      }
-      
-      // Update Open Graph title
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) {
-        ogTitle.setAttribute('content', `${sharedContent.title} - QuranGPT`);
-      }
-      
-      // Update Open Graph description
-      const ogDescription = document.querySelector('meta[property="og:description"]');
-      if (ogDescription) {
-        ogDescription.setAttribute('content', sharedContent.question);
-      }
-      
-      // Update Twitter title
-      const twitterTitle = document.querySelector('meta[name="twitter:title"]');
-      if (twitterTitle) {
-        twitterTitle.setAttribute('content', `${sharedContent.title} - QuranGPT`);
-      }
-      
-      // Update Twitter description
-      const twitterDescription = document.querySelector('meta[name="twitter:description"]');
-      if (twitterDescription) {
-        twitterDescription.setAttribute('content', sharedContent.question);
-      }
-    }
-  }, [sharedContent]);
 
   // Track shared content view in Google Analytics
   useEffect(() => {
@@ -680,14 +673,20 @@ export default function SharePage() {
     );
   }
 
+  // Update document title when error or no content
+  useEffect(() => {
+    if (error || !sharedContent) {
+      document.title = 'Content Expired - QuranGPT';
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', 'This shared content has expired or is no longer available.');
+      }
+    }
+  }, [error, sharedContent]);
+
   if (error || !sharedContent) {
     return (
       <>
-        <Head>
-          <title>Content Expired - QuranGPT</title>
-          <meta name="description" content="This shared content has expired or is no longer available." />
-        </Head>
-
         <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
           <div className="text-center max-w-md">
             <div className="mb-6">
@@ -719,27 +718,46 @@ export default function SharePage() {
     );
   }
 
+  // Update document metadata when shared content is available
+  useEffect(() => {
+    if (sharedContent) {
+      document.title = `${sharedContent.title} - QuranGPT`;
+      
+      const updateMetaTag = (attribute: string, value: string, content: string) => {
+        const selector = attribute === 'name' ? `meta[${attribute}="${value}"]` : `meta[property="${value}"]`;
+        let meta = document.querySelector(selector) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          if (attribute === 'name') {
+            meta.setAttribute('name', value);
+          } else {
+            meta.setAttribute('property', value);
+          }
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      };
+
+      updateMetaTag('name', 'description', `QuranGPT answer: ${sharedContent.question}`);
+      updateMetaTag('property', 'og:title', `${sharedContent.title} - QuranGPT`);
+      updateMetaTag('property', 'og:type', 'website');
+      updateMetaTag('property', 'og:url', `https://quran-gpt.netlify.app/share/${shareId}`);
+      updateMetaTag('property', 'og:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
+      updateMetaTag('property', 'og:site_name', 'QuranGPT - Get the Guidance from the Holy Quran');
+      updateMetaTag('property', 'og:description', sharedContent.question);
+      updateMetaTag('name', 'twitter:card', 'summary_large_image');
+      updateMetaTag('name', 'twitter:title', `${sharedContent.title} - QuranGPT`);
+      updateMetaTag('name', 'twitter:description', sharedContent.question);
+      updateMetaTag('name', 'twitter:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
+      updateMetaTag('name', 'google-site-verification', 'NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs');
+      updateMetaTag('name', 'msvalidate.01', '5CC4429FDE08444C1CB98ECB946F1E2C');
+      updateMetaTag('name', 'robots', 'noindex, nofollow');
+      updateMetaTag('name', 'googlebot', 'noindex, nofollow');
+    }
+  }, [sharedContent, shareId]);
+
   return (
     <>
-      <Head>
-        <title>Shared Content - QuranGPT</title>
-        <meta name="description" content="Shared content from QuranGPT - AI-Powered Islamic Knowledge Base" />
-        <meta property="og:title" content="Shared Content - QuranGPT" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`https://quran-gpt.netlify.app/share/${shareId}`} />
-        <meta property="og:image" content="https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png" />
-        <meta property="og:site_name" content="QuranGPT - Get the Guidance from the Holy Quran" />
-        <meta property="og:description" content="Shared content from QuranGPT - AI-Powered Islamic Knowledge Base" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Shared Content - QuranGPT" />
-        <meta name="twitter:description" content="Shared content from QuranGPT - AI-Powered Islamic Knowledge Base" />
-        <meta name="twitter:image" content="https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png" />
-        <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
-        <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
-        <meta name="robots" content="noindex, nofollow" />
-        <meta name="googlebot" content="noindex, nofollow" />
-      </Head>
-
       {/* Google Analytics */}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-NMNGXPDXNK"
@@ -769,10 +787,18 @@ export default function SharePage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {sharedContent.title}
             </h1>
-            <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Shared from QuranGPT
               </p>
+              {sharedContent.timestamp && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-gray-50 dark:bg-gray-900/50 text-gray-600 dark:text-gray-400 rounded text-xs font-medium">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Created {formatCreationTime(sharedContent.timestamp)}
+                </div>
+              )}
               {timeRemaining && timeRemaining !== 'Expired' && (
                 <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded text-xs font-medium">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

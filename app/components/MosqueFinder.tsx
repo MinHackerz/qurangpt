@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPinIcon, PhoneIcon, GlobeAltIcon, ClockIcon, StarIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
@@ -41,6 +41,10 @@ interface Mosque {
   distance?: number;
 }
 
+type TravelMode = 'DRIVING' | 'WALKING' | 'TRANSIT' | 'BICYCLING';
+
+type FilterType = 'all' | 'open' | 'rated' | 'nearest';
+
 export default function MosqueFinder() {
   const [location, setLocation] = useState<Location | null>(null);
   const [mosques, setMosques] = useState<Mosque[]>([]);
@@ -69,6 +73,12 @@ export default function MosqueFinder() {
   const [isAutoSelected, setIsAutoSelected] = useState<boolean>(false);
   const [showAutoSelectNotification, setShowAutoSelectNotification] = useState<boolean>(false);
   const [isMapInitialized, setIsMapInitialized] = useState<boolean>(false);
+  const [travelMode, setTravelMode] = useState<TravelMode>('DRIVING');
+  const [filterType, setFilterType] = useState<FilterType>('all');
+  const [favoriteMosques, setFavoriteMosques] = useState<Set<string>>(new Set());
+  const [estimatedArrival, setEstimatedArrival] = useState<string | null>(null);
+  const [currentSpeed, setCurrentSpeed] = useState<number>(0);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
   
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<any>(null);
@@ -76,6 +86,104 @@ export default function MosqueFinder() {
   const userMarkerRef = useRef<any>(null);
   const directionsServiceRef = useRef<any>(null);
   const directionsRendererRef = useRef<any>(null);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('favoriteMosques');
+    if (stored) {
+      try {
+        setFavoriteMosques(new Set(JSON.parse(stored)));
+      } catch (e) {
+        console.error('Failed to load favorites');
+      }
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  const toggleFavorite = useCallback((mosqueId: string) => {
+    setFavoriteMosques(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(mosqueId)) {
+        newSet.delete(mosqueId);
+      } else {
+        newSet.add(mosqueId);
+      }
+      localStorage.setItem('favoriteMosques', JSON.stringify(Array.from(newSet)));
+      return newSet;
+    });
+  }, []);
+
+  // Filter mosques based on filter type
+  const filteredMosques = useMemo(() => {
+    let filtered = [...mosques];
+    
+    // Apply type filter
+    switch (filterType) {
+      case 'open':
+        filtered = filtered.filter(m => m.opening_hours?.open_now);
+        break;
+      case 'rated':
+        filtered = filtered.filter(m => m.rating && m.rating >= 4.0);
+        break;
+      case 'nearest':
+        filtered = filtered.slice(0, 5);
+        break;
+    }
+    
+    return filtered;
+  }, [mosques, filterType]);
+
+  // Calculate ETA during journey
+  useEffect(() => {
+    if (isJourneyActive && selectedMosque && location && directionsInfo) {
+      try {
+        const duration = directionsInfo.duration;
+        const match = duration.match(/(\d+)\s*(hour|min)/i);
+        if (match) {
+          const value = parseInt(match[1]);
+          const unit = match[2].toLowerCase();
+          const minutes = unit.startsWith('hour') ? value * 60 : value;
+          const eta = new Date(Date.now() + minutes * 60000);
+          setEstimatedArrival(eta.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+        }
+      } catch (e) {
+        setEstimatedArrival(null);
+      }
+    } else {
+      setEstimatedArrival(null);
+    }
+  }, [isJourneyActive, selectedMosque, location, directionsInfo]);
+
+  // Calculate speed during journey
+  useEffect(() => {
+    if (isJourneyActive && lastKnownPosition && location && journeyStartTime) {
+      const timeDiff = (Date.now() - journeyStartTime.getTime()) / 3600000; // hours
+      if (timeDiff > 0 && distanceTraveled > 0) {
+        setCurrentSpeed(distanceTraveled / timeDiff);
+      }
+    }
+  }, [isJourneyActive, lastKnownPosition, location, distanceTraveled, journeyStartTime]);
+
+  // Share mosque location
+  const shareMosque = useCallback(async (mosque: Mosque) => {
+    const shareText = `${mosque.name}\n${mosque.address || ''}\nhttps://www.google.com/maps/search/?api=1&query=${mosque.latitude},${mosque.longitude}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: mosque.name,
+          text: shareText,
+        });
+      } catch (err) {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(shareText);
+        alert('Location copied to clipboard!');
+      }
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      alert('Location copied to clipboard!');
+    }
+  }, []);
 
   // Load Google Maps API
   useEffect(() => {
@@ -386,14 +494,14 @@ export default function MosqueFinder() {
     }
 
     // Auto-select nearest mosque if none selected
-    if (mosques.length > 0 && !selectedMosque) {
-      setSelectedMosque(mosques[0]);
+    if (filteredMosques.length > 0 && !selectedMosque) {
+      setSelectedMosque(filteredMosques[0]);
       if (location) {
-        showDirectionsOnMap(mosques[0]);
+        showDirectionsOnMap(filteredMosques[0]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mosques, selectedMosque, location, searchRadius]);
+  }, [filteredMosques, selectedMosque, location, searchRadius]);
 
   const showDirectionsOnMap = (mosque: Mosque) => {
     if (!location || !directionsServiceRef.current || !directionsRendererRef.current) return;
@@ -406,7 +514,7 @@ export default function MosqueFinder() {
     directionsServiceRef.current.route({
       origin: { lat: fromLocation.latitude, lng: fromLocation.longitude },
       destination: { lat: mosque.latitude, lng: mosque.longitude },
-      travelMode: window.google.maps.TravelMode.DRIVING,
+      travelMode: window.google.maps.TravelMode[travelMode],
     }, (result: any, status: any) => {
       if (status === 'OK' && directionsRendererRef.current) {
         directionsRendererRef.current.setDirections(result);
@@ -574,8 +682,8 @@ export default function MosqueFinder() {
     }
 
     // Auto-select nearest mosque if none selected
-    if (!selectedMosque && mosques.length > 0) {
-      const nearestMosque = mosques[0];
+    if (!selectedMosque && filteredMosques.length > 0) {
+      const nearestMosque = filteredMosques[0];
       console.log('Auto-selecting nearest mosque:', nearestMosque.name, `(${nearestMosque.distance?.toFixed(1)}km away)`);
       setSelectedMosque(nearestMosque);
       setIsAutoSelected(true);
@@ -592,7 +700,7 @@ export default function MosqueFinder() {
     }
 
     // Get the mosque to use for journey (either selected or auto-selected nearest)
-    const mosqueForJourney = selectedMosque || mosques[0];
+    const mosqueForJourney = selectedMosque || filteredMosques[0];
     
     console.log('Starting journey to:', mosqueForJourney.name, `(${mosqueForJourney.distance?.toFixed(1)}km away)`);
 
@@ -843,62 +951,121 @@ export default function MosqueFinder() {
           </p>
         </div>
 
-        {/* Controls - Single Line Layout */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          {/* Radius Selector */}
-          <div className="flex-1 sm:flex-none sm:min-w-[140px]">
+        {/* Controls - Compact Layout */}
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex flex-wrap gap-2">
+            {/* Filter Buttons */}
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                filterType === 'all'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              All ({mosques.length})
+            </button>
+            <button
+              onClick={() => setFilterType('nearest')}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                filterType === 'nearest'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              📍 Nearest 5
+            </button>
+            <button
+              onClick={() => setFilterType('open')}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                filterType === 'open'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              🟢 Open Now
+            </button>
+            <button
+              onClick={() => setFilterType('rated')}
+              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                filterType === 'rated'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              ⭐ 4.0+
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Travel Mode Selector */}
+            <select
+              value={travelMode}
+              onChange={(e) => {
+                setTravelMode(e.target.value as TravelMode);
+                if (selectedMosque && location) showDirectionsOnMap(selectedMosque);
+              }}
+              className="flex-1 sm:flex-none sm:min-w-[130px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
+              style={{ backgroundColor: 'transparent' }}
+            >
+              <option value="DRIVING" className="bg-white dark:bg-gray-800">🚗 Driving</option>
+              <option value="WALKING" className="bg-white dark:bg-gray-800">🚶 Walking</option>
+              <option value="TRANSIT" className="bg-white dark:bg-gray-800">🚌 Transit</option>
+              <option value="BICYCLING" className="bg-white dark:bg-gray-800">🚴 Cycling</option>
+            </select>
+
+            {/* Radius Selector */}
             <select
               value={searchRadius}
               onChange={(e) => handleRadiusChange(Number(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="flex-1 sm:flex-none sm:min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
               style={{ backgroundColor: 'transparent' }}
             >
-              <option value={1000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">1 km radius</option>
-              <option value={2000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">2 km radius</option>
-              <option value={3000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">3 km radius</option>
-              <option value={5000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">5 km radius</option>
-              <option value={10000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">10 km radius</option>
-              <option value={15000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">15 km radius</option>
-              <option value={20000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">20 km radius</option>
-              <option value={25000} className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">25 km radius</option>
+              <option value={1000} className="bg-white dark:bg-gray-800">1 km</option>
+              <option value={2000} className="bg-white dark:bg-gray-800">2 km</option>
+              <option value={5000} className="bg-white dark:bg-gray-800">5 km</option>
+              <option value={10000} className="bg-white dark:bg-gray-800">10 km</option>
+              <option value={15000} className="bg-white dark:bg-gray-800">15 km</option>
+              <option value={20000} className="bg-white dark:bg-gray-800">20 km</option>
+              <option value={25000} className="bg-white dark:bg-gray-800">25 km</option>
             </select>
+            
+            {/* Mosque Selection */}
+            {filteredMosques.length > 0 && (
+              <select
+                value={selectedMosque?.id || ''}
+                onChange={(e) => {
+                  const mosque = filteredMosques.find(m => m.id === e.target.value);
+                  if (mosque) {
+                    setSelectedMosque(mosque);
+                    setIsAutoSelected(false);
+                    if (location) showDirectionsOnMap(mosque);
+                  }
+                }}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500"
+                style={{ backgroundColor: 'transparent' }}
+              >
+                {filteredMosques.map((mosque, index) => (
+                  <option 
+                    key={mosque.id} 
+                    value={mosque.id}
+                    className="bg-white dark:bg-gray-800"
+                  >
+                    {index === 0 ? '📍 ' : ''}{mosque.name} ({mosque.distance?.toFixed(1)} km)
+                  </option>
+                ))}
+              </select>
+            )}
+            
+            {/* Refresh Button */}
+            <button
+              onClick={getCurrentLocation}
+              disabled={isLoading}
+              className="flex-shrink-0 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? 'Loading...' : 'Refresh'}
+            </button>
           </div>
-          
-          {/* Mosque Selection */}
-          {mosques.length > 0 && (
-            <select
-              value={selectedMosque?.id || ''}
-              onChange={(e) => {
-                const mosque = mosques.find(m => m.id === e.target.value);
-                if (mosque) {
-                  setSelectedMosque(mosque);
-                  setIsAutoSelected(false); // Reset auto-selected flag when manually selecting
-                  if (location) showDirectionsOnMap(mosque);
-                }
-              }}
-              className="flex-1 sm:flex-none sm:min-w-[200px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              style={{ backgroundColor: 'transparent' }}
-            >
-              {mosques.map((mosque, index) => (
-                <option 
-                  key={mosque.id} 
-                  value={mosque.id}
-                  className="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                >
-                  {index === 0 ? '📍 ' : ''}{mosque.name} ({mosque.distance?.toFixed(1)} km)
-                </option>
-              ))}
-            </select>
-          )}
-          
-          {/* Refresh Button */}
-          <button
-            onClick={getCurrentLocation}
-            disabled={isLoading}
-            className="flex-shrink-0 px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? 'Searching...' : 'Refresh'}
-          </button>
         </div>
 
         {error && (
@@ -1077,17 +1244,16 @@ export default function MosqueFinder() {
                   </div>
                 )}
 
-                {/* Contact Links */}
-                <div className="space-y-3 mb-5">
+                {/* Quick Actions Row */}
+                <div className="flex items-center gap-2 mb-5">
                   {selectedMosque.phone && (
                     <a 
                       href={`tel:${selectedMosque.phone}`}
-                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100/30 dark:hover:bg-gray-700/20 transition-colors group"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100/50 dark:bg-gray-700/30 hover:bg-gray-200/50 dark:hover:bg-gray-600/30 transition-colors group"
+                      title="Call"
                     >
-                      <PhoneIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100">
-                        {selectedMosque.phone}
-                      </span>
+                      <PhoneIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                      <span className="text-xs text-gray-600 dark:text-gray-300">Call</span>
                     </a>
                   )}
 
@@ -1096,14 +1262,39 @@ export default function MosqueFinder() {
                       href={selectedMosque.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100/30 dark:hover:bg-gray-700/20 transition-colors group"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100/50 dark:bg-gray-700/30 hover:bg-gray-200/50 dark:hover:bg-gray-600/30 transition-colors group"
+                      title="Website"
                     >
-                      <GlobeAltIcon className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                      <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100">
-                        Website
-                      </span>
+                      <GlobeAltIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                      <span className="text-xs text-gray-600 dark:text-gray-300">Web</span>
                     </a>
                   )}
+
+                  <button
+                    onClick={() => shareMosque(selectedMosque)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-100/50 dark:bg-gray-700/30 hover:bg-gray-200/50 dark:hover:bg-gray-600/30 transition-colors"
+                    title="Share"
+                  >
+                    <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                    <span className="text-xs text-gray-600 dark:text-gray-300">Share</span>
+                  </button>
+
+                  <button
+                    onClick={() => toggleFavorite(selectedMosque.id)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      favoriteMosques.has(selectedMosque.id)
+                        ? 'bg-red-100/70 dark:bg-red-900/30 hover:bg-red-200/70 dark:hover:bg-red-800/40'
+                        : 'bg-gray-100/50 dark:bg-gray-700/30 hover:bg-gray-200/50 dark:hover:bg-gray-600/30'
+                    }`}
+                    title={favoriteMosques.has(selectedMosque.id) ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <svg className={`w-4 h-4 ${favoriteMosques.has(selectedMosque.id) ? 'text-red-600 dark:text-red-400 fill-current' : 'text-gray-600 dark:text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span className={`text-xs ${favoriteMosques.has(selectedMosque.id) ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-300'}`}>
+                      {favoriteMosques.has(selectedMosque.id) ? 'Saved' : 'Save'}
+                    </span>
+                  </button>
                 </div>
 
                 {/* Spacer to push buttons down */}
@@ -1138,30 +1329,45 @@ export default function MosqueFinder() {
                         Stop Journey
                       </button>
                       
-                      <div className="p-3 bg-gray-50/50 dark:bg-gray-700/30 rounded-xl border border-gray-200/30 dark:border-gray-600/30">
-                        <div className="flex items-center justify-center space-x-2 mb-3">
-                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 tracking-wide uppercase">Journey Active</span>
+                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200/50 dark:border-green-700/50">
+                        <div className="flex items-center justify-center space-x-2 mb-4">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs font-mono text-green-700 dark:text-green-300 tracking-wide uppercase font-semibold">Journey in Progress</span>
                         </div>
-                        <div className="mb-3 text-center">
-                          <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                            🗺️ Route visible on map
+                        
+                        {/* ETA Display */}
+                        {estimatedArrival && (
+                          <div className="mb-4 text-center p-2 bg-white/50 dark:bg-gray-800/30 rounded-lg">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Estimated Arrival</div>
+                            <div className="text-lg font-mono text-green-700 dark:text-green-300 font-semibold">
+                              {estimatedArrival}
+                            </div>
                           </div>
-                        </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="text-center">
-                            <div className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                          <div className="text-center p-2 bg-white/40 dark:bg-gray-800/20 rounded-lg">
+                            <div className="text-lg font-mono text-gray-800 dark:text-gray-200 font-semibold">
                               {distanceTraveled.toFixed(2)}km
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Traveled</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">Traveled</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                          <div className="text-center p-2 bg-white/40 dark:bg-gray-800/20 rounded-lg">
+                            <div className="text-lg font-mono text-gray-800 dark:text-gray-200 font-semibold">
                               {journeyStartTime ? Math.floor((Date.now() - journeyStartTime.getTime()) / 60000) : 0}m
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Duration</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">Duration</div>
                           </div>
                         </div>
+
+                        {/* Speed Display */}
+                        {currentSpeed > 0 && (
+                          <div className="mt-3 text-center p-2 bg-white/40 dark:bg-gray-800/20 rounded-lg">
+                            <div className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                              Avg: {currentSpeed.toFixed(1)} km/h
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}

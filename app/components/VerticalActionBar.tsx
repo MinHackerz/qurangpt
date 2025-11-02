@@ -397,25 +397,6 @@ export default function VerticalActionBar() {
                 <CurrencyDollarIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
               </button>
 
-              <Link
-                href="/transparency"
-                className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition mx-auto"
-                aria-label="Transparency"
-                title="Transparency"
-              >
-                <Shield className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
-              </Link>
-
-              <button
-                onClick={() => {
-                  window.open('https://www.linkedin.com/in/menajul-hoque/', '_blank');
-                }}
-                className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition mx-auto"
-                aria-label="Contact Developer"
-                title="Contact Developer"
-              >
-                <EnvelopeIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-              </button>
             </div>
 
             {/* Bottom elements: Palestinian flag, support button, and theme toggle */}
@@ -441,20 +422,42 @@ export default function VerticalActionBar() {
                 </svg>
               </button>
 
+              {/* Compact links column */}
+              <div className="flex flex-col items-center justify-center gap-2 mx-auto">
+                <button
+                  onClick={() => {
+                    window.open('https://www.linkedin.com/in/menajul-hoque/', '_blank');
+                  }}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition"
+                  aria-label="Contact Developer"
+                  title="Contact Developer"
+                >
+                  <EnvelopeIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                </button>
+                <Link
+                  href="/transparency"
+                  className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition"
+                  aria-label="Transparency"
+                  title="Transparency"
+                >
+                  <Shield className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
+                </Link>
+              </div>
+
               {/* Theme toggle - light/dark only */}
               <button
                 onClick={() => {
                   const nextTheme = theme === 'dark' ? 'light' : 'dark';
                   (window as any).dispatchEvent(new CustomEvent('qgpt:set-theme', { detail: { mode: nextTheme } }));
                 }}
-                className="flex items-center justify-center w-10 h-6 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition mx-auto"
+                className="flex items-center justify-center w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-white/60 dark:hover:bg-gray-900/40 transition mx-auto"
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
               >
                 {theme === 'dark' ? (
-                  <SunIcon className="w-3 h-3 text-yellow-500" />
+                  <SunIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 ) : (
-                  <MoonIcon className="w-3 h-3 text-blue-500" />
+                  <MoonIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 )}
               </button>
             </div>
@@ -589,30 +592,6 @@ export default function VerticalActionBar() {
                 <CurrencyDollarIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                 <span className="text-sm text-gray-800 dark:text-gray-200">Zakat Calculator</span>
               </button>
-
-              {/* Contact Developer */}
-              <button
-                onClick={() => {
-                  window.open('https://menajul.vercel.app', '_blank');
-                }}
-                className="w-full flex items-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-3 bg-transparent backdrop-blur hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                title="Contact Developer"
-              >
-                <UserIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                <span className="text-sm text-gray-800 dark:text-gray-200">Contact Developer</span>
-              </button>
-
-              {/* Transparency */}
-              <Link
-                href="/transparency"
-                className="w-full flex items-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-3 bg-transparent backdrop-blur hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                title="Transparency"
-              >
-                <Shield className="w-5 h-5 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
-                <span className="text-sm text-gray-800 dark:text-gray-200">Transparency</span>
-              </Link>
-
-              {/* Theme Mode placeholder removed; moved to footer bottom */}
             </div>
 
           {/* Footer - full gradient background (light/dark synced to flag colors) */}
@@ -639,6 +618,28 @@ export default function VerticalActionBar() {
               </svg>
               <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Support</span>
             </button>
+
+            {/* Compact utility links */}
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <Link
+                href="/transparency"
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-gray-100 dark:hover:bg-gray-800 transition flex-1"
+                title="Transparency"
+              >
+                <Shield className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
+                <span className="text-[10px] text-gray-600 dark:text-gray-400">Info</span>
+              </Link>
+              <button
+                onClick={() => {
+                  window.open('https://www.linkedin.com/in/menajul-hoque/', '_blank');
+                }}
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur hover:bg-gray-100 dark:hover:bg-gray-800 transition flex-1"
+                title="Contact Developer"
+              >
+                <EnvelopeIcon className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                <span className="text-[10px] text-gray-600 dark:text-gray-400">Contact</span>
+              </button>
+            </div>
 
             {/* Theme Mode - bottom of footer */}
             <div className="mt-2 flex items-center justify-center">

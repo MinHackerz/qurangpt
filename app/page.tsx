@@ -2,7 +2,6 @@
 
 import { useCallback, useState, useEffect, Suspense, useRef } from 'react';
 import { motion } from 'framer-motion';
-import Head from 'next/head';
 import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import { detectLanguage } from './utils/languageDetection';
@@ -935,43 +934,51 @@ function HomeContent() {
     return '';
   }, []);
 
+  // Update document metadata dynamically
+  useEffect(() => {
+    document.title = 'Quran GPT - AI-Powered Islamic Knowledge Base';
+    
+    // Update or create meta tags
+    const updateMetaTag = (attribute: string, value: string, content: string) => {
+      const selector = attribute === 'name' ? `meta[${attribute}="${value}"]` : `meta[property="${value}"]`;
+      let meta = document.querySelector(selector) as HTMLMetaElement;
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (attribute === 'name') {
+          meta.setAttribute('name', value);
+        } else {
+          meta.setAttribute('property', value);
+        }
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    updateMetaTag('property', 'og:title', 'Quran GPT');
+    updateMetaTag('property', 'og:type', 'website');
+    updateMetaTag('property', 'og:url', 'https://quran-gpt.netlify.app/');
+    updateMetaTag('property', 'og:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
+    updateMetaTag('property', 'og:site_name', 'Quran GPT - Get the Guidance from the Holy Quran');
+    updateMetaTag('property', 'og:description', 'Quran GPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. It utilizes advanced language models to offer insightful and accurate responses, supported by relevant verses and interpretations from the Quran.');
+    updateMetaTag('name', 'description', 'Quran GPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. Get insightful and accurate responses supported by relevant verses and interpretations from the Quran.');
+    updateMetaTag('name', 'google-site-verification', 'NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs');
+    updateMetaTag('name', 'msvalidate.01', '5CC4429FDE08444C1CB98ECB946F1E2C');
+    updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+    updateMetaTag('name', 'googlebot', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  }, []);
+
   return (
     <>
-      <Head>
-        <title>Quran GPT - AI-Powered Islamic Knowledge Base</title>
-        <meta property="og:title" content="Quran GPT" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://quran-gpt.netlify.app/" />
-        <meta property="og:image" content="https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png" />
-        <meta property="og:site_name" content="Quran GPT - Get the Guidance from the Holy Quran" />
-        <meta property="og:description" content="Quran GPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. It utilizes advanced language models to offer insightful and accurate responses, supported by relevant verses and interpretations from the Quran." />
-        <meta name="description" content="Quran GPT is an AI-powered Islamic knowledge base that provides answers to your questions based on the Holy Quran. Get insightful and accurate responses supported by relevant verses and interpretations from the Quran." />
-        <meta name="google-site-verification" content="NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs" />
-        <meta name="msvalidate.01" content="5CC4429FDE08444C1CB98ECB946F1E2C" />
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
-          integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
-
-        <script
-          type="text/javascript"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "mhnlj5neqn");
-            `
-          }}
-        />
-      </Head>
+      {/* Microsoft Clarity */}
+      <Script id="clarity" strategy="afterInteractive">
+        {`
+          (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "mhnlj5neqn");
+        `}
+      </Script>
 
       {/* Google Analytics */}
       <Script

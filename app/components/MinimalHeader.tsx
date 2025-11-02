@@ -408,10 +408,10 @@ export default function MinimalHeader({
                         if (!mounted) return;
                         setTheme?.('light');
                       })}
-                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 border ${
                         mounted && theme === 'light'
-                          ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-900 dark:text-gray-100 shadow-sm'
+                          : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                       title="Light Mode"
                     >
@@ -423,10 +423,10 @@ export default function MinimalHeader({
                         if (!mounted) return;
                         setTheme?.('dark');
                       })}
-                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                      className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 border ${
                         mounted && theme === 'dark'
-                          ? 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          ? 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-900 dark:text-gray-100 shadow-sm'
+                          : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                       title="Dark Mode"
                     >
@@ -434,12 +434,6 @@ export default function MinimalHeader({
                     </button>
                   </div>
 
-                  {/* Free Palestine - Minimal Footer */}
-                  <div className="flex items-center justify-center px-3 py-1">
-                    <span className="text-xs text-gray-500 dark:text-gray-400 font-light">
-                      Free Palestine
-                    </span>
-                  </div>
                 </div>
               </div>
             </motion.div>
