@@ -20,7 +20,7 @@ interface SharedContent {
 
 export default function SharePage() {
   const params = useParams();
-  const shareId = params.shareId as string;
+  const shareId = params?.shareId as string | undefined;
   
   const [sharedContent, setSharedContent] = useState<SharedContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -310,6 +310,9 @@ export default function SharePage() {
 
   // Calculate time remaining until expiry
   const calculateTimeRemaining = useCallback((timestamp: number) => {
+    if (!timestamp || isNaN(timestamp)) {
+      return 'Expired';
+    }
     const now = Date.now();
     const expiryTime = timestamp + (7 * 24 * 60 * 60 * 1000); // 7 days from creation
     const timeLeft = expiryTime - now;
@@ -333,9 +336,14 @@ export default function SharePage() {
 
   // Update time remaining every minute
   useEffect(() => {
-    if (!sharedContent) return;
+    if (!sharedContent || !sharedContent.timestamp) return;
 
     const updateTimer = () => {
+      // Safety check: ensure sharedContent and timestamp still exist
+      if (!sharedContent || !sharedContent.timestamp) {
+        setTimeRemaining('Expired');
+        return;
+      }
       setTimeRemaining(calculateTimeRemaining(sharedContent.timestamp));
     };
 
@@ -350,6 +358,12 @@ export default function SharePage() {
 
   useEffect(() => {
     const fetchSharedContent = async () => {
+      if (!shareId) {
+        setError('Share ID is missing');
+        setLoading(false);
+        return;
+      }
+      
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -423,9 +437,7 @@ export default function SharePage() {
       }
     };
 
-    if (shareId) {
-      fetchSharedContent();
-    }
+    fetchSharedContent();
   }, [shareId]);
 
 
@@ -741,7 +753,7 @@ export default function SharePage() {
       updateMetaTag('name', 'description', `QuranGPT answer: ${sharedContent.question}`);
       updateMetaTag('property', 'og:title', `${sharedContent.title} - QuranGPT`);
       updateMetaTag('property', 'og:type', 'website');
-      updateMetaTag('property', 'og:url', `https://quran-gpt.netlify.app/share/${shareId}`);
+      updateMetaTag('property', 'og:url', `https://quran-gpt.netlify.app/share/${shareId || ''}`);
       updateMetaTag('property', 'og:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
       updateMetaTag('property', 'og:site_name', 'QuranGPT - Get the Guidance from the Holy Quran');
       updateMetaTag('property', 'og:description', sharedContent.question);
