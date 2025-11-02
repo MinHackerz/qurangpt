@@ -121,12 +121,21 @@ export default function SharePage() {
           suggestedQuestions: false // Don't fetch questions for shared content
         })
           .then(setFormattedResponse)
+          .catch(() => {
+            // If formatting fails, use the original response
+            setFormattedResponse(sharedContent.response);
+          })
           .finally(() => setIsFormatting(false));
       }
+    } else {
+      // Reset formatted response when sharedContent is cleared
+      setFormattedResponse('');
+      setIsFormatting(false);
     }
-    // Intentionally excluding selectedContentTypes and textSize from dependencies:
-    // We only want to format when content/question changes, not when options are toggled.
+    // Intentionally excluding selectedContentTypes, textSize, and formatResponse from dependencies:
+    // We only want to format when content/question changes, not when options are toggled or formatResponse changes.
     // Toggling options should only filter the already-formatted content (handled by filteredContent memo).
+    // formatResponse is stable enough and adding it would cause unnecessary re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedContent?.response, sharedContent?.question]);
 
@@ -862,13 +871,11 @@ export default function SharePage() {
             )}
           </div>
 
-          {/* Sources Section - Always visible when there's content */}
-          {filteredContent && (
-            <SourcesSection 
-              content={filteredContent} 
-              textSize={textSize}
-            />
-          )}
+          {/* Sources Section - Always render to maintain hook consistency */}
+          <SourcesSection 
+            content={filteredContent || ''} 
+            textSize={textSize}
+          />
 
 
           {/* Bottom Spacing */}
