@@ -63,8 +63,8 @@ const getSharedContent = async (shareId: string): Promise<SharedContent | null> 
     const blobStore = getBlobStore();
     if (blobStore) {
       console.log('Retrieving from Netlify Blobs');
-      const data = await blobStore.get(`share-${shareId}`);
-      return data ? JSON.parse(data) : null;
+      const data = await blobStore.get(`share-${shareId}`, { type: 'text' });
+      return data ? JSON.parse(data as string) : null;
     } else {
       // Fallback for local development - use in-memory store
       console.log('Retrieving from local store');
@@ -96,9 +96,9 @@ const cleanupOldEntries = async (): Promise<void> => {
         for (const blob of blobs) {
           if (blob.key.startsWith('share-')) {
             try {
-              const data = await blobStore.get(blob.key);
+              const data = await blobStore.get(blob.key, { type: 'text' });
               if (data) {
-                const content = JSON.parse(data);
+                const content = JSON.parse(data as string);
                 if (content.timestamp && content.timestamp < sevenDaysAgo) {
                   await blobStore.delete(blob.key);
                   console.log('Deleted expired content:', blob.key);

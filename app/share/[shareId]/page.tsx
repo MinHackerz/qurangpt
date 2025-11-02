@@ -20,7 +20,7 @@ interface SharedContent {
 
 export default function SharePage() {
   const params = useParams();
-  const shareId = params.shareId as string;
+  const shareId = params?.shareId as string | undefined;
   
   const [sharedContent, setSharedContent] = useState<SharedContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,12 +121,21 @@ export default function SharePage() {
           suggestedQuestions: false // Don't fetch questions for shared content
         })
           .then(setFormattedResponse)
+          .catch(() => {
+            // If formatting fails, use the original response
+            setFormattedResponse(sharedContent.response);
+          })
           .finally(() => setIsFormatting(false));
       }
+    } else {
+      // Reset formatted response when sharedContent is cleared
+      setFormattedResponse('');
+      setIsFormatting(false);
     }
-    // Intentionally excluding selectedContentTypes and textSize from dependencies:
-    // We only want to format when content/question changes, not when options are toggled.
+    // Intentionally excluding selectedContentTypes, textSize, and formatResponse from dependencies:
+    // We only want to format when content/question changes, not when options are toggled or formatResponse changes.
     // Toggling options should only filter the already-formatted content (handled by filteredContent memo).
+    // formatResponse is stable enough and adding it would cause unnecessary re-runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedContent?.response, sharedContent?.question]);
 
@@ -278,38 +287,27 @@ export default function SharePage() {
 
 
 
-  // Format creation date/time
+  // Format creation date/time - shows exact time in user's timezone
   const formatCreationTime = useCallback((timestamp: number) => {
     const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    // Show relative time if less than 7 days ago
-    if (diffMins < 1) {
-      return 'Just now';
-    } else if (diffMins < 60) {
-      return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-    } else if (diffDays < 7) {
-      return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
-    } else {
-      // Show full date for older posts
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
+    
+    // Always show full date and time in user's local timezone
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
   }, []);
 
   // Calculate time remaining until expiry
   const calculateTimeRemaining = useCallback((timestamp: number) => {
+    if (!timestamp || isNaN(timestamp)) {
+      return 'Expired';
+    }
     const now = Date.now();
     const expiryTime = timestamp + (7 * 24 * 60 * 60 * 1000); // 7 days from creation
     const timeLeft = expiryTime - now;
@@ -333,9 +331,14 @@ export default function SharePage() {
 
   // Update time remaining every minute
   useEffect(() => {
-    if (!sharedContent) return;
+    if (!sharedContent || !sharedContent.timestamp) return;
 
     const updateTimer = () => {
+      // Safety check: ensure sharedContent and timestamp still exist
+      if (!sharedContent || !sharedContent.timestamp) {
+        setTimeRemaining('Expired');
+        return;
+      }
       setTimeRemaining(calculateTimeRemaining(sharedContent.timestamp));
     };
 
@@ -350,6 +353,12 @@ export default function SharePage() {
 
   useEffect(() => {
     const fetchSharedContent = async () => {
+      if (!shareId) {
+        setError('Share ID is missing');
+        setLoading(false);
+        return;
+      }
+      
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -423,9 +432,7 @@ export default function SharePage() {
       }
     };
 
-    if (shareId) {
-      fetchSharedContent();
-    }
+    fetchSharedContent();
   }, [shareId]);
 
 
@@ -662,6 +669,55 @@ export default function SharePage() {
     };
   }, [sharedContent]);
 
+  // Update document title when error or no content - MUST be before early returns
+  useEffect(() => {
+    if (error || !sharedContent) {
+      document.title = 'Content Expired - QuranGPT';
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', 'This shared content has expired or is no longer available.');
+      }
+    }
+  }, [error, sharedContent]);
+
+  // Update document metadata when shared content is available - MUST be before early returns
+  useEffect(() => {
+    if (sharedContent) {
+      document.title = `${sharedContent.title} - QuranGPT`;
+      
+      const updateMetaTag = (attribute: string, value: string, content: string) => {
+        const selector = attribute === 'name' ? `meta[${attribute}="${value}"]` : `meta[property="${value}"]`;
+        let meta = document.querySelector(selector) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          if (attribute === 'name') {
+            meta.setAttribute('name', value);
+          } else {
+            meta.setAttribute('property', value);
+          }
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      };
+
+      updateMetaTag('name', 'description', `QuranGPT answer: ${sharedContent.question}`);
+      updateMetaTag('property', 'og:title', `${sharedContent.title} - QuranGPT`);
+      updateMetaTag('property', 'og:type', 'website');
+      updateMetaTag('property', 'og:url', `https://quran-gpt.netlify.app/share/${shareId || ''}`);
+      updateMetaTag('property', 'og:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
+      updateMetaTag('property', 'og:site_name', 'QuranGPT - Get the Guidance from the Holy Quran');
+      updateMetaTag('property', 'og:description', sharedContent.question);
+      updateMetaTag('name', 'twitter:card', 'summary_large_image');
+      updateMetaTag('name', 'twitter:title', `${sharedContent.title} - QuranGPT`);
+      updateMetaTag('name', 'twitter:description', sharedContent.question);
+      updateMetaTag('name', 'twitter:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
+      updateMetaTag('name', 'google-site-verification', 'NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs');
+      updateMetaTag('name', 'msvalidate.01', '5CC4429FDE08444C1CB98ECB946F1E2C');
+      updateMetaTag('name', 'robots', 'noindex, nofollow');
+      updateMetaTag('name', 'googlebot', 'noindex, nofollow');
+    }
+  }, [sharedContent, shareId]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center">
@@ -672,17 +728,6 @@ export default function SharePage() {
       </div>
     );
   }
-
-  // Update document title when error or no content
-  useEffect(() => {
-    if (error || !sharedContent) {
-      document.title = 'Content Expired - QuranGPT';
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute('content', 'This shared content has expired or is no longer available.');
-      }
-    }
-  }, [error, sharedContent]);
 
   if (error || !sharedContent) {
     return (
@@ -718,44 +763,6 @@ export default function SharePage() {
     );
   }
 
-  // Update document metadata when shared content is available
-  useEffect(() => {
-    if (sharedContent) {
-      document.title = `${sharedContent.title} - QuranGPT`;
-      
-      const updateMetaTag = (attribute: string, value: string, content: string) => {
-        const selector = attribute === 'name' ? `meta[${attribute}="${value}"]` : `meta[property="${value}"]`;
-        let meta = document.querySelector(selector) as HTMLMetaElement;
-        if (!meta) {
-          meta = document.createElement('meta');
-          if (attribute === 'name') {
-            meta.setAttribute('name', value);
-          } else {
-            meta.setAttribute('property', value);
-          }
-          document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', content);
-      };
-
-      updateMetaTag('name', 'description', `QuranGPT answer: ${sharedContent.question}`);
-      updateMetaTag('property', 'og:title', `${sharedContent.title} - QuranGPT`);
-      updateMetaTag('property', 'og:type', 'website');
-      updateMetaTag('property', 'og:url', `https://quran-gpt.netlify.app/share/${shareId}`);
-      updateMetaTag('property', 'og:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
-      updateMetaTag('property', 'og:site_name', 'QuranGPT - Get the Guidance from the Holy Quran');
-      updateMetaTag('property', 'og:description', sharedContent.question);
-      updateMetaTag('name', 'twitter:card', 'summary_large_image');
-      updateMetaTag('name', 'twitter:title', `${sharedContent.title} - QuranGPT`);
-      updateMetaTag('name', 'twitter:description', sharedContent.question);
-      updateMetaTag('name', 'twitter:image', 'https://dqy38fnwh4fqs.cloudfront.net/project/PRJH6A8OEAAERGE7JHOGG787JP9LGO.png');
-      updateMetaTag('name', 'google-site-verification', 'NGBfty7J9MyQwQ5DT-wvArocgpJC72IXOrH4M1IIJAs');
-      updateMetaTag('name', 'msvalidate.01', '5CC4429FDE08444C1CB98ECB946F1E2C');
-      updateMetaTag('name', 'robots', 'noindex, nofollow');
-      updateMetaTag('name', 'googlebot', 'noindex, nofollow');
-    }
-  }, [sharedContent, shareId]);
-
   return (
     <>
       {/* Google Analytics */}
@@ -784,9 +791,6 @@ export default function SharePage() {
               </svg>
               Shared Content
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {sharedContent.title}
-            </h1>
             <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Shared from QuranGPT
@@ -796,7 +800,7 @@ export default function SharePage() {
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  Created {formatCreationTime(sharedContent.timestamp)}
+                  Created: {formatCreationTime(sharedContent.timestamp)}
                 </div>
               )}
               {timeRemaining && timeRemaining !== 'Expired' && (
@@ -811,18 +815,20 @@ export default function SharePage() {
           </div>
 
           {/* Question */}
-          <div className="bg-transparent rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Question
-            </h2>
-            <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${
-              textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
-            }`}>
-              {sharedContent.question}
-            </p>
+          <div className="bg-transparent px-6 pb-6">
+            <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Question
+              </h2>
+              <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${
+                textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+              }`}>
+                {sharedContent.question}
+              </p>
+            </div>
           </div>
 
           {/* Response */}
@@ -850,13 +856,11 @@ export default function SharePage() {
             )}
           </div>
 
-          {/* Sources Section - Always visible when there's content */}
-          {filteredContent && (
-            <SourcesSection 
-              content={filteredContent} 
-              textSize={textSize}
-            />
-          )}
+          {/* Sources Section - Always render to maintain hook consistency */}
+          <SourcesSection 
+            content={filteredContent || ''} 
+            textSize={textSize}
+          />
 
 
           {/* Bottom Spacing */}
