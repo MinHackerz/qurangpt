@@ -19,29 +19,16 @@ export default function WaveAnimationContainer({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`absolute inset-0 pointer-events-none z-10 ${className}`}
+      className={`flex items-center justify-center w-full h-full pointer-events-none z-10 ${className}`}
     >
-      {/* Invisible container that doesn't affect layout */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex items-center justify-center space-x-2 w-full">
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="w-1 rounded-full bg-gray-400 dark:bg-gray-600"
-              animate={{
-                height: ['20px', '60px', '20px'],
-                opacity: [0.4, 0.8, 0.4]
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                delay: i * 0.1,
-                ease: "easeInOut"
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Container for the loading animation GIF - centered on both mobile and desktop */}
+      <img
+        src="/qurangpt_loading_animation_with_text.gif"
+        alt="Loading..."
+        className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 object-contain"
+        loading="eager"
+        decoding="async"
+      />
     </motion.div>
   );
 }
