@@ -80,6 +80,96 @@ const validateAndCleanResponse = (response: string): string => {
   return cleanedResponse;
 };
 
+// Helper function to combine AI explanation with Tavily contexts (calls server-side API)
+const combineAIExplanationWithContexts = async (
+  aiExplanation: string,
+  contexts: any[],
+  reference: string,
+  type: 'ayah' | 'hadith',
+  userQuery?: string,
+  detectedLanguage: string = 'en',
+  abortController?: AbortController
+): Promise<string> => {
+  if (!contexts || contexts.length === 0) {
+    return aiExplanation; // Return original if no contexts
+  }
+
+  if (!aiExplanation) {
+    return ''; // Return empty if no AI explanation
+  }
+
+  try {
+    const response = await fetch('/api/combine-explanation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        aiExplanation,
+        contexts,
+        reference,
+        type,
+        userQuery,
+        detectedLanguage,
+      }),
+      signal: abortController?.signal,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error combining explanation:', errorData.error || 'Unknown error');
+      return aiExplanation; // Fallback to original
+    }
+
+    const data = await response.json();
+    
+    if (data.success && data.combinedExplanation) {
+      return data.combinedExplanation;
+    }
+    
+    // Fallback to original explanation if combination failed
+    return data.combinedExplanation || aiExplanation;
+  } catch (error) {
+    // Check if it's an abort error
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw error; // Re-throw abort errors
+    }
+    console.error('Error combining AI explanation with contexts:', error);
+    return aiExplanation; // Return original on error
+  }
+};
+
+// Helper function to extract AI explanation text between ayah references
+const extractAIExplanationForAyah = (
+  response: string,
+  ayahMatch: AyahMatch,
+  nextAyahMatch?: AyahMatch
+): string => {
+  const matchIndex = response.indexOf(ayahMatch.originalMatch);
+  if (matchIndex === -1) return '';
+
+  const startIndex = matchIndex + ayahMatch.originalMatch.length;
+  const endIndex = nextAyahMatch 
+    ? response.indexOf(nextAyahMatch.originalMatch, startIndex)
+    : response.length;
+
+  if (endIndex === -1 || endIndex <= startIndex) return '';
+
+  let explanation = response.substring(startIndex, endIndex).trim();
+  
+  // Clean up the explanation
+  explanation = explanation
+    .replace(/^\s*[.\-•]\s*/gm, '') // Remove leading bullets/dashes
+    .replace(/\n{3,}/g, '\n\n') // Normalize line breaks
+    .trim();
+
+  // Remove any markdown links or formatting
+  explanation = explanation.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+  
+  // Only return if substantial (at least 20 characters)
+  return explanation.length >= 20 ? explanation : '';
+};
+
 export const useAIResponse = (textSize: 'small' | 'medium' | 'large' = 'small', selectedContentTypes?: {
   tafsir: boolean;
   hadith: boolean;
@@ -237,6 +327,9 @@ Question: ${content}`;
     // First, validate that the response is complete and properly formatted
     const validatedResponse = validateAndCleanResponse(response);
     
+    // Check if web search is enabled
+    const isWebSearchEnabled = contentTypes?.webSearch === true || selectedContentTypes?.webSearch === true;
+    
     // Find all ayah references using universal detection system
     const ayahMatches = detectAyahReferences(validatedResponse);
     
@@ -245,6 +338,50 @@ Question: ${content}`;
       console.log('formatResponse - Operation aborted before processing ayahs');
       return response;
     }
+
+    // Extract AI explanations for each ayah BEFORE processing (since replacement removes the text)
+    const ayahAIExplanations = new Map<string, string>();
+    let responseWithExplanationsRemoved = validatedResponse;
+    
+    if (isWebSearchEnabled) {
+      ayahMatches.forEach((ayahMatch, index) => {
+        const nextAyahMatch = index < ayahMatches.length - 1 ? ayahMatches[index + 1] : undefined;
+        const aiExplanation = extractAIExplanationForAyah(validatedResponse, ayahMatch, nextAyahMatch);
+        if (aiExplanation) {
+          // Store by surah:ayah reference
+          const surahNumber = getSurahNumber(ayahMatch.surahName.trim());
+          if (surahNumber) {
+            const reference = `${surahNumber}:${ayahMatch.ayahNumber}`;
+            ayahAIExplanations.set(reference, aiExplanation);
+            
+            // Remove the original AI explanation from response text to prevent duplicate display
+            // This ensures only the combined explanation is shown
+            const matchIndex = validatedResponse.indexOf(ayahMatch.originalMatch);
+            if (matchIndex !== -1) {
+              const startIndex = matchIndex + ayahMatch.originalMatch.length;
+              const endIndex = nextAyahMatch 
+                ? validatedResponse.indexOf(nextAyahMatch.originalMatch, startIndex)
+                : validatedResponse.length;
+              
+              if (endIndex > startIndex) {
+                // Extract the text between ayah references
+                const textBetween = validatedResponse.substring(startIndex, endIndex);
+                // Remove the AI explanation part (keep any other content if needed)
+                const cleanedText = textBetween.replace(aiExplanation.trim(), '').trim();
+                // Update the response
+                responseWithExplanationsRemoved = responseWithExplanationsRemoved.replace(
+                  textBetween,
+                  cleanedText
+                );
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Use response with explanations removed if web search is enabled
+    const responseForProcessing = isWebSearchEnabled ? responseWithExplanationsRemoved : validatedResponse;
 
     // Collect all ayah references for batch context fetching
     const ayahContextRequests: Array<{
@@ -729,32 +866,73 @@ Question: ${content}`;
 
     // Update ayah replacements with contexts from batch
     // Match by reference instead of index to ensure correct mapping
-    const updatedAyahReplacements = ayahReplacements.map((replacement) => {
-      // Find the matching context request by reference stored in replacement
-      const reference = (replacement as any).reference;
-      if (reference) {
-        const contexts = ayahContextMap.get(reference);
-        const contextHTML = contexts ? generateContextHTML(contexts) : '';
-        // Replace placeholder with actual context HTML
-        const updatedReplacement = replacement.replacement.replace(
-          '__CONTEXT_PLACEHOLDER__',
-          contextHTML
-        );
+    const detectedLanguage = userQuery ? detectLanguage(userQuery) : 'en';
+    
+    const updatedAyahReplacements = await Promise.all(
+      ayahReplacements.map(async (replacement) => {
+        // Find the matching context request by reference stored in replacement
+        const reference = (replacement as any).reference;
+        if (reference) {
+          const contexts = ayahContextMap.get(reference);
+          
+          // Get AI explanation from pre-extracted map if web search is enabled
+          let combinedExplanation = '';
+          if (isWebSearchEnabled && contexts && contexts.length > 0) {
+            const aiExplanation = ayahAIExplanations.get(reference);
+            
+            if (aiExplanation) {
+              // Combine AI explanation with contexts
+              combinedExplanation = await combineAIExplanationWithContexts(
+                aiExplanation,
+                contexts,
+                reference,
+                'ayah',
+                userQuery,
+                detectedLanguage,
+                abortController
+              );
+            }
+          }
+          
+          // Always generate context HTML if contexts exist
+          const contextHTML = contexts && contexts.length > 0
+            ? generateContextHTML(contexts) 
+            : '';
+          
+          // Create combined explanation HTML if available (replaces original AI explanation)
+          // STRICTLY match the text size with general content text size (same as ResponseSection)
+          // Always use the same text size as general content - no variations
+          const textSizeClass = (currentTextSize ?? textSize) === 'large' ? 'text-xl' : (currentTextSize ?? textSize) === 'medium' ? 'text-lg' : 'text-base';
+          const combinedExplanationHTML = combinedExplanation 
+            ? `<div class="mt-3 combined-explanation ${textSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed">
+                ${combinedExplanation}
+              </div>`
+            : '';
+          
+          // Replace placeholder with: context links first, then combined explanation
+          // Order: ayah box → context links → combined explanation
+          let updatedReplacement = replacement.replacement.replace(
+            '__CONTEXT_PLACEHOLDER__',
+            contextHTML + combinedExplanationHTML
+          );
+          
+          
+          return {
+            match: replacement.match,
+            replacement: updatedReplacement,
+          };
+        }
+        // Remove placeholder if no context or no reference
+        const updatedReplacement = replacement.replacement.replace('__CONTEXT_PLACEHOLDER__', '');
         return {
           match: replacement.match,
           replacement: updatedReplacement,
         };
-      }
-      // Remove placeholder if no context or no reference
-      const updatedReplacement = replacement.replacement.replace('__CONTEXT_PLACEHOLDER__', '');
-      return {
-        match: replacement.match,
-        replacement: updatedReplacement,
-      };
-    });
+      })
+    );
 
-    // Apply all ayah replacements
-    let processedText = response;
+    // Apply all ayah replacements using the cleaned response
+    let processedText = responseForProcessing;
     updatedAyahReplacements.forEach(({ match, replacement }) => {
       processedText = processedText.replace(match, replacement);
     });
@@ -903,21 +1081,50 @@ Question: ${content}`;
     }
 
     // Update hadith replacements with contexts
-    const updatedHadithReplacements = hadithReplacements.map((replacement, index) => {
-      if (replacement.replacement === '__HADITH_PLACEHOLDER__') {
-        const hadithData = hadithDataMap.get(index);
-        if (hadithData) {
-          const reference = `${hadithData.bookSlug}-${hadithData.hadithNumber}`;
-          const contexts = hadithContextMap.get(reference) || [];
-          const hadithBoxHTML = generateHadithBoxHTML(hadithData, index, currentTextSize ?? textSize, contexts);
-          return {
-            match: replacement.match,
-            replacement: hadithBoxHTML,
-          };
+    const updatedHadithReplacements = await Promise.all(
+      hadithReplacements.map(async (replacement, index) => {
+        if (replacement.replacement === '__HADITH_PLACEHOLDER__') {
+          const hadithData = hadithDataMap.get(index);
+          if (hadithData) {
+            const reference = `${hadithData.bookSlug}-${hadithData.hadithNumber}`;
+            const contexts = hadithContextMap.get(reference) || [];
+            
+            // Combine AI summary with contexts if web search is enabled
+            let combinedSummary = hadithData.aiSummary || '';
+            if (isWebSearchEnabled && contexts && contexts.length > 0 && hadithData.aiSummary) {
+              combinedSummary = await combineAIExplanationWithContexts(
+                hadithData.aiSummary,
+                contexts,
+                reference,
+                'hadith',
+                userQuery,
+                detectedLanguage,
+                abortController
+              );
+            }
+            
+            // Create a copy of hadith data with combined summary
+            const hadithDataWithCombinedSummary = {
+              ...hadithData,
+              aiSummary: combinedSummary
+            };
+            
+            // Always show contexts (even when combined with summary)
+            const hadithBoxHTML = generateHadithBoxHTML(
+              hadithDataWithCombinedSummary, 
+              index, 
+              currentTextSize ?? textSize, 
+              contexts
+            );
+            return {
+              match: replacement.match,
+              replacement: hadithBoxHTML,
+            };
+          }
         }
-      }
-      return replacement;
-    });
+        return replacement;
+      })
+    );
 
     // Apply hadith replacements
     updatedHadithReplacements.forEach(({ match, replacement }) => {
@@ -926,11 +1133,42 @@ Question: ${content}`;
 
     // Add intelligent hadiths at the end of the response only if hadith is selected
     if (contentTypes?.hadith !== false && intelligentHadiths.length > 0) {
-      const intelligentHadithsHTML = intelligentHadiths.map((hadith, index) => {
-        const reference = `${hadith.bookSlug}-${hadith.hadithNumber}`;
-        const contexts = hadithContextMap.get(reference) || [];
-        return generateHadithBoxHTML(hadith, index + 1000, currentTextSize ?? textSize, contexts); // Use high index to avoid conflicts
-      }).join('');
+      const intelligentHadithsHTML = await Promise.all(
+        intelligentHadiths.map(async (hadith, index) => {
+          const reference = `${hadith.bookSlug}-${hadith.hadithNumber}`;
+          const contexts = hadithContextMap.get(reference) || [];
+          
+          // Combine AI summary with contexts if web search is enabled
+          let combinedSummary = hadith.aiSummary || '';
+          if (isWebSearchEnabled && contexts && contexts.length > 0 && hadith.aiSummary) {
+            combinedSummary = await combineAIExplanationWithContexts(
+              hadith.aiSummary,
+              contexts,
+              reference,
+              'hadith',
+              userQuery,
+              detectedLanguage,
+              abortController
+            );
+          }
+          
+          // Create a copy of hadith data with combined summary
+          const hadithDataWithCombinedSummary = {
+            ...hadith,
+            aiSummary: combinedSummary
+          };
+          
+          // Always show contexts (even when combined with summary)
+          return generateHadithBoxHTML(
+            hadithDataWithCombinedSummary, 
+            index + 1000, 
+            currentTextSize ?? textSize, 
+            contexts
+          ); // Use high index to avoid conflicts
+        })
+      );
+      
+      const intelligentHadithsHTMLString = intelligentHadithsHTML.join('');
       
       processedText += `
         <div class="mt-8 mb-6">
@@ -945,7 +1183,7 @@ Question: ${content}`;
             </h3>
           </div>
           <div class="space-y-4">
-            ${intelligentHadithsHTML}
+            ${intelligentHadithsHTMLString}
           </div>
         </div>
       `;

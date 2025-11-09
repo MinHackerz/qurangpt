@@ -58,6 +58,14 @@ export default function SharePage() {
   const [hasBeenImproved, setHasBeenImproved] = useState(false);
   const isImprovingRef = useRef(false);
 
+  // State for speech recognition using ElevenLabs
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const accumulatedTextRef = useRef<string>('');
+
   // Use the same AI response formatting as the main page
   const { formatResponse } = useAIResponse(textSize, selectedContentTypes);
   
@@ -65,6 +73,37 @@ export default function SharePage() {
   // Use global event delegation for audio progress bars
   useGlobalEventDelegation();
   // Note: useContextManager is disabled - contexts are now fetched during response formatting
+
+  // Check if speech recognition is supported (MediaRecorder API)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isSupported = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function' && typeof MediaRecorder !== 'undefined');
+      setIsSpeechSupported(isSupported);
+    }
+  }, []);
+
+  // Cleanup speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      // Stop recording if active
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+      
+      // Stop media stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      audioChunksRef.current = [];
+      accumulatedTextRef.current = '';
+    };
+  }, []);
   
   // Process content based on selected content types
   const processContentBasedOnSelection = useCallback((content: string) => {
@@ -94,7 +133,8 @@ export default function SharePage() {
 
   // Get filtered content based on current selection
   const filteredContent = useMemo(() => {
-    return processContentBasedOnSelection(formattedResponse || sharedContent?.response || '');
+    const content = processContentBasedOnSelection(formattedResponse || sharedContent?.response || '');
+    return processContentLinks(content);
   }, [formattedResponse, sharedContent?.response, processContentBasedOnSelection]);
 
   // Format response when shared content changes (only when content/question changes, not when options toggle)
@@ -247,6 +287,128 @@ export default function SharePage() {
     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
     return words.length >= 3;
   };
+
+  // Start speech recognition using ElevenLabs
+  const startRecognition = useCallback(async () => {
+    // Check if MediaRecorder is supported
+    if (typeof window === 'undefined' || !navigator.mediaDevices || !MediaRecorder) {
+      console.warn('MediaRecorder is not supported in this browser');
+      return false;
+    }
+
+    try {
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      // Initialize MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+      });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      accumulatedTextRef.current = '';
+
+      // Store initial content
+      const initialContent = inputValue.trim();
+
+      // Handle data available - just accumulate chunks
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      // Handle recording stop - process complete audio file
+      mediaRecorder.onstop = async () => {
+        try {
+          // Create complete audio file from all accumulated chunks
+          if (audioChunksRef.current.length > 0) {
+            const completeAudioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+            
+            // Only process if we have enough audio data
+            if (completeAudioBlob.size > 1000) {
+              const formData = new FormData();
+              formData.append('file', completeAudioBlob, 'recording.webm');
+
+              const response = await fetch('/api/speech-to-text', {
+                method: 'POST',
+                body: formData,
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                console.error('ElevenLabs STT error:', errorData.error || 'Failed to transcribe audio');
+                return;
+              }
+
+              const data = await response.json();
+              const transcription = data.text || '';
+
+              if (transcription.trim()) {
+                // Update content with transcription
+                const newContent = initialContent 
+                  ? `${initialContent} ${transcription}`.trim()
+                  : transcription.trim();
+                setInputValue(newContent);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error processing transcription:', error);
+        } finally {
+          // Cleanup
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+          audioChunksRef.current = [];
+          accumulatedTextRef.current = '';
+        }
+      };
+
+      // Start recording without timeslice - this creates a single complete file when stopped
+      mediaRecorder.start();
+      setIsListening(true);
+      console.log('🎤 Recording started - using ElevenLabs Speech-to-Text');
+      return true;
+    } catch (error: any) {
+      console.error('Error starting recording:', error);
+      if (error.name === 'NotAllowedError') {
+        console.error('Microphone access denied. Please allow microphone access.');
+      } else if (error.name === 'NotFoundError') {
+        console.error('No microphone found.');
+      }
+      setIsListening(false);
+      return false;
+    }
+  }, [inputValue]);
+
+  // Handle speech recognition (public interface)
+  const handleSpeechRecognition = useCallback(() => {
+    if (isListening) {
+      // Stop recording
+      console.log('User stopped recording');
+      
+      // Stop MediaRecorder if active
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+          setIsListening(false);
+        } catch (e) {
+          console.error('Error stopping recording:', e);
+          setIsListening(false);
+        }
+      } else {
+        setIsListening(false);
+      }
+      return;
+    }
+
+    // Start recognition
+    console.log('🎤 User started recording - will use ElevenLabs STT');
+    startRecognition();
+  }, [isListening, startRecognition]);
 
   // Handle improve question - only affects the input field, not shared content
   const handleImproveQuestion = async () => {
@@ -1203,31 +1365,71 @@ export default function SharePage() {
                         </motion.button>
                       )}
                       
-                      {/* Send Button - Matching ChatSection Design */}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{ pointerEvents: 'auto', zIndex: 30 }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSendToHomepage();
-                        }}
-                        disabled={!inputValue.trim()}
-                        className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                          inputValue.trim()
-                            ? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
-                            : 'bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                        }`}
-                        title="Send message"
-                        type="button"
-                      >
-                        <div className="relative z-10 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                          </svg>
-                        </div>
-                      </motion.button>
+                      {/* Speech Recognition Button - Mic Icon - Only show when no content */}
+                      <AnimatePresence>
+                        {isSpeechSupported && !inputValue.trim() && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{ pointerEvents: 'auto', zIndex: 30 }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSpeechRecognition();
+                            }}
+                            className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                              isListening
+                                ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 animate-pulse'
+                                : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                            }`}
+                            title={isListening ? "Stop recording" : "Start voice input"}
+                            type="button"
+                          >
+                            <div className="relative z-10 flex items-center justify-center">
+                              {isListening ? (
+                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                                </svg>
+                              ) : (
+                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                              )}
+                            </div>
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
+                      
+                      {/* Send Button - Matching ChatSection Design - Only show when user has input */}
+                      <AnimatePresence>
+                        {inputValue.trim() && (
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{ pointerEvents: 'auto', zIndex: 30 }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSendToHomepage();
+                            }}
+                            className="group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
+                            title="Send message"
+                            type="button"
+                          >
+                            <div className="relative z-10 flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                              </svg>
+                            </div>
+                          </motion.button>
+                        )}
+                      </AnimatePresence>
 
                       {/* Reset/Close Button - Matching ChatSection Design */}
                       <motion.button

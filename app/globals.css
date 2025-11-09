@@ -1158,6 +1158,29 @@ body {
     }
   }
   
+  /* STRICTLY enforce uniform text sizes for combined explanations everywhere */
+  .combined-explanation,
+  .hadith-ai-summary {
+    /* Remove any inherited font sizes and ensure Tailwind classes take precedence */
+    font-size: unset !important;
+  }
+  
+  /* Force text size classes to work correctly - override any parent styles */
+  .combined-explanation.text-base,
+  .hadith-ai-summary.text-base {
+    font-size: 1rem !important; /* 16px - matches Tailwind text-base */
+  }
+  
+  .combined-explanation.text-lg,
+  .hadith-ai-summary.text-lg {
+    font-size: 1.125rem !important; /* 18px - matches Tailwind text-lg */
+  }
+  
+  .combined-explanation.text-xl,
+  .hadith-ai-summary.text-xl {
+    font-size: 1.25rem !important; /* 20px - matches Tailwind text-xl */
+  }
+
   /* Audio player button fixes for production */
   .ayah-audio-play-btn {
     cursor: pointer !important;

@@ -149,7 +149,8 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
   // Text size classes based on textSize parameter - professional hierarchy
   const textSizeClass = textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'; // Professional hadith text sizing
   const headerTextSizeClass = textSize === 'large' ? 'text-xs md:text-sm' : textSize === 'medium' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'; // Match ayah header sizing
-  const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'; // Match AI content sizing exactly
+  // STRICTLY match general content text size - uniform everywhere
+  const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base';
   
   // Generate context HTML from passed contexts
   let contextHTML = '';
@@ -261,13 +262,13 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
         </div>
       </div>
       
-      <!-- AI Summary - Simple text below the box -->
+      ${contextHTML}
+      <!-- AI Summary (Combined Explanation) - Simple text below context links -->
       ${hadith.aiSummary ? `
         <div class="mt-3 hadith-ai-summary ${summaryTextSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed">
           ${hadith.aiSummary}
         </div>
       ` : ''}
-      ${contextHTML}
     </div>
   `;
 }

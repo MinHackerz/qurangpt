@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import { detectLanguage } from './utils/languageDetection';
+import { processContentLinks } from './utils/contentUtils';
 import {
   ChatSection,
   MinimalHeader,
@@ -243,6 +244,7 @@ function HomeContent() {
     selectedEvents: any[];
   }>({ selectedDate: null, selectedEvents: [] });
   
+
   // Content type selection state
   const [selectedContentTypes, setSelectedContentTypes] = useState({
     tafsir: true,
@@ -591,6 +593,7 @@ function HomeContent() {
     setPendingShareModal(false);
   }, [chatManager.submittedQuestion, chatManager.displayedContent, chatManager.summary]);
 
+
   // Handle sharing AI content
   const handleShareContent = useCallback(async () => {
     if (!chatManager.submittedQuestion || (!chatManager.displayedContent && !chatManager.summary)) {
@@ -883,6 +886,40 @@ function HomeContent() {
         }
       });
 
+      // STRICTLY update combined explanations for ayahs - uniform text size everywhere
+      // Force update ALL combined explanations to ensure absolute consistency
+      const combinedExplanations = document.querySelectorAll('.combined-explanation');
+      const expectedClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base';
+      combinedExplanations.forEach(explanation => {
+        // Always remove ALL text size classes first (even if it has the expected class, to ensure no conflicts)
+        explanation.className = explanation.className.replace(/\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl)\b/g, '');
+        explanation.className = explanation.className.replace(/\bmd:text-(xs|sm|base|lg|xl|2xl|3xl|4xl)\b/g, '');
+        // Clean up extra spaces
+        explanation.className = explanation.className.replace(/\s+/g, ' ').trim();
+        // Add the new class - STRICTLY uniform
+        explanation.classList.add(expectedClass);
+        // Ensure consistent color and styling
+        explanation.classList.add('text-gray-700', 'dark:text-gray-300', 'leading-relaxed');
+        // Force the font size to match the class by clearing any inline styles that might override
+        (explanation as HTMLElement).style.fontSize = '';
+      });
+      
+      // STRICTLY update hadith AI summaries - uniform text size everywhere
+      const hadithSummaries = document.querySelectorAll('.hadith-ai-summary');
+      hadithSummaries.forEach(summary => {
+        // Always remove ALL text size classes first
+        summary.className = summary.className.replace(/\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl)\b/g, '');
+        summary.className = summary.className.replace(/\bmd:text-(xs|sm|base|lg|xl|2xl|3xl|4xl)\b/g, '');
+        // Clean up extra spaces
+        summary.className = summary.className.replace(/\s+/g, ' ').trim();
+        // Add the new class - STRICTLY uniform (same as combined explanations)
+        summary.classList.add(expectedClass);
+        // Ensure consistent color and styling
+        summary.classList.add('text-gray-700', 'dark:text-gray-300', 'leading-relaxed');
+        // Force the font size to match the class
+        (summary as HTMLElement).style.fontSize = '';
+      });
+
       // Update suggested questions text sizes
       const suggestedQuestionItems = document.querySelectorAll('.suggested-question-item p');
       suggestedQuestionItems.forEach(questionItem => {
@@ -1161,6 +1198,7 @@ function HomeContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </button>
+
                   </div>
 
                   {/* Desktop: Vertical layout (hidden on mobile) */}
@@ -1230,6 +1268,7 @@ function HomeContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </button>
+
                   </div>
                 </div>
 
@@ -1273,7 +1312,7 @@ function HomeContent() {
                     position: 'relative',
                     pointerEvents: 'auto'
                   }}
-                  dangerouslySetInnerHTML={{ __html: chatManager.displayedContent || chatManager.summary }}
+                  dangerouslySetInnerHTML={{ __html: processContentLinks(chatManager.displayedContent || chatManager.summary) }}
                 />
                 </div>
               </div>
