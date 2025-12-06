@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { getSurahNumber, calculateGlobalAyahNumber, fetchTafsir } from '../utils/tafsirUtils';
+import { ProgressStep } from '../components/ProgressIndicator';
 
 export interface ChatState {
   content: string;
@@ -16,6 +17,7 @@ export interface ChatState {
   translationProgress: number;
   isChatActive: boolean;
   translatedQuestions?: string[];
+  currentStep: ProgressStep | null;
 }
 
 export const useChatManager = () => {
@@ -34,6 +36,7 @@ export const useChatManager = () => {
     translationProgress: 0,
     isChatActive: false,
     translatedQuestions: undefined,
+    currentStep: null,
   });
 
   // Audio functionality is now handled directly in ResponseSection component
@@ -67,8 +70,9 @@ export const useChatManager = () => {
       translationProgress: 0,
       isChatActive: false, // Return to default homepage state
       translatedQuestions: undefined,
+      currentStep: null,
     });
-    
+
     // Audio is now managed directly in ResponseSection component
   }, [updateState]);
 
@@ -128,6 +132,10 @@ export const useChatManager = () => {
     updateState({ isChatActive });
   }, [updateState]);
 
+  const setCurrentStep = useCallback((currentStep: ProgressStep | null) => {
+    updateState({ currentStep });
+  }, [updateState]);
+
   return useMemo(() => ({
     ...state,
     insertQuestion,
@@ -146,6 +154,7 @@ export const useChatManager = () => {
     setTranslationProgress,
     setTranslatedQuestions,
     setIsChatActive,
+    setCurrentStep,
   }), [
     state,
     insertQuestion,
@@ -164,5 +173,6 @@ export const useChatManager = () => {
     setTranslationProgress,
     setTranslatedQuestions,
     setIsChatActive,
+    setCurrentStep,
   ]);
 };

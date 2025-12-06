@@ -2,6 +2,7 @@ export interface TafsirData {
   surahName: string;
   surahNo: number;
   ayahNo: number;
+  ayah: number;
   tafsirs: Array<{
     author: string;
     groupVerse?: string;
@@ -12,7 +13,7 @@ export interface TafsirData {
 export const fetchTafsir = async (surahNumber: number, ayahNumber: number): Promise<TafsirData | null> => {
   try {
     const response = await fetch(`https://quranapi.pages.dev/api/tafsir/${surahNumber}_${ayahNumber}.json`);
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         // Tafsir not found
@@ -20,9 +21,10 @@ export const fetchTafsir = async (surahNumber: number, ayahNumber: number): Prom
       }
       throw new Error(`Failed to fetch tafsir: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    return data;
+    // Map API response to include new 'ayah' property from 'ayahNo'
+    return { ...data, ayah: data.ayahNo };
   } catch (error) {
     // Error fetching tafsir
     return null;
@@ -41,33 +43,34 @@ export const formatTafsirContent = (content: string): string => {
 export const fetchTafsirRange = async (surahNumber: number, startAyah: number, endAyah: number): Promise<TafsirData | null> => {
   try {
     console.log(`🔍 Fetching tafsir range for ${surahNumber}:${startAyah}-${endAyah}`);
-    
+
     const tafsirData: TafsirData = {
       surahName: '', // Will be set from first successful fetch
       surahNo: surahNumber,
       ayahNo: startAyah, // Use start ayah as reference
+      ayah: startAyah,
       tafsirs: []
     };
-    
+
     // Track unique authors to avoid duplicates
     const authorMap = new Map<string, { content: string; groupVerse: string }>();
-    
+
     // Fetch tafsir for each ayah in the range
     for (let ayahNum = startAyah; ayahNum <= endAyah; ayahNum++) {
       console.log(`   Fetching tafsir for ${surahNumber}:${ayahNum}...`);
-      
+
       const singleTafsir = await fetchTafsir(surahNumber, ayahNum);
       if (singleTafsir && singleTafsir.tafsirs && singleTafsir.tafsirs.length > 0) {
         // Set surah name from first successful fetch
         if (!tafsirData.surahName) {
           tafsirData.surahName = singleTafsir.surahName;
         }
-        
+
         // Combine tafsirs by author
         singleTafsir.tafsirs.forEach(tafsir => {
           const author = tafsir.author;
           const groupVerse = tafsir.groupVerse || `${surahNumber}:${ayahNum}`;
-          
+
           if (authorMap.has(author)) {
             // Append to existing author's content
             const existing = authorMap.get(author)!;
@@ -81,20 +84,20 @@ export const fetchTafsirRange = async (surahNumber: number, startAyah: number, e
             });
           }
         });
-        
+
         console.log(`   ✅ Fetched tafsir for ${surahNumber}:${ayahNum} (${singleTafsir.tafsirs.length} authors)`);
       } else {
         console.log(`   ⚠️ No tafsir found for ${surahNumber}:${ayahNum}`);
       }
     }
-    
+
     // Convert map to array format
     tafsirData.tafsirs = Array.from(authorMap.entries()).map(([author, data]) => ({
       author,
       groupVerse: data.groupVerse,
       content: data.content
     }));
-    
+
     if (tafsirData.tafsirs.length > 0) {
       console.log(`✅ Successfully fetched combined tafsir for range ${surahNumber}:${startAyah}-${endAyah} (${tafsirData.tafsirs.length} authors)`);
       return tafsirData;
@@ -102,7 +105,7 @@ export const fetchTafsirRange = async (surahNumber: number, startAyah: number, e
       console.log(`❌ No tafsir found for range ${surahNumber}:${startAyah}-${endAyah}`);
       return null;
     }
-    
+
   } catch (error) {
     console.error(`🚨 Error fetching tafsir range ${surahNumber}:${startAyah}-${endAyah}:`, error);
     return null;
@@ -156,7 +159,7 @@ export const getSurahNumber = (surahName: string): number | null => {
   if (surahNameToNumber[surahName]) {
     return surahNameToNumber[surahName];
   }
-  
+
   // Case-insensitive match
   const lowerSurahName = surahName.toLowerCase();
   for (const [name, number] of Object.entries(surahNameToNumber)) {
@@ -164,7 +167,7 @@ export const getSurahNumber = (surahName: string): number | null => {
       return number;
     }
   }
-  
+
   // Handle common variations and typos
   const variations: { [key: string]: number } = {
     'al-anbiya': 21, 'al-anbya': 21, 'al-anbiyaa': 21,
@@ -253,10 +256,10 @@ export const getSurahNumber = (surahName: string): number | null => {
     'al-falaq': 113, 'an-falaq': 113,
     'an-nas': 114, 'al-nas': 114
   };
-  
+
   if (variations[lowerSurahName]) {
     return variations[lowerSurahName];
   }
-  
+
   return null;
 };

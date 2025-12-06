@@ -145,13 +145,12 @@ export function formatHadithForDisplay(hadith: HadithData): {
 export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, textSize: 'small' | 'medium' | 'large' = 'small', contexts: any[] = []): string {
   const formatted = formatHadithForDisplay(hadith);
   const hadithId = `hadith-${hadith.bookSlug}-${hadith.hadithNumber}-${index}`;
-  
+
   // Text size classes based on textSize parameter - professional hierarchy
-  const textSizeClass = textSize === 'large' ? 'text-lg md:text-xl' : textSize === 'medium' ? 'text-base md:text-lg' : 'text-sm md:text-base'; // Professional hadith text sizing
-  const headerTextSizeClass = textSize === 'large' ? 'text-xs md:text-sm' : textSize === 'medium' ? 'text-xs md:text-sm' : 'text-xs md:text-sm'; // Match ayah header sizing
-  // STRICTLY match general content text size - uniform everywhere
+  const textSizeClass = textSize === 'large' ? 'text-2xl lg:text-3xl' : textSize === 'medium' ? 'text-xl lg:text-2xl' : 'text-lg lg:text-xl'; // Professional hadith text sizing
+  const headerTextSizeClass = textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs'; // Match ayah header sizing
   const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base';
-  
+
   // Generate context HTML from passed contexts
   let contextHTML = '';
   if (contexts && contexts.length > 0) {
@@ -162,113 +161,135 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
         return url.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace('www.', '');
       }
     };
-    
+
     contextHTML = `
-      <div class="hadith-context-section mt-4 w-full">
-        <div class="flex gap-2.5 w-full">
-          ${contexts.map((context: any) => `
-            <a 
-              href="${context.url}" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              class="flex-1 min-w-0 h-32 p-2.5 bg-transparent rounded-lg border border-gray-200/50 dark:border-gray-700/50 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all duration-200 group overflow-hidden"
-            >
-              <div class="w-full h-full flex flex-col overflow-hidden">
-                <div class="flex items-start gap-1.5 mb-1.5 flex-shrink-0 overflow-hidden">
-                  <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                  <div class="flex-1 min-w-0 overflow-hidden">
-                    <h5 class="text-xs font-semibold text-gray-800 dark:text-gray-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1 line-clamp-2 leading-tight break-words overflow-hidden">
-                      ${context.title}
-                    </h5>
+        <div class="hadith-context-section mt-8 mb-6 pb-6 border-b border-gray-100 dark:border-gray-800/50 w-full">
+          <h5 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+             References & Context
+          </h5>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+            ${contexts.map((context: any) => `
+              <a 
+                href="${context.url}" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="group flex flex-col h-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 overflow-hidden relative"
+              >
+                <div class="flex h-full">
+                  <div class="w-12 h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 transition-colors">
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  </div>
+                  <div class="flex-1 p-3 min-w-0 flex flex-col justify-center">
+                      <h6 class="text-xs font-semibold text-gray-900 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 mb-1">
+                        ${context.title}
+                      </h6>
+                      <p class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-1">
+                        ${context.snippet}
+                      </p>
+                      <div class="text-[10px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1 mt-auto">
+                        <span>${getHostname(context.url)}</span>
+                      </div>
                   </div>
                 </div>
-                <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed flex-1 min-h-0 mb-1.5 overflow-hidden break-words">
-                  ${context.snippet}
-                </p>
-                <div class="flex items-center justify-between mt-auto pt-1.5 border-t border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 overflow-hidden">
-                  <span class="text-xs text-gray-400 dark:text-gray-500 truncate flex-1 min-w-0 overflow-hidden">
-                    ${getHostname(context.url)}
-                  </span>
-                  <svg class="w-3 h-3 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </div>
-              </div>
-            </a>
-          `).join('')}
-        </div>
-      </div>`;
+              </a>
+            `).join('')}
+          </div>
+        </div>`;
   }
-  
+
   return `
-    <div class="stylish-hadith-reference mb-4 max-w-none w-full" 
+    <div class="stylish-hadith-reference mt-12 mb-8 max-w-none w-full bg-transparent" 
          data-hadith-id="${hadithId}" 
          data-book-slug="${hadith.bookSlug}" 
          data-hadith-number="${hadith.hadithNumber}" 
          data-book-name="${formatted.bookName}"
          data-status="${formatted.status}">
-      <div class="bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-full relative">
-        <!-- Minimal Header: Book name + Hadith number -->
-        <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center justify-between">
-            <!-- Book name and hadith number -->
-            <div class="flex items-center space-x-2">
-              <span class="${textSizeClass} font-medium text-gray-800 dark:text-gray-200">${formatted.bookName}</span>
-              <span class="${headerTextSizeClass} text-gray-500 dark:text-gray-400">#${formatted.hadithNumber}</span>
+      
+
+
+      <div class="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden w-full relative group transition-all duration-300">
+        
+        <!-- Header -->
+        <div class="px-5 py-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center border border-emerald-100 dark:border-emerald-800/30">
+              <span class="font-serif text-lg text-emerald-600 dark:text-emerald-500 font-bold">H</span>
             </div>
-            <!-- Status Badge -->
-            <div class="flex items-center space-x-2">
-              <span class="px-2 py-0.5 ${headerTextSizeClass} font-medium rounded ${
-                formatted.status.toLowerCase() === 'sahih' 
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
-                  : formatted.status.toLowerCase() === 'hasan'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-              }">
-                ${formatted.status}
-              </span>
+            <div>
+              <h3 class="${(textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm')} font-bold text-gray-900 dark:text-gray-100 tracking-wide">${formatted.bookName}</h3>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase">Hadith #${formatted.hadithNumber}</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${formatted.status.toLowerCase() === 'sahih'
+      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      : formatted.status.toLowerCase() === 'hasan'
+        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    }">
+                  ${formatted.status}
+                </span>
+              </div>
             </div>
           </div>
+          
+          <!-- Language Toggle Removed as per request -->
         </div>
         
         <!-- Content Area -->
-        <div class="p-4">
-          <!-- English Text (Default) -->
-          <div class="hadith-text-english" data-hadith-id="${hadithId}">
-            <blockquote class="text-gray-800 dark:text-gray-200 leading-relaxed ${textSizeClass} font-medium tracking-wide px-6 py-2">
-              ${formatted.text.english}
-            </blockquote>
-            ${formatted.narrator ? `
-              <div class="mt-2 hadith-narrator ${headerTextSizeClass} text-gray-500 dark:text-gray-400 italic">
-                — ${formatted.narrator}
-              </div>
-            ` : ''}
-          </div>
-          
-          <!-- Arabic Text (Hidden by default) -->
-          <div class="hadith-text-arabic hidden" data-hadith-id="${hadithId}">
-            <blockquote class="text-gray-800 dark:text-gray-200 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] text-right font-medium tracking-wide px-6 py-2">
-              ${formatted.text.arabic}
-            </blockquote>
-            ${formatted.narrator ? `
-              <div class="mt-2 hadith-narrator ${headerTextSizeClass} text-gray-500 dark:text-gray-400 italic text-right">
-                — ${formatted.narrator}
-              </div>
-            ` : ''}
+        <div class="p-6 sm:p-8 bg-gradient-to-b from-white to-gray-50/30 dark:from-gray-950 dark:to-gray-900/20">
+          <div class="relative">
+             <span class="absolute -top-3 -left-2 text-5xl text-gray-100 dark:text-gray-800 opacity-60 font-serif leading-none select-none">“</span>
+             
+             <!-- English Text (Default) -->
+             <div class="hadith-text-english" data-hadith-id="${hadithId}">
+               <blockquote class="text-gray-800 dark:text-gray-100 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] px-4 py-1 relative z-10">
+                 ${formatted.text.english}
+               </blockquote>
+               ${formatted.narrator ? `
+                 <div class="mt-4 pl-4 border-l-2 border-emerald-500/30 dark:border-emerald-500/20">
+                   <p class="text-sm font-bold text-gray-900 dark:text-gray-100">Narrated by:</p>
+                   <p class="text-sm text-gray-500 dark:text-gray-400 italic">${formatted.narrator}</p>
+                 </div>
+               ` : ''}
+             </div>
+             
+             <!-- Arabic Text (Hidden) -->
+             <div class="hadith-text-arabic hidden" data-hadith-id="${hadithId}">
+               <blockquote class="text-gray-800 dark:text-gray-100 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] text-right px-4 py-1 relative z-10" dir="rtl">
+                 ${formatted.text.arabic}
+               </blockquote>
+               ${formatted.narrator ? `
+                 <div class="mt-4 pr-4 border-r-2 border-emerald-500/30 dark:border-emerald-500/20 text-right">
+                    <p class="text-sm font-bold text-gray-900 dark:text-gray-100">Narrated by:</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">${formatted.narrator}</p>
+                 </div>
+               ` : ''}
+             </div>
           </div>
           
         </div>
       </div>
-      
+
+      <!-- Context Section (Independent) -->
       ${contextHTML}
-      <!-- AI Summary (Combined Explanation) - Simple text below context links -->
+      
+      <!-- AI Summary (Explanation) (Independent) -->
       ${hadith.aiSummary ? `
-        <div class="mt-3 hadith-ai-summary ${summaryTextSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed">
-          ${hadith.aiSummary}
+        <div class="hadith-explanation-section mt-6">
+           <div class="flex items-center gap-2 mb-3">
+              <span class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 p-1 rounded-md">
+                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              </span>
+              <h5 class="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Explanation</h5>
+           </div>
+           <div class="${summaryTextSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed pl-2 border-l-2 border-amber-200 dark:border-amber-800/50">
+             ${hadith.aiSummary}
+           </div>
         </div>
       ` : ''}
+
     </div>
   `;
 }
@@ -277,20 +298,20 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
 export async function searchHadiths(query: string, limit: number = 5): Promise<HadithData[]> {
   try {
     const response = await fetch(`/api/hadith?query=${encodeURIComponent(query)}&limit=${limit}`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     if (data.success && data.hadiths) {
       // Double-check that we only return Sahih hadiths
-      return data.hadiths.filter((hadith: HadithData) => 
+      return data.hadiths.filter((hadith: HadithData) =>
         hadith.status && hadith.status.toLowerCase() === 'sahih'
       );
     }
-    
+
     return [];
   } catch (error) {
     return [];
@@ -301,13 +322,13 @@ export async function searchHadiths(query: string, limit: number = 5): Promise<H
 export async function fetchSpecificHadith(bookSlug: string, hadithNumber: string): Promise<HadithData | null> {
   try {
     const response = await fetch(`/api/hadith?hadithNumber=${hadithNumber}&bookSlug=${bookSlug}`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     if (data.success && data.hadith) {
       // Ensure it's a Sahih hadith
       if (data.hadith.status && data.hadith.status.toLowerCase() === 'sahih') {
@@ -316,7 +337,7 @@ export async function fetchSpecificHadith(bookSlug: string, hadithNumber: string
         return null;
       }
     }
-    
+
     return null;
   } catch (error) {
     return null;

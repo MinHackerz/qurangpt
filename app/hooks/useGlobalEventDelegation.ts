@@ -64,36 +64,36 @@ export const useGlobalEventDelegation = () => {
       if (isNaN(progress) || progress < 0) {
         return;
       }
-      
+
       // Clamp progress to 0-100 range
       progress = Math.max(0, Math.min(100, progress));
-      
+
       // Find the waveform container
       const waveformContainer = document.querySelector(`div[data-surah="${surah}"][data-ayah="${ayah}"].cursor-pointer`);
-      
+
       if (!waveformContainer) {
         return;
       }
-      
+
       const bars = waveformContainer.querySelectorAll('.wave-bar');
       if (bars.length === 0) {
         return;
       }
-      
+
       const totalBars = bars.length;
       const activeBars = Math.floor((progress / 100) * totalBars);
       const partialProgress = (progress / 100) * totalBars - activeBars;
-      
+
       // Get the current progress color
       const progressColor = getProgressColor(progress);
       const progressColorRgb = hexToRgb(progressColor);
-      
+
       bars.forEach((bar, index) => {
         const barElement = bar as HTMLElement;
-        
+
         // Remove all progress classes first
         barElement.classList.remove('progress-active', 'progress-partial', 'progress-current');
-        
+
         if (index < activeBars) {
           // Active bars - fully completed with dynamic color
           barElement.classList.add('progress-active');
@@ -122,8 +122,8 @@ export const useGlobalEventDelegation = () => {
     // Helper function to convert hex to RGB
     const hexToRgb = (hex: string) => {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? 
-        `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+      return result ?
+        `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` :
         '107, 114, 128'; // fallback to gray
     };
 
@@ -239,7 +239,7 @@ export const useGlobalEventDelegation = () => {
             // Check if this is a range (e.g., "1-8")
             const isRange = ayah.includes('-');
             let response;
-            
+
             if (isRange) {
               // Handle range: fetch all audio URLs for the range
               const [startAyah, endAyah] = ayah.split('-').map(num => parseInt(num.trim()));
@@ -266,7 +266,7 @@ export const useGlobalEventDelegation = () => {
             }
 
             const data = await response.json();
-            
+
             if (!data.success) {
               throw new Error(data.error || 'No audio data received');
             }
@@ -276,7 +276,7 @@ export const useGlobalEventDelegation = () => {
               // Store all audio URLs for the range
               state.audioUrls = data.audioUrls;
               state.currentAudioIndex = 0;
-              
+
               // Create audio element for the first ayah
               const audio = new Audio();
               audio.src = data.audioUrls[0];
@@ -289,14 +289,14 @@ export const useGlobalEventDelegation = () => {
             } else {
               throw new Error('No audio URL received');
             }
-            
+
             // Progress tracking - smooth updates with better error handling
             const updateProgress = () => {
               try {
-                if (state && state.audio && state.audio.duration && !isNaN(state.audio.duration) && state.audio.duration > 0 && 
-                    state.audio.currentTime >= 0 && !isNaN(state.audio.currentTime)) {
+                if (state && state.audio && state.audio.duration && !isNaN(state.audio.duration) && state.audio.duration > 0 &&
+                  state.audio.currentTime >= 0 && !isNaN(state.audio.currentTime)) {
                   const progress = Math.min(100, Math.max(0, (state.audio.currentTime / state.audio.duration) * 100));
-                  
+
                   // Update progress immediately with requestAnimationFrame for smooth updates
                   requestAnimationFrame(() => {
                     updateWaveformProgress(surah, ayah, progress);
@@ -309,7 +309,7 @@ export const useGlobalEventDelegation = () => {
                 // Silent error handling
               }
             };
-            
+
             // Wait for metadata to be loaded before tracking progress
             state.audio.addEventListener('loadedmetadata', () => {
               // Initial progress update after metadata is loaded
@@ -319,16 +319,16 @@ export const useGlobalEventDelegation = () => {
                 updateDurationDisplay(surah, ayah, state.audio.currentTime, state.audio.duration);
               }
             });
-            
+
             // Use timeupdate event for progress tracking (fires every 250ms by default)
             state.audio.addEventListener('timeupdate', updateProgress);
-            
+
             // Add a higher frequency interval for smoother progress updates (every 100ms)
             const progressInterval = setInterval(() => {
               try {
-                if (state && state.isPlaying && state.audio && state.audio.duration && 
-                    !isNaN(state.audio.duration) && state.audio.duration > 0 &&
-                    state.audio.currentTime >= 0 && !isNaN(state.audio.currentTime)) {
+                if (state && state.isPlaying && state.audio && state.audio.duration &&
+                  !isNaN(state.audio.duration) && state.audio.duration > 0 &&
+                  state.audio.currentTime >= 0 && !isNaN(state.audio.currentTime)) {
                   const progress = Math.min(100, Math.max(0, (state.audio.currentTime / state.audio.duration) * 100));
                   requestAnimationFrame(() => {
                     updateWaveformProgress(surah, ayah, progress);
@@ -341,10 +341,10 @@ export const useGlobalEventDelegation = () => {
                 // Silent error handling
               }
             }, 100); // Update every 100ms for smooth progress
-            
+
             // Store interval ID for cleanup
             state.progressInterval = progressInterval;
-            
+
             // Handle audio end - for ranges, play next ayah
             state.audio.addEventListener('ended', () => {
               if (isRange && state && state.audioUrls && state.audioUrls.length > 1) {
@@ -367,7 +367,7 @@ export const useGlobalEventDelegation = () => {
                 // Single ayah or last ayah in range
                 handleAudioEnd();
               }
-              
+
               function handleAudioEnd() {
                 if (state) {
                   state.isPlaying = false;
@@ -413,7 +413,7 @@ export const useGlobalEventDelegation = () => {
             state.isPlaying = true;
           }
           currentPlayingKey = key;
-          
+
           setButtonToPauseState(audioButton);
         }
       } catch (error) {
@@ -433,16 +433,16 @@ export const useGlobalEventDelegation = () => {
       // Find the ayah text element
       const ayahBox = document.querySelector(`[data-ayah-id="${ayahId}"]`);
       if (!ayahBox) return;
-      
+
       const ayahTextElement = ayahBox.querySelector('blockquote') as HTMLElement;
       if (!ayahTextElement) return;
-      
+
       // Check current language state - more robust detection
-      const isCurrentlyArabic = button.classList.contains('arabic-active') || 
-                                button.className.includes('bg-gray-300') || 
-                                button.className.includes('bg-gray-600') ||
-                                button.getAttribute('data-language-state') === 'arabic';
-      
+      const isCurrentlyArabic = button.classList.contains('arabic-active') ||
+        button.className.includes('bg-gray-300') ||
+        button.className.includes('bg-gray-600') ||
+        button.getAttribute('data-language-state') === 'arabic';
+
       if (isCurrentlyArabic) {
         // Switch back to translation - INSTANT (no async, no delays)
         const translationText = ayahTextElement.getAttribute('data-translation-text');
@@ -457,24 +457,24 @@ export const useGlobalEventDelegation = () => {
         // Switch to Arabic - INSTANT visual feedback, background fetch
         // Store current translation text first
         ayahTextElement.setAttribute('data-translation-text', ayahTextElement.textContent || '');
-        
+
         // INSTANTLY update button to show active state (darker background)
         button.classList.add('arabic-active');
         button.setAttribute('data-language-state', 'arabic');
         button.className = 'ayah-language-toggle-btn w-8 h-8 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100 rounded-lg border border-gray-400 dark:border-gray-500 transition-all duration-200 flex items-center justify-center';
-        
+
         // Fetch Arabic text in background (completely non-blocking)
         // Check if already fetching to prevent multiple simultaneous requests
         if (button.getAttribute('data-fetching') === 'true') {
           return;
         }
-        
+
         button.setAttribute('data-fetching', 'true');
-        
+
         const fetchArabicText = async () => {
           try {
             let arabicText: string | null = null;
-            
+
             if (isRange) {
               // Handle range
               const [startAyah, endAyah] = ayah.split('-').map(num => parseInt(num.trim()));
@@ -491,7 +491,7 @@ export const useGlobalEventDelegation = () => {
                 arabicText = data.text;
               }
             }
-            
+
             if (arabicText) {
               // Update text when Arabic is fetched
               ayahTextElement.textContent = arabicText;
@@ -506,7 +506,7 @@ export const useGlobalEventDelegation = () => {
             button.removeAttribute('data-fetching');
           }
         };
-        
+
         // Start background fetch (non-blocking)
         fetchArabicText();
       }
@@ -522,7 +522,7 @@ export const useGlobalEventDelegation = () => {
       // Create global click handler
       window.globalTafsirClickHandler = (e: Event) => {
         const target = e.target as HTMLElement;
-        
+
         // Handle clicks for any button with our classes, regardless of container
         const isAudioButton = target.closest('.ayah-audio-play-btn');
         const isTafsirButton = target.closest('.tafsir-toggle-btn, .tafsir-close-btn');
@@ -531,7 +531,7 @@ export const useGlobalEventDelegation = () => {
         const waveformElement = target.closest('[data-surah][data-ayah]');
         const isWaveformContainer = waveformElement && waveformElement.classList.contains('cursor-pointer');
         const isSuggestedQuestion = target.closest('[data-suggested-question="true"]');
-        
+
         if (!isAudioButton && !isTafsirButton && !isLanguageToggleButton && !isWaveBar && !isWaveformContainer && !isSuggestedQuestion) {
           return;
         }
@@ -550,20 +550,53 @@ export const useGlobalEventDelegation = () => {
         if (tafsirButton) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           // Ensure button is always clickable
           tafsirButton.disabled = false;
           tafsirButton.style.pointerEvents = 'auto';
           tafsirButton.style.cursor = 'pointer';
-          
+
           const tafsirId = tafsirButton.getAttribute('data-tafsir-id');
-          
+
           if (tafsirId) {
-            // Simple tafsir toggle
             const content = document.getElementById(tafsirId);
+            const isClosingViaCloseBtn = tafsirButton.classList.contains('tafsir-close-btn');
+
             if (content) {
-              const isHidden = content.style.display === 'none' || content.style.display === '';
-              content.style.display = isHidden ? 'block' : 'none';
+              const isCurrentlyHidden = content.classList.contains('hidden') || content.style.display === 'none' || content.style.display === '';
+
+              // If opening a new tafsir, close all other tafsirs first
+              if (isCurrentlyHidden && !isClosingViaCloseBtn) {
+                // Close all other tafsir contents
+                document.querySelectorAll('.tafsir-content').forEach(otherContent => {
+                  if (otherContent.id !== tafsirId) {
+                    otherContent.classList.add('hidden');
+                    (otherContent as HTMLElement).style.display = 'none';
+                  }
+                });
+
+                // Reset all tafsir toggle buttons' active state
+                document.querySelectorAll('.tafsir-toggle-btn').forEach(btn => {
+                  btn.removeAttribute('data-active');
+                });
+
+                // Show the selected tafsir
+                content.classList.remove('hidden');
+                content.style.display = 'block';
+
+                // Set the clicked button as active
+                tafsirButton.setAttribute('data-active', 'true');
+              } else {
+                // Closing the tafsir
+                content.classList.add('hidden');
+                content.style.display = 'none';
+
+                // Remove active state from the corresponding toggle button
+                const toggleBtn = document.querySelector(`.tafsir-toggle-btn[data-tafsir-id="${tafsirId}"]`);
+                if (toggleBtn) {
+                  toggleBtn.removeAttribute('data-active');
+                }
+              }
             }
           }
           return;
@@ -574,18 +607,18 @@ export const useGlobalEventDelegation = () => {
         if (languageToggleButton) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           // Ensure button is always clickable
           languageToggleButton.disabled = false;
           languageToggleButton.style.pointerEvents = 'auto';
           languageToggleButton.style.cursor = 'pointer';
-          
+
           const ayahId = languageToggleButton.getAttribute('data-ayah-id');
           const isRange = languageToggleButton.getAttribute('data-is-range') === 'true';
           const surah = languageToggleButton.getAttribute('data-surah');
           const ayah = languageToggleButton.getAttribute('data-ayah');
           const globalAyah = languageToggleButton.getAttribute('data-global-ayah');
-          
+
           if (ayahId && surah && ayah && globalAyah) {
             handleLanguageToggle(ayahId, isRange, surah, ayah, globalAyah, languageToggleButton);
           }
@@ -597,15 +630,15 @@ export const useGlobalEventDelegation = () => {
         if (audioButton) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           // Ensure button is always clickable
           audioButton.disabled = false;
           audioButton.style.pointerEvents = 'auto';
           audioButton.style.cursor = 'pointer';
-          
+
           const surah = audioButton.getAttribute('data-surah');
           const ayah = audioButton.getAttribute('data-ayah');
-          
+
           if (surah && ayah) {
             handleAudioPlayback(audioButton, surah, ayah);
           }
@@ -616,14 +649,14 @@ export const useGlobalEventDelegation = () => {
         if (isSuggestedQuestion) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const suggestedQuestionElement = target.closest('[data-suggested-question="true"]') as HTMLElement;
           if (suggestedQuestionElement) {
             const questionText = suggestedQuestionElement.querySelector('p')?.textContent;
             if (questionText) {
               // Dispatch custom event that can be handled by the parent component
-              window.dispatchEvent(new CustomEvent('suggestedQuestionClick', { 
-                detail: { question: questionText } 
+              window.dispatchEvent(new CustomEvent('suggestedQuestionClick', {
+                detail: { question: questionText }
               }));
             }
           }
@@ -634,21 +667,21 @@ export const useGlobalEventDelegation = () => {
         if (isWaveformContainer) {
           e.preventDefault();
           e.stopPropagation();
-          
+
           const waveformContainer = target.closest('[data-surah][data-ayah]') as HTMLElement;
           const surah = waveformContainer.getAttribute('data-surah');
           const ayah = waveformContainer.getAttribute('data-ayah');
-          
+
           if (surah && ayah) {
             const key = getAudioKey(surah, ayah);
             const state = audioStates.get(key);
-            
+
             if (state && state.audio && state.isPlaying) {
               const rect = waveformContainer.getBoundingClientRect();
               const clickX = (e as MouseEvent).clientX - rect.left;
               const percentage = clickX / rect.width;
               const newTime = percentage * state.audio.duration;
-              
+
               if (!isNaN(newTime) && newTime >= 0 && newTime <= state.audio.duration) {
                 state.audio.currentTime = newTime;
               }
@@ -707,9 +740,9 @@ export const useGlobalEventDelegation = () => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const button = entry.target as HTMLElement;
-          if (button.classList.contains('ayah-audio-play-btn') || 
-              button.classList.contains('tafsir-toggle-btn') || 
-              button.classList.contains('tafsir-close-btn')) {
+          if (button.classList.contains('ayah-audio-play-btn') ||
+            button.classList.contains('tafsir-toggle-btn') ||
+            button.classList.contains('tafsir-close-btn')) {
             button.style.pointerEvents = 'auto';
             button.style.cursor = 'pointer';
           }
@@ -729,7 +762,7 @@ export const useGlobalEventDelegation = () => {
     // Re-observe when new content is added and ensure button clickability
     const mutationObserver = new MutationObserver((mutations) => {
       let shouldReobserve = false;
-      
+
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((node) => {
@@ -747,15 +780,15 @@ export const useGlobalEventDelegation = () => {
                 element.classList.contains('ayah-language-toggle-btn')
               )) {
                 shouldReobserve = true;
-                
+
                 // Immediately ensure new buttons are clickable
-                const buttons = element.querySelectorAll ? 
+                const buttons = element.querySelectorAll ?
                   element.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn, .ayah-language-toggle-btn') :
-                  (element.classList.contains('ayah-audio-play-btn') || 
-                   element.classList.contains('tafsir-toggle-btn') || 
-                   element.classList.contains('tafsir-close-btn') ||
-                   element.classList.contains('ayah-language-toggle-btn')) ? [element] : [];
-                
+                  (element.classList.contains('ayah-audio-play-btn') ||
+                    element.classList.contains('tafsir-toggle-btn') ||
+                    element.classList.contains('tafsir-close-btn') ||
+                    element.classList.contains('ayah-language-toggle-btn')) ? [element] : [];
+
                 buttons.forEach((button) => {
                   const btn = button as HTMLElement;
                   btn.style.pointerEvents = 'auto';
@@ -771,7 +804,7 @@ export const useGlobalEventDelegation = () => {
           });
         }
       });
-      
+
       if (shouldReobserve) {
         observeButtons();
       }
@@ -807,7 +840,7 @@ export const useGlobalEventDelegation = () => {
           btn.disabled = false;
           btn.style.pointerEvents = 'auto';
           btn.style.cursor = 'pointer';
-          
+
           // Ensure audio buttons are in play state if not currently playing
           if (btn.classList.contains('ayah-audio-play-btn')) {
             const surah = btn.getAttribute('data-surah');
@@ -822,7 +855,7 @@ export const useGlobalEventDelegation = () => {
           }
         });
       }
-      
+
       // Also ensure waveform bars are properly initialized
       ensureWaveformBarsInitialized();
     };
@@ -839,7 +872,7 @@ export const useGlobalEventDelegation = () => {
         document.removeEventListener('click', window.globalTafsirClickHandler, false);
         delete window.globalTafsirClickHandler;
       }
-      
+
       // Cleanup observers
       try {
         observer.disconnect();
@@ -848,10 +881,10 @@ export const useGlobalEventDelegation = () => {
       } catch (error) {
         console.warn('Error disconnecting observers:', error);
       }
-      
+
       // Cleanup interval
       clearInterval(intervalId);
-      
+
       // Cleanup audio states more efficiently
       audioStates.forEach((state) => {
         try {

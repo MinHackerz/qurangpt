@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { CurrencyDollarIcon, InformationCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface ZakatCalculation {
   totalAssets: number;
@@ -42,37 +42,37 @@ export default function ZakatCalculator() {
   const [liabilities, setLiabilities] = useState(defaultLiabilities);
   const [calculation, setCalculation] = useState<ZakatCalculation | null>(null);
   const [nisabType, setNisabType] = useState<'gold' | 'silver'>('gold');
-  const [currency, setCurrency] = useState('INR');
+  const [currency, setCurrency] = useState('USD');
   const [goldPrice, setGoldPrice] = useState(0);
   const [silverPrice, setSilverPrice] = useState(0);
   const [isLoadingPrices, setIsLoadingPrices] = useState(true);
-  const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({});
+  const [exchangeRates, setExchangeRates] = useState<{ [key: string]: number }>({});
 
   // Fetch current gold and silver prices and exchange rates
   const fetchMetalPrices = async () => {
     try {
       setIsLoadingPrices(true);
-      
+
       // Fetch metal prices
       const metalResponse = await fetch('/api/metal-prices');
       let goldPriceUSD = 2000;
       let silverPriceUSD = 25;
-      
+
       if (metalResponse.ok) {
         const metalData = await metalResponse.json();
         goldPriceUSD = metalData.gold || 2000;
         silverPriceUSD = metalData.silver || 25;
       }
-      
+
       // Fetch exchange rates
       const exchangeResponse = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
       let rates = { USD: 1 };
-      
+
       if (exchangeResponse.ok) {
         const exchangeData = await exchangeResponse.json();
         rates = exchangeData.rates || { USD: 1 };
       }
-      
+
       setExchangeRates(rates);
       setGoldPrice(goldPriceUSD);
       setSilverPrice(silverPriceUSD);
@@ -90,11 +90,10 @@ export default function ZakatCalculator() {
     fetchMetalPrices();
   }, []);
 
-
   // Calculate Nisab based on current metal prices in selected currency
   const calculateNisab = useCallback(() => {
     const exchangeRate = exchangeRates[currency] || 1;
-    
+
     if (nisabType === 'gold') {
       // Nisab for gold is 87.48 grams (approximately 3 ounces)
       return (goldPrice * 3) * exchangeRate;
@@ -106,14 +105,14 @@ export default function ZakatCalculator() {
 
   // Calculate Zakat
   const calculateZakat = useCallback(() => {
-    const totalAssets = assets.reduce((sum, asset) => 
+    const totalAssets = assets.reduce((sum, asset) =>
       sum + (asset.isZakatable ? asset.amount : 0), 0
     );
-    
-    const totalLiabilities = liabilities.reduce((sum, liability) => 
+
+    const totalLiabilities = liabilities.reduce((sum, liability) =>
       sum + liability.amount, 0
     );
-    
+
     const netWorth = totalAssets - totalLiabilities;
     const nisab = calculateNisab();
     const isEligible = netWorth >= nisab;
@@ -132,14 +131,14 @@ export default function ZakatCalculator() {
 
   // Update asset amount
   const updateAsset = (id: string, amount: number) => {
-    setAssets(prev => prev.map(asset => 
+    setAssets(prev => prev.map(asset =>
       asset.id === id ? { ...asset, amount } : asset
     ));
   };
 
   // Update liability amount
   const updateLiability = (id: string, amount: number) => {
-    setLiabilities(prev => prev.map(liability => 
+    setLiabilities(prev => prev.map(liability =>
       liability.id === id ? { ...liability, amount } : liability
     ));
   };
@@ -163,313 +162,169 @@ export default function ZakatCalculator() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
-      className="min-h-[70vh] w-full"
+      className="min-h-screen bg-transparent"
     >
-      <div className="w-full mx-auto px-6 sm:px-8 py-8 space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center border-2 border-green-200 dark:border-green-700">
-            <CurrencyDollarIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Zakat Calculator</h1>
-        </div>
-        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">
-          Calculate your Zakat obligation based on wealth held for one full lunar year (Hawl). Zakat is 2.5% of your net zakatable wealth above the Nisab threshold. Only include assets that exceed your basic needs and necessities.
-        </p>
-      </div>
+      <div className="max-w-4xl mx-auto px-6 py-12 sm:px-8">
+        {/* Header */}
+        <header className="mb-12 text-center md:text-left">
+          <h1 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-gray-50 mb-2 tracking-tight">Zakat Calculator</h1>
+          <p className="text-gray-500 dark:text-gray-400 font-light text-lg">Calculate your annual Zakat obligation</p>
+        </header>
 
-      {/* Nisab Settings */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Nisab Calculation</h2>
-        
-        {/* Currency Selection */}
-        <div className="mb-6 p-3 sm:p-4 bg-transparent dark:bg-transparent rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Currency</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Select your preferred currency for calculations
-              </p>
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-transparent touch-manipulation"
-              >
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="GBP">GBP - British Pound</option>
-                <option value="CAD">CAD - Canadian Dollar</option>
-                <option value="AUD">AUD - Australian Dollar</option>
-                <option value="JPY">JPY - Japanese Yen</option>
-                <option value="CNY">CNY - Chinese Yuan</option>
-                <option value="INR">INR - Indian Rupee</option>
-                <option value="BRL">BRL - Brazilian Real</option>
-                <option value="MXN">MXN - Mexican Peso</option>
-                <option value="RUB">RUB - Russian Ruble</option>
-                <option value="KRW">KRW - South Korean Won</option>
-                <option value="SGD">SGD - Singapore Dollar</option>
-                <option value="HKD">HKD - Hong Kong Dollar</option>
-                <option value="SAR">SAR - Saudi Riyal</option>
-                <option value="AED">AED - UAE Dirham</option>
-                <option value="EGP">EGP - Egyptian Pound</option>
-                <option value="ZAR">ZAR - South African Rand</option>
-                <option value="NGN">NGN - Nigerian Naira</option>
-                <option value="KES">KES - Kenyan Shilling</option>
-                <option value="GHS">GHS - Ghanaian Cedi</option>
-                <option value="MAD">MAD - Moroccan Dirham</option>
-                <option value="TND">TND - Tunisian Dinar</option>
-                <option value="DZD">DZD - Algerian Dinar</option>
-                <option value="LYD">LYD - Libyan Dinar</option>
-                <option value="SDG">SDG - Sudanese Pound</option>
-                <option value="ETB">ETB - Ethiopian Birr</option>
-                <option value="UGX">UGX - Ugandan Shilling</option>
-                <option value="TZS">TZS - Tanzanian Shilling</option>
-                <option value="ZWL">ZWL - Zimbabwean Dollar</option>
-                <option value="BWP">BWP - Botswanan Pula</option>
-                <option value="NAD">NAD - Namibian Dollar</option>
-                <option value="SZL">SZL - Swazi Lilangeni</option>
-                <option value="LSL">LSL - Lesotho Loti</option>
-                <option value="MWK">MWK - Malawian Kwacha</option>
-                <option value="ZMW">ZMW - Zambian Kwacha</option>
-                <option value="AOA">AOA - Angolan Kwanza</option>
-                <option value="MZN">MZN - Mozambican Metical</option>
-                <option value="MGA">MGA - Malagasy Ariary</option>
-                <option value="MUR">MUR - Mauritian Rupee</option>
-                <option value="SCR">SCR - Seychellois Rupee</option>
-                <option value="KMF">KMF - Comorian Franc</option>
-                <option value="DJF">DJF - Djiboutian Franc</option>
-                <option value="SOS">SOS - Somali Shilling</option>
-                <option value="ERN">ERN - Eritrean Nakfa</option>
-                <option value="SSP">SSP - South Sudanese Pound</option>
-                <option value="XAF">XAF - Central African CFA Franc</option>
-                <option value="CDF">CDF - Congolese Franc</option>
-                <option value="STN">STN - São Tomé and Príncipe Dobra</option>
-                <option value="CVE">CVE - Cape Verdean Escudo</option>
-                <option value="XOF">XOF - West African CFA Franc</option>
-                <option value="GMD">GMD - Gambian Dalasi</option>
-                <option value="GNF">GNF - Guinean Franc</option>
-                <option value="SLL">SLL - Sierra Leonean Leone</option>
-                <option value="LRD">LRD - Liberian Dollar</option>
-                <option value="MRU">MRU - Mauritanian Ouguiya</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nisab Type
-            </label>
-            <select
-              value={nisabType}
-              onChange={(e) => setNisabType(e.target.value as 'gold' | 'silver')}
-              className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent touch-manipulation"
-            >
-              <option value="gold">Gold (87.48g / 3 oz)</option>
-              <option value="silver">Silver (612.36g / 20 oz)</option>
-            </select>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-2 h-5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Current {nisabType === 'gold' ? 'Gold' : 'Silver'} Price
-              </label>
-              <button
-                onClick={fetchMetalPrices}
-                disabled={isLoadingPrices}
-                className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors touch-manipulation"
-                title="Refresh prices"
-              >
-                <svg className={`w-3.5 h-3.5 ${isLoadingPrices ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            </div>
-            <div className="min-h-[44px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white flex items-center">
-              {isLoadingPrices ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
-                  <span className="text-sm">Loading...</span>
-                </div>
-              ) : (
-                `${formatCurrency((nisabType === 'gold' ? goldPrice : silverPrice) * (exchangeRates[currency] || 1))} per oz`
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nisab Threshold
-            </label>
-            <div className="min-h-[44px] px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-green-700 dark:text-green-400 font-semibold flex items-center">
-              {formatCurrency(calculateNisab())}
-            </div>
-          </div>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main Input Column */}
+          <div className="lg:col-span-2 space-y-16">
 
-      {/* Assets Section */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Your Assets</h2>
-        <div className="space-y-4">
-          {assets.map((asset) => (
-            <motion.div
-              key={asset.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors gap-4"
-            >
-              <div className="flex-1">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                  <h3 className="font-medium text-gray-900 dark:text-white">{asset.name}</h3>
-                  {asset.isZakatable && (
-                    <span className="px-2 py-1 text-xs bg-transparent dark:bg-transparent text-green-700 dark:text-green-400 rounded-full w-fit">
-                      Zakatable
-                    </span>
+            {/* Settings Section - Text Only/Minimal */}
+            <section className="flex flex-wrap items-center gap-8 pb-8 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Currency</label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="bg-transparent text-lg font-medium text-gray-900 dark:text-white border-none p-0 focus:ring-0 cursor-pointer"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                  {/* Add more common currencies as needed */}
+                  <option value="CAD">CAD ($)</option>
+                  <option value="AUD">AUD ($)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Nisab Standard</label>
+                <select
+                  value={nisabType}
+                  onChange={(e) => setNisabType(e.target.value as 'gold' | 'silver')}
+                  className="bg-transparent text-lg font-medium text-gray-900 dark:text-white border-none p-0 focus:ring-0 cursor-pointer"
+                >
+                  <option value="gold">Gold Standard (87.48g)</option>
+                  <option value="silver">Silver Standard (612.36g)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col ml-auto text-right">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Current Threshold</span>
+                <div className="flex items-center gap-2 justify-end">
+                  {isLoadingPrices ? (
+                    <ArrowPathIcon className="w-4 h-4 animate-spin text-gray-400" />
+                  ) : (
+                    <span className="text-lg font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(calculateNisab())}</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{asset.description}</p>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{currency}</span>
-                <input
-                  type="number"
-                  value={asset.amount}
-                  onChange={(e) => updateAsset(asset.id, parseFloat(e.target.value) || 0)}
-                  className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+            </section>
 
-      {/* Liabilities Section */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Your Liabilities</h2>
-        <div className="space-y-4">
-          {liabilities.map((liability) => (
-            <motion.div
-              key={liability.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-transparent dark:hover:bg-transparent transition-colors gap-4"
-            >
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900 dark:text-white">{liability.name}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{liability.description}</p>
+            {/* Assets Section */}
+            <section>
+              <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+                Your Assets
+                <span className="text-sm font-sans font-normal text-gray-400 bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded-full">Wealth & Savings</span>
+              </h2>
+              <div className="space-y-8">
+                {assets.map((asset) => (
+                  <div key={asset.id} className="group">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <label className="text-base font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        {asset.name}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm font-light">$</span>
+                        <input
+                          type="number"
+                          value={asset.amount || ''}
+                          onChange={(e) => updateAsset(asset.id, parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-32 text-right bg-transparent border-b border-gray-200 dark:border-gray-800 focus:border-emerald-500 outline-none py-1 text-lg font-mono text-gray-900 dark:text-gray-100 placeholder-gray-300 transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400 font-light">{asset.description}</p>
+                  </div>
+                ))}
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{currency}</span>
-                <input
-                  type="number"
-                  value={liability.amount}
-                  onChange={(e) => updateLiability(liability.id, parseFloat(e.target.value) || 0)}
-                  className="w-full min-h-[44px] px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent dark:bg-transparent text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent text-right touch-manipulation"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+            </section>
 
-      {/* Calculation Results */}
-      {calculation && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-transparent dark:bg-transparent rounded-xl border border-green-200 dark:border-green-700 p-4 sm:p-6"
-        >
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Zakat Calculation</h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Summary */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
-                <span className="text-gray-600 dark:text-gray-400">Total Zakatable Assets:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(calculation.totalAssets)}</span>
+            {/* Liabilities Section */}
+            <section>
+              <h2 className="text-2xl font-serif text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+                Your Liabilities
+                <span className="text-sm font-sans font-normal text-gray-400 bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded-full">Debts & Due Payments</span>
+              </h2>
+              <div className="space-y-8">
+                {liabilities.map((liability) => (
+                  <div key={liability.id} className="group">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <label className="text-base font-medium text-gray-700 dark:text-gray-300 group-hover:text-rose-500 transition-colors">
+                        {liability.name}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm font-light">$</span>
+                        <input
+                          type="number"
+                          value={liability.amount || ''}
+                          onChange={(e) => updateLiability(liability.id, parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                          className="w-32 text-right bg-transparent border-b border-gray-200 dark:border-gray-800 focus:border-rose-500 outline-none py-1 text-lg font-mono text-gray-900 dark:text-gray-100 placeholder-gray-300 transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400 font-light">{liability.description}</p>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
-                <span className="text-gray-600 dark:text-gray-400">Total Liabilities:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(calculation.totalLiabilities)}</span>
+            </section>
+
+          </div>
+
+          {/* Results Column - Sticky */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 p-8 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-gray-100 dark:border-gray-800 backdrop-blur-sm">
+              <h3 className="text-lg font-serif text-gray-900 dark:text-white mb-6">Summary</h3>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Total Assets</span>
+                  <span className="font-mono text-gray-900 dark:text-gray-200">{formatCurrency(calculation?.totalAssets || 0)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Total Liabilities</span>
+                  <span className="font-mono text-gray-900 dark:text-gray-200">- {formatCurrency(calculation?.totalLiabilities || 0)}</span>
+                </div>
+                <div className="h-px bg-gray-200 dark:bg-gray-700 my-4"></div>
+                <div className="flex justify-between font-medium">
+                  <span className="text-gray-900 dark:text-white">Net Worth</span>
+                  <span className="font-mono text-gray-900 dark:text-white">{formatCurrency(calculation?.netWorth || 0)}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-600">
-                <span className="text-gray-600 dark:text-gray-400">Net Worth:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(calculation.netWorth)}</span>
+
+              <div className={`p-6 rounded-2xl text-center transition-colors ${calculation?.isEligible
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                <p className="text-sm font-medium mb-1 opacity-90">Zakat Payable (2.5%)</p>
+                <p className="text-3xl font-serif font-bold">
+                  {formatCurrency(calculation?.zakatAmount || 0)}
+                </p>
+                {!calculation?.isEligible && (
+                  <p className="text-xs mt-2 opacity-75">Below Nisab Threshold</p>
+                )}
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600 dark:text-gray-400">Nisab Threshold:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(calculation.nisab)}</span>
+
+              <div className="mt-8 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-100 dark:border-amber-900/50">
+                <InformationCircleIcon className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-800 dark:text-amber-400 leading-relaxed">
+                  <span className="font-semibold block mb-1">Hawl Requirement</span>
+                  Zakat is only due on wealth that has been in your possession for one complete lunar year. Excluding personal use items.
+                </p>
               </div>
             </div>
-
-            {/* Zakat Result */}
-            <div className="text-center space-y-4">
-              <div className={`p-6 rounded-lg ${calculation.isEligible ? 'bg-transparent dark:bg-transparent' : 'bg-transparent dark:bg-transparent'}`}>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  {calculation.isEligible ? 'You are eligible for Zakat' : 'You are not eligible for Zakat'}
-                </div>
-                <div className={`text-3xl font-bold ${calculation.isEligible ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                  {formatCurrency(calculation.zakatAmount)}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {calculation.zakatPercentage}% of net worth
-                </div>
-              </div>
-              
-              {calculation.isEligible && (
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <p>This amount should be distributed to eligible recipients according to Islamic guidelines.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Hawl Warning */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-amber-200 dark:border-amber-700 p-4 sm:p-6">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-2">Critical: Hawl (Lunar Year) Requirement</h3>
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              <strong>Zakat is only due on wealth that has been in your possession for one complete lunar year (Hawl).</strong> 
-              If you acquired any assets within the last 12 lunar months, they are not yet subject to Zakat. 
-              Only include assets that have been held for a full lunar year or longer.
-            </p>
           </div>
         </div>
-      </div>
-
-      {/* Information Section */}
-      <div className="bg-transparent dark:bg-transparent rounded-xl border border-blue-200 dark:border-blue-700 p-4 sm:p-6">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">Important Notes</h3>
-        <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
-          <li>• <strong>Hawl (Lunar Year):</strong> Zakat is only due on wealth held for one complete lunar year</li>
-          <li>• <strong>Basic Needs:</strong> Exclude personal residence, vehicles, household items, and basic necessities</li>
-          <li>• <strong>Gold & Silver:</strong> All forms of gold and silver are zakatable regardless of purpose</li>
-          <li>• <strong>Business Assets:</strong> Only include inventory and assets intended for sale</li>
-          <li>• <strong>Investment Properties:</strong> Only rental income savings are zakatable, not the property itself</li>
-          <li>• <strong>Liabilities:</strong> Only deduct immediate, short-term debts due within the Zakat year</li>
-          <li>• <strong>Nisab:</strong> Based on 87.48g gold or 612.36g silver at current market prices</li>
-          <li>• <strong>Rate:</strong> 2.5% of net zakatable wealth above Nisab threshold</li>
-          <li>• <strong>Important:</strong> Always verify calculations and consult authentic Islamic scholars for complex situations and religious rulings</li>
-        </ul>
-      </div>
       </div>
     </motion.div>
   );
