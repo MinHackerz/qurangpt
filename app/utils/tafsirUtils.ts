@@ -33,10 +33,18 @@ export const fetchTafsir = async (surahNumber: number, ayahNumber: number): Prom
 
 export const formatTafsirContent = (content: string): string => {
   return content
-    .replace(/\n/g, '<br>')
-    .replace(/##\s*(.*?)$/gm, '<h4 class="font-semibold text-gray-800 dark:text-gray-200 mt-3 mb-2">$1</h4>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>');
+    // Handle headers with ### (must come before ##)
+    .replace(/^###\s*(.*?)$/gm, '<h5 class="font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-2 text-base">$1</h5>')
+    // Handle headers with ##
+    .replace(/^##\s*(.*?)$/gm, '<h4 class="font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-2 text-lg">$1</h4>')
+    // Handle headers with #
+    .replace(/^#\s*(.*?)$/gm, '<h3 class="font-bold text-gray-900 dark:text-gray-100 mt-4 mb-2 text-xl">$1</h3>')
+    // Handle bold text
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+    // Handle italic text
+    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+    // Handle line breaks
+    .replace(/\n/g, '<br>');
 };
 
 // Fetch combined tafsir for ayah ranges (e.g., 23:1-11)

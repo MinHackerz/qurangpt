@@ -222,6 +222,63 @@ function HomeContent() {
     };
   }, [chatManager.isProcessing, chatManager.isChatActive]);
 
+  // Track previous processing state to detect completion
+  const wasProcessingRef = useRef(false);
+  const autoScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-scroll functionality: Follow progress during generation, scroll to top when complete
+  useEffect(() => {
+    // During processing: Auto-scroll to follow the progress
+    if (chatManager.isProcessing) {
+      wasProcessingRef.current = true;
+
+      // Clear any existing interval
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+      }
+
+      // Set up auto-scroll interval during processing
+      autoScrollIntervalRef.current = setInterval(() => {
+        // Scroll to the bottom of the current content to follow progress
+        const mainContent = document.querySelector('main');
+        if (mainContent) {
+          const scrollTarget = mainContent.scrollHeight;
+          window.scrollTo({
+            top: scrollTarget,
+            behavior: 'smooth'
+          });
+        }
+      }, 500); // Check every 500ms
+    } else {
+      // Processing just completed - scroll to top to show output from beginning
+      if (wasProcessingRef.current && chatManager.showSummary) {
+        // Clear the auto-scroll interval
+        if (autoScrollIntervalRef.current) {
+          clearInterval(autoScrollIntervalRef.current);
+          autoScrollIntervalRef.current = null;
+        }
+
+        // Small delay to ensure content is rendered, then scroll to top
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }, 300);
+
+        wasProcessingRef.current = false;
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+    };
+  }, [chatManager.isProcessing, chatManager.showSummary]);
+
   // Audio functionality is now handled directly in ResponseSection component
 
 

@@ -255,6 +255,17 @@ export default function MinimalHeader({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-30 sm:hidden bg-white/95 dark:bg-black/95 backdrop-blur-3xl pt-24 px-8 pb-10 overflow-y-auto flex flex-col"
           >
+            {/* Close Button - Top Right */}
+            <button
+              onClick={() => setShowMobileMenu(false)}
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all"
+              title="Close Menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
             <div className="flex-1 flex flex-col gap-8 max-w-sm mx-auto w-full">
 
               {/* Primary Navigation */}

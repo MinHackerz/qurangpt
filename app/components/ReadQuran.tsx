@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, PauseIcon, BookOpenIcon, LanguageIcon, MusicalNoteIcon, MagnifyingGlassIcon, ChevronDownIcon, ClipboardDocumentIcon, XMarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
-import { fetchTafsir, TafsirData } from '../utils/tafsirUtils';
+import { fetchTafsir, formatTafsirContent, TafsirData } from '../utils/tafsirUtils';
 
 interface Ayah {
   number: number;
@@ -459,7 +459,7 @@ export default function ReadQuran() {
             className="pb-10"
           >
             {/* Sticky Professional Header */}
-            <div className="sticky top-0 z-30 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-900">
+            <div className="sticky top-0 z-30 backdrop-blur-md">
               <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
                 <button
                   onClick={() => {
@@ -551,10 +551,44 @@ export default function ReadQuran() {
                             {ayah.translation}
                           </p>
                         </div>
+
+                        {/* Mobile/Tablet Actions - Inline buttons visible on smaller screens */}
+                        <div className="flex xl:hidden items-center justify-start gap-2 mt-4">
+                          <button
+                            onClick={() => playAyahAudio(ayah.number)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${audioState.isPlaying && audioState.currentAyah === ayah.number ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                            title="Play Audio"
+                          >
+                            {audioState.isPlaying && audioState.currentAyah === ayah.number ? (
+                              <PauseIcon className="w-4 h-4" />
+                            ) : (
+                              <PlayIcon className="w-4 h-4" />
+                            )}
+                            <span className="hidden sm:inline">{audioState.isPlaying && audioState.currentAyah === ayah.number ? 'Pause' : 'Play'}</span>
+                          </button>
+
+                          <button
+                            onClick={() => toggleTransliteration(ayah.number)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${visibleTransliterations.has(ayah.number) ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                            title="Show/Hide Transliteration"
+                          >
+                            <LanguageIcon className="w-4 h-4" />
+                            <span className="hidden sm:inline">Transliteration</span>
+                          </button>
+
+                          <button
+                            onClick={() => fetchTafsirForAyah(selectedSurah?.number || 1, ayah.number)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+                            title="Read Tafsir"
+                          >
+                            <BookOpenIcon className="w-4 h-4" />
+                            <span className="hidden sm:inline">Tafsir</span>
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Minimal Actions - Appear on Hover */}
-                      <div className="absolute -left-16 top-2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity hidden xl:flex text-gray-300 dark:text-gray-600">
+                      {/* Minimal Actions - Appear on Hover (Desktop XL only) */}
+                      <div className="absolute -left-16 top-2 flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity hidden xl:flex text-gray-300 dark:text-gray-600">
                         <button
                           onClick={() => playAyahAudio(ayah.number)}
                           className={`p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 ${audioState.isPlaying && audioState.currentAyah === ayah.number ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'}`}
@@ -623,81 +657,98 @@ export default function ReadQuran() {
         )}
       </AnimatePresence>
 
-      {/* Improved Tafsir Popup */}
+      {/* Minimalistic Professional Tafsir Bottom Sheet */}
       <AnimatePresence>
         {showTafsirPopup && tafsirData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/20 dark:bg-black/40 z-50 flex items-end justify-center"
             onClick={() => setShowTafsirPopup(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-gray-100 dark:border-gray-800"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-3xl bg-white dark:bg-gray-950 max-h-[70vh] flex flex-col overflow-hidden rounded-t-2xl shadow-2xl border-t border-x border-gray-200 dark:border-gray-800"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modern Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 sm:p-8 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
-                <div>
-                  <span className="text-xs font-bold tracking-widest text-emerald-500 uppercase mb-2 block">Interpretation</span>
-                  <h3 className="text-2xl sm:text-3xl font-serif text-gray-900 dark:text-white leading-tight">
-                    Surah {selectedSurah?.englishName}, Ayah {tafsirData.ayah}
+              {/* Minimal Header */}
+              <div className="relative px-5 pt-4 pb-3 sm:px-8 sm:pt-5 sm:pb-4 border-b border-gray-100 dark:border-gray-800/50 flex-shrink-0">
+                {/* Drag indicator */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+
+                {/* Close button - top right */}
+                <button
+                  onClick={() => setShowTafsirPopup(false)}
+                  className="absolute top-4 right-4 sm:top-5 sm:right-6 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+
+                {/* Title section */}
+                <div className="pr-10">
+                  <p className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-1">
+                    Tafsir
+                  </p>
+                  <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
+                    {selectedSurah?.englishName} <span className="text-gray-400 dark:text-gray-500 font-normal">·</span> Ayah {tafsirData.ayah}
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-4 mt-4 sm:mt-0">
-                  {tafsirData.tafsirs.length > 1 && (
-                    <div className="relative">
-                      <select
-                        value={selectedTafsirAuthor}
-                        onChange={(e) => setSelectedTafsirAuthor(e.target.value)}
-                        className="appearance-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-sm"
-                      >
-                        {tafsirData.tafsirs.map((tafsir) => (
-                          <option key={tafsir.author} value={tafsir.author}>
-                            {tafsir.author}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDownIcon className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
+                {/* Author selector - if multiple tafsirs available */}
+                {tafsirData.tafsirs.length > 1 && (
+                  <div className="mt-4">
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+                      {tafsirData.tafsirs.map((tafsir) => (
+                        <button
+                          key={tafsir.author}
+                          onClick={() => setSelectedTafsirAuthor(tafsir.author)}
+                          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedTafsirAuthor === tafsir.author
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                          {tafsir.author}
+                        </button>
+                      ))}
                     </div>
-                  )}
-
-                  <button
-                    onClick={() => setShowTafsirPopup(false)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                  >
-                    <XMarkIcon className="w-6 h-6" />
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
-                <div className="prose prose-lg dark:prose-invert max-w-none">
-                  {/* Active Tafsir Content */}
+              <div className="flex-1 overflow-y-auto overscroll-contain">
+                <div className="px-6 py-6 sm:px-10 sm:py-8">
                   <motion.div
                     key={selectedTafsirAuthor}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="max-w-prose mx-auto"
                   >
-                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed font-serif text-lg md:text-xl">
-                      {tafsirData.tafsirs.find(t => t.author === selectedTafsirAuthor)?.content ||
-                        tafsirData.tafsirs[0]?.content}
-                    </p>
+                    <div
+                      className="text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-[1.8] sm:leading-[1.9] font-serif text-justify hyphens-auto"
+                      style={{ wordSpacing: '0.05em' }}
+                      dangerouslySetInnerHTML={{
+                        __html: formatTafsirContent(
+                          tafsirData.tafsirs.find(t => t.author === selectedTafsirAuthor)?.content ||
+                          tafsirData.tafsirs[0]?.content || ''
+                        )
+                      }}
+                    />
                   </motion.div>
                 </div>
               </div>
 
-              {/* Footer / Context */}
-              <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/30 flex justify-between items-center text-sm text-gray-400">
-                <span>Source: {selectedTafsirAuthor}</span>
+              {/* Minimal Footer */}
+              <div className="px-5 py-3 sm:px-8 sm:py-4 border-t border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-900/50">
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Scholar: <span className="text-gray-600 dark:text-gray-400">{selectedTafsirAuthor}</span>
+                </p>
               </div>
             </motion.div>
           </motion.div>

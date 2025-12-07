@@ -85,21 +85,14 @@ export default function TransparencyLayout({
   };
 
   return (
-    <div className="min-h-screen bg-transparent relative">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-50/30 via-transparent to-gray-100/20 dark:from-gray-950/30 dark:via-transparent dark:to-gray-900/20"></div>
-      
+    <div className="min-h-screen bg-transparent">
       {/* Structured Data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-
-
-      {/* Main Content */}
-      <main className="relative max-w-3xl mx-auto px-6 py-8">
-        {children}
-      </main>
+      {children}
     </div>
   );
 }
+

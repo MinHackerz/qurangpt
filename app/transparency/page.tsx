@@ -1,186 +1,194 @@
 'use client';
 
-import { useTheme } from '../contexts/ThemeContext';
 import { motion } from 'framer-motion';
-import { ArrowLeftIcon, EyeIcon, ShieldCheckIcon, CpuChipIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 export default function TransparencyPage() {
-  const { theme } = useTheme();
-
   return (
-    <>
-      {/* Minimal Back Button - Fixed top left */}
-      <div className="fixed top-4 left-4 z-50">
-        <div className="p-1 rounded-xl border border-gray-200/30 dark:border-gray-700/30 bg-white/5 dark:bg-gray-900/5 backdrop-blur-sm">
-          <Link 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="min-h-screen bg-transparent"
+    >
+      {/* Sticky Header - Matching ReadQuran style */}
+      <div className="sticky top-0 z-30 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center">
+          <Link
             href="/"
-            className="group flex items-center justify-center w-16 h-8 rounded-lg bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl hover:bg-white/20 dark:hover:bg-gray-900/20 transition-all duration-300 hover:scale-105"
+            className="group flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
-            <ArrowLeftIcon className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-200" />
+            <ChevronLeftIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Home
           </Link>
         </div>
       </div>
 
       {/* Content */}
-      <div className="relative max-w-3xl mx-auto px-6 pt-20 pb-8">
+      <div className="max-w-3xl mx-auto px-6 sm:px-8 pt-12 pb-24">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="space-y-6"
+          transition={{ duration: 0.4 }}
         >
-
-          {/* Introduction */}
-          <div className="backdrop-blur-md bg-white/5 dark:bg-gray-900/5 rounded-2xl p-8 border border-gray-300/30 dark:border-gray-600/30">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 tracking-tight">
-              Our Commitment
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-base font-light">
-              Quran GPT is built with transparency and trust at its core. We provide clear 
-              information about our AI system, data sources, and reliability measures.
+          {/* Page Title */}
+          <header className="mb-16 text-center">
+            <h1 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-gray-50 mb-4 tracking-tight">
+              Transparency
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 font-light text-lg max-w-xl mx-auto">
+              Our commitment to openness about how QuranGPT works, the sources we use, and how we handle your data.
             </p>
-          </div>
+          </header>
 
-          {/* AI Technology */}
-          <div className="backdrop-blur-md bg-white/5 dark:bg-gray-900/5 rounded-2xl p-8 border border-gray-300/30 dark:border-gray-600/30">
-            <div className="flex items-center space-x-3 mb-6">
-              <CpuChipIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
+          {/* Content Sections */}
+          <div className="space-y-16">
+
+            {/* AI Technology */}
+            <section>
+              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
                 AI Technology
               </h2>
-            </div>
-            <div className="space-y-5">
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Language Model</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Google's Gemini AI model, designed for multilingual understanding with high accuracy.
-                </p>
+              <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
+                Powered by Google Gemini
+              </h3>
+              <div className="space-y-6">
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Language Model</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    Google's Gemini AI model, designed for multilingual understanding with high accuracy and nuanced responses.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Training Data</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    Diverse dataset including Islamic texts, scholarly works, and general knowledge to provide contextual and accurate responses.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Training Data</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Diverse dataset including Islamic texts, scholarly works, and general knowledge.
-                </p>
-              </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Data Sources */}
-          <div className="backdrop-blur-md bg-white/5 dark:bg-gray-900/5 rounded-2xl p-8 border border-gray-300/30 dark:border-gray-600/30">
-            <div className="flex items-center space-x-3 mb-6">
-              <GlobeAltIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
+            {/* Data Sources */}
+            <section>
+              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
                 Data Sources
               </h2>
-            </div>
-            <div className="space-y-5">
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Quran Text</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Authentic Quranic text from reliable sources with accurate Arabic and translations.
-                </p>
+              <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
+                Authentic Islamic Sources
+              </h3>
+              <div className="space-y-6">
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Quran Text</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    Authentic Quranic text from reliable sources with accurate Arabic script and multiple verified translations.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Hadith Collections</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    Sahih Bukhari, Sahih Muslim, Sunan Abu Dawood, Sunan Ibn Majah, and Jami' at-Tirmidhi.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Tafsir Sources</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    Multiple classical and contemporary tafsir works for comprehensive Quranic interpretations.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Hadith Collections</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Sahih Bukhari, Sahih Muslim, Sunan Abu Dawood, Sunan Ibn Majah, and Jami' at-Tirmidhi.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Tafsir Sources</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Multiple classical and contemporary tafsir works for comprehensive interpretations.
-                </p>
-              </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Privacy & Security */}
-          <div className="backdrop-blur-md bg-white/5 dark:bg-gray-900/5 rounded-2xl p-8 border border-gray-300/30 dark:border-gray-600/30">
-            <div className="flex items-center space-x-3 mb-6">
-              <ShieldCheckIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
+            {/* Privacy & Security */}
+            <section>
+              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
                 Privacy & Security
               </h2>
-            </div>
-            <div className="space-y-5">
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Data Handling</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Questions processed securely with no permanent storage. Data retained temporarily only.
-                </p>
+              <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
+                Your Data is Protected
+              </h3>
+              <div className="space-y-6">
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Data Handling</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    Questions are processed securely with no permanent storage. Data is retained temporarily only for processing.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">No Personal Data Collection</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    We do not collect personal information, track users, or store any identifying data.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Secure Processing</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    All data transmission is encrypted using industry-standard security practices.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">No Personal Data</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  No personal information collection, user tracking, or identifying data storage.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Secure Processing</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Encrypted data transmission with industry-standard security practices.
-                </p>
-              </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Accuracy & Reliability */}
-          <div className="backdrop-blur-md bg-white/5 dark:bg-gray-900/5 rounded-2xl p-8 border border-gray-300/30 dark:border-gray-600/30">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 tracking-tight">
-              Accuracy & Reliability
-            </h2>
-            <div className="space-y-5">
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Source Verification</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  All Quranic verses and hadith references verified against authentic sources.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Continuous Improvement</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  Regular updates and refinements to improve response accuracy.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2 text-base">Limitations</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-base leading-relaxed font-light">
-                  AI responses are educational starting points only. Always verify with authentic Islamic scholars and trusted sources before making any religious decisions.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="backdrop-blur-sm bg-white/3 dark:bg-gray-900/3 rounded-xl p-6 border border-gray-200/40 dark:border-gray-700/40">
-            <div className="text-center">
-              <h2 className="text-base font-medium text-gray-800 dark:text-gray-200 mb-3 tracking-tight">
-                Questions?
+            {/* Accuracy & Reliability */}
+            <section>
+              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
+                Accuracy & Reliability
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed font-light">
-                Have questions about our transparency practices?
-              </p>
-              <a
-                href="https://menajul.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100/80 dark:bg-gray-800/80 hover:bg-gray-200/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200 text-sm font-medium"
-              >
-                <span>Contact Developer</span>
-              </a>
-            </div>
-          </div>
+              <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
+                Commitment to Accuracy
+              </h3>
+              <div className="space-y-6">
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Source Verification</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    All Quranic verses and hadith references are verified against authentic sources.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Continuous Improvement</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    We regularly update and refine our system to improve response accuracy and reliability.
+                  </p>
+                </div>
+                <div className="border-l-2 border-emerald-500/30 dark:border-emerald-500/30 pl-6 bg-emerald-50/50 dark:bg-emerald-900/10 py-4 pr-4 rounded-r-lg">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Important Note</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    AI responses are educational starting points only. Always verify with authentic Islamic scholars and trusted sources before making any religious decisions.
+                  </p>
+                </div>
+              </div>
+            </section>
 
-          {/* Footer */}
-          <div className="text-center py-6">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Last updated: {new Date().toLocaleDateString()}
-            </p>
+            {/* Contact */}
+            <section className="pt-8 border-t border-gray-100 dark:border-gray-900">
+              <div className="text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-4 font-light">
+                  Have questions about our transparency practices?
+                </p>
+                <a
+                  href="https://menajul.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                >
+                  Contact the Developer
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="text-center pt-8">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Last updated: December 7, 2025
+              </p>
+            </footer>
+
           </div>
         </motion.div>
       </div>
-    </>
+    </motion.div>
   );
 }
