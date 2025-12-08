@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPinIcon, ArrowTopRightOnSquareIcon, ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, ArrowTopRightOnSquareIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 
 declare global {
@@ -345,253 +345,214 @@ export default function MosqueFinder() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-8"
+      className="min-h-screen bg-transparent"
     >
-      {/* Header */}
-      <header className="text-center md:text-left">
-        <h1 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-gray-50 mb-2 tracking-tight">
-          Nearest Mosques
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 font-light text-lg">
-          Find places of worship near your location
-        </p>
-      </header>
-
-      {/* Location Status Card */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${location ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
-              <MapPinIcon className={`w-6 h-6 ${location ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">
-                {location ? 'Location Found' : isLoading ? 'Finding your location...' : 'Location Required'}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {location
-                  ? `${mosques.length} mosques found within 5km radius`
-                  : error || 'Enable location to find nearby mosques'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={getUserLocation}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors disabled:opacity-50"
-          >
-            <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Searching...' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-
-      {/* Map Container */}
-      <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-[300px] sm:h-[350px]">
-        {mapError ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-            <ExclamationTriangleIcon className="w-12 h-12 text-amber-500 mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-2">{mapError}</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              Mosque list is still available below
+      <div className="max-w-4xl mx-auto px-6 py-12 sm:px-8">
+        <div className="space-y-8">
+          {/* Header */}
+          <header className="text-center md:text-left">
+            <h1 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-gray-50 mb-2 tracking-tight">
+              Nearest Mosques
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 font-light text-lg">
+              Find places of worship near your location
             </p>
-          </div>
-        ) : !googleMapsLoaded || isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Loading map...</p>
-          </div>
-        ) : (
-          <div ref={mapRef} className="w-full h-full" />
-        )}
+          </header>
 
-        {/* Route Info Overlay */}
-        {routeInfo && selectedMosque && (
-          <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">Distance</span>
-                <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">{routeInfo.distance}</span>
-              </div>
-              <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-400 uppercase tracking-wider">{travelMode === 'WALKING' ? 'Walk' : 'Drive'}</span>
-                <span className="text-lg font-semibold text-gray-900 dark:text-white">{routeInfo.duration}</span>
+          {/* Location Status Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${location ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <MapPinIcon className={`w-6 h-6 ${location ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    {location ? 'Location Found' : isLoading ? 'Finding your location...' : 'Location Required'}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {location
+                      ? `${mosques.length} mosques found within 5km radius`
+                      : error || 'Enable location to find nearby mosques'}
+                  </p>
+                </div>
               </div>
               <button
-                onClick={() => setSelectedMosque(null)}
-                className="ml-auto p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
+                onClick={getUserLocation}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors disabled:opacity-50"
               >
-                ✕
+                <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Searching...' : 'Refresh'}
               </button>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Travel Mode Toggle */}
-      <div className="flex items-center justify-center gap-2">
-        <button
-          onClick={() => setTravelMode('WALKING')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${travelMode === 'WALKING'
-              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-        >
-          🚶 Walking
-        </button>
-        <button
-          onClick={() => setTravelMode('DRIVING')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${travelMode === 'DRIVING'
-              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
-        >
-          🚗 Driving
-        </button>
-      </div>
-
-      {/* Mosque List */}
-      <div className="space-y-4">
-        <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase">
-          {mosques.length > 0 ? `${mosques.length} Mosques Found` : 'Nearby Mosques'}
-        </h2>
-
-        {mosques.length === 0 && !isLoading ? (
-          <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <MapPinIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">No mosques found nearby</p>
-            <p className="text-sm mt-1">Try refreshing your location</p>
+          {/* Travel Mode Toggle */}
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => setTravelMode('WALKING')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${travelMode === 'WALKING'
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+            >
+              🚶 Walking
+            </button>
+            <button
+              onClick={() => setTravelMode('DRIVING')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${travelMode === 'DRIVING'
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+            >
+              🚗 Driving
+            </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {mosques.map((mosque: any) => (
-              <div
-                key={mosque.id}
-                onClick={() => setSelectedMosque(selectedMosque?.id === mosque.id ? null : mosque)}
-                className={`group p-5 rounded-xl border transition-all cursor-pointer ${selectedMosque?.id === mosque.id
-                    ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
-                    : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-emerald-200 dark:hover:border-emerald-800'
-                  }`}
-              >
-                {/* Mosque Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                      {mosque.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-light mt-1">
-                      {mosque.address || 'Address not available'}
-                    </p>
-                  </div>
 
-                  {/* Distance & Direction Badge */}
-                  {mosque.distance && (
-                    <div className="flex items-center gap-2 ml-4">
-                      <span className="text-2xl" title={`Direction: ${mosque.direction}`}>
-                        {getDirectionArrow(mosque.direction)}
-                      </span>
-                      <div className="text-right">
-                        <span className="block text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                          {typeof mosque.distance === 'number' ? mosque.distance.toFixed(1) : mosque.distance}
-                          <span className="text-xs font-normal text-gray-400 ml-0.5">km</span>
-                        </span>
-                        <span className="text-xs text-gray-400">{mosque.direction}</span>
+          {/* Mosque List */}
+          <div className="space-y-4">
+            <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase">
+              {mosques.length > 0 ? `${mosques.length} Mosques Found` : 'Nearby Mosques'}
+            </h2>
+
+            {mosques.length === 0 && !isLoading ? (
+              <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <MapPinIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="font-medium">No mosques found nearby</p>
+                <p className="text-sm mt-1">Try refreshing your location</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {mosques.map((mosque: any) => (
+                  <div
+                    key={mosque.id}
+                    onClick={() => setSelectedMosque(selectedMosque?.id === mosque.id ? null : mosque)}
+                    className={`group p-5 rounded-xl border transition-all cursor-pointer ${selectedMosque?.id === mosque.id
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
+                      : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-emerald-200 dark:hover:border-emerald-800'
+                      }`}
+                  >
+                    {/* Mosque Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          {mosque.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-light mt-1">
+                          {mosque.address || 'Address not available'}
+                        </p>
                       </div>
+
+                      {/* Distance & Direction Badge */}
+                      {mosque.distance && (
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className="text-2xl" title={`Direction: ${mosque.direction}`}>
+                            {getDirectionArrow(mosque.direction)}
+                          </span>
+                          <div className="text-right">
+                            <span className="block text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                              {typeof mosque.distance === 'number' ? mosque.distance.toFixed(1) : mosque.distance}
+                              <span className="text-xs font-normal text-gray-400 ml-0.5">km</span>
+                            </span>
+                            <span className="text-xs text-gray-400">{mosque.direction}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mosque Info Row */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center gap-4">
+                        {mosque.rating && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <StarIcon className="w-4 h-4 text-amber-400" />
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{mosque.rating}</span>
+                            {mosque.user_ratings_total && (
+                              <span className="text-gray-400 text-xs">({mosque.user_ratings_total})</span>
+                            )}
+                          </div>
+                        )}
+                        {mosque.opening_hours?.open_now !== undefined && (
+                          <span className={`text-sm font-medium ${mosque.opening_hours.open_now ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                            {mosque.opening_hours.open_now ? '● Open Now' : '○ Closed'}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGoogleMapsDirections(mosque);
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                      >
+                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                        Directions
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Directions Panel */}
+          <AnimatePresence>
+            {directions.length > 0 && selectedMosque && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
+              >
+                <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                  <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <MapPinIcon className="w-4 h-4 text-emerald-500" />
+                    Step-by-Step Directions to {selectedMosque.name}
+                  </h3>
+                </div>
+
+                <div className="max-h-[300px] overflow-y-auto">
+                  {isLoadingRoute ? (
+                    <div className="p-8 text-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500 mx-auto"></div>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-50 dark:divide-gray-800">
+                      {directions.map((step, index) => (
+                        <div key={index} className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg font-medium">
+                            {getManeuverIcon(step.maneuver)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-900 dark:text-white">{step.instruction}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-xs text-gray-400">{step.distance}</span>
+                              {step.duration && <span className="text-xs text-gray-400">• {step.duration}</span>}
+                            </div>
+                          </div>
+                          <span className="flex-shrink-0 text-xs font-mono text-gray-300 dark:text-gray-600">{index + 1}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* Mosque Info Row */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-4">
-                    {mosque.rating && (
-                      <div className="flex items-center gap-1 text-sm">
-                        <StarIcon className="w-4 h-4 text-amber-400" />
-                        <span className="font-medium text-gray-700 dark:text-gray-300">{mosque.rating}</span>
-                        {mosque.user_ratings_total && (
-                          <span className="text-gray-400 text-xs">({mosque.user_ratings_total})</span>
-                        )}
-                      </div>
-                    )}
-                    {mosque.opening_hours?.open_now !== undefined && (
-                      <span className={`text-sm font-medium ${mosque.opening_hours.open_now ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                        {mosque.opening_hours.open_now ? '● Open Now' : '○ Closed'}
-                      </span>
-                    )}
-                  </div>
-
+                <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openGoogleMapsDirections(mosque);
-                    }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                    onClick={() => openGoogleMapsDirections(selectedMosque)}
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                    Directions
+                    Open in Google Maps for Navigation
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-
-      {/* Directions Panel */}
-      <AnimatePresence>
-        {directions.length > 0 && selectedMosque && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden"
-          >
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                <MapPinIcon className="w-4 h-4 text-emerald-500" />
-                Step-by-Step Directions to {selectedMosque.name}
-              </h3>
-            </div>
-
-            <div className="max-h-[300px] overflow-y-auto">
-              {isLoadingRoute ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500 mx-auto"></div>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {directions.map((step, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg font-medium">
-                        {getManeuverIcon(step.maneuver)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 dark:text-white">{step.instruction}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-gray-400">{step.distance}</span>
-                          {step.duration && <span className="text-xs text-gray-400">• {step.duration}</span>}
-                        </div>
-                      </div>
-                      <span className="flex-shrink-0 text-xs font-mono text-gray-300 dark:text-gray-600">{index + 1}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
-              <button
-                onClick={() => openGoogleMapsDirections(selectedMosque)}
-                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                Open in Google Maps for Navigation
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
