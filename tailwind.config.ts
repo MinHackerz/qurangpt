@@ -58,6 +58,26 @@ const config: Config = {
           },
         },
       }),
+      keyframes: {
+        'gradient-xy': {
+          '0%, 100%': {
+            'background-size': '200% 200%',
+            'background-position': 'left center'
+          },
+          '50%': {
+            'background-size': '200% 200%',
+            'background-position': 'right center'
+          }
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%) skewX(-12deg)' },
+          '100%': { transform: 'translateX(200%) skewX(-12deg)' }
+        }
+      },
+      animation: {
+        'gradient-xy': 'gradient-xy 6s ease infinite',
+        shimmer: 'shimmer 2.5s linear infinite',
+      },
     },
   },
   plugins: [

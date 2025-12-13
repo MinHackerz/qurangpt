@@ -9,6 +9,7 @@ import { processContentLinks } from '../utils/contentUtils';
 import { createShareLink, getShareText } from '../utils/shareUtils';
 import ShareModal from './ShareModal';
 import SourcesSection from './SourcesSection';
+import TextSizeStyles from './TextSizeStyles';
 
 
 
@@ -31,9 +32,9 @@ interface ResponseSectionProps {
   };
 }
 
-export default function ResponseSection({ 
-  showSummary, 
-  summary, 
+export default function ResponseSection({
+  showSummary,
+  summary,
   displayedContent,
   userQuestion,
   onQuestionEdit,
@@ -51,26 +52,26 @@ export default function ResponseSection({
   // Process content based on selected content types - memoized for performance
   const processContentBasedOnSelection = useCallback((content: string) => {
     if (!content) return content;
-    
+
     // Create a temporary DOM element to parse the content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
-    
+
     // Remove sections based on selection
     if (!selectedContentTypes.tafsir) {
       // Remove tafsir sections
       const tafsirSections = tempDiv.querySelectorAll('.tafsir-content, .tafsir-section');
       tafsirSections.forEach(section => section.remove());
     }
-    
+
     // Note: Hadith content is preserved when option is unselected
     // Only new hadith content generation is controlled by the option
     // Existing hadith content remains visible regardless of option state
-    
+
     // Note: Suggested questions content is preserved when option is unselected
     // Only new suggested questions content generation is controlled by the option
     // Existing suggested questions content remains visible regardless of option state
-    
+
     return tempDiv.innerHTML;
   }, [selectedContentTypes.tafsir]);
 
@@ -81,7 +82,7 @@ export default function ResponseSection({
   const questionEditing = useQuestionEditing(userQuestion, onQuestionEdit);
   useGlobalEventDelegation();
   // Note: useContextManager is disabled - contexts are now fetched during response formatting
-  
+
   // Scroll detection for share button
   const containerRef = useRef<HTMLDivElement>(null);
   const { isAtBottom, isScrolled } = useScrollDetection({
@@ -90,7 +91,7 @@ export default function ResponseSection({
     containerRef: containerRef
   });
 
-  
+
   // Check if we should show welcome message (no content but showSummary is true)
   const shouldShowWelcome = showSummary && !contentToShow && !userQuestion;
 
@@ -132,7 +133,7 @@ export default function ResponseSection({
       generateShareUrl();
     }
   }, [userQuestion, contentToShow, generatedShareUrl, shareUrl]);
-  
+
   useEffect(() => {
     if (contentToShow && contentToShow.includes('ayah-audio-play-btn')) {
       // Use requestAnimationFrame for better performance
@@ -141,7 +142,7 @@ export default function ResponseSection({
         if (buttons.length > 0) {
           buttons.forEach((button) => {
             const btn = button as HTMLElement;
-            
+
             // Only update if button is not already properly configured
             if (btn.style.pointerEvents !== 'auto' || btn.style.cursor !== 'pointer') {
               btn.style.pointerEvents = 'auto';
@@ -163,7 +164,7 @@ export default function ResponseSection({
     const ensureButtonClickability = () => {
       const buttons = document.querySelectorAll('.ayah-audio-play-btn, .tafsir-toggle-btn, .tafsir-close-btn');
       if (buttons.length === 0) return; // Early return if no buttons
-      
+
       buttons.forEach((button) => {
         const btn = button as HTMLElement;
         // Only fix if button is not currently disabled by the audio system
@@ -191,6 +192,7 @@ export default function ResponseSection({
 
   return (
     <AnimatePresence>
+      <TextSizeStyles />
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -215,7 +217,7 @@ export default function ResponseSection({
                     <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-gray-900 dark:text-white mb-4">
                       QuranGPT
                     </h1>
-                    
+
                     {/* Minimalist Arabic Ornament - Matching HeroSection */}
                     <div className="flex items-center justify-center mb-6">
                       <div className="w-12 h-px bg-gray-300 dark:bg-gray-600"></div>
@@ -223,7 +225,7 @@ export default function ResponseSection({
                       <div className="w-12 h-px bg-gray-300 dark:bg-gray-600"></div>
                     </div>
                   </div>
-                  
+
                   {/* Professional Subtitle - Matching HeroSection */}
                   <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed font-light">
                     AI-powered Islamic knowledge from the Holy Quran
@@ -251,23 +253,22 @@ export default function ResponseSection({
                         <div className="text-xs text-gray-500 dark:text-gray-400 font-mono uppercase tracking-wide mb-1">
                           Question
                         </div>
-                        <div className={`text-gray-800 dark:text-gray-200 leading-relaxed ${
-                          textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
-                        }`}>
+                        <div className={`text-gray-800 dark:text-gray-200 leading-relaxed ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+                          }`}>
                           {userQuestion}
                         </div>
                       </div>
                     </div>
                   </motion.div>
                 )}
-                
+
                 {/* AI Response Content */}
-                <div 
+                <div
                   ref={containerRef}
-                  className={`text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed p-4 -m-4 transition-all duration-200 ${
-                    textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
-                  }`}
-                  style={{ 
+                  data-text-size={textSize}
+                  className={`group/textsize text-gray-700 dark:text-gray-300 space-y-6 leading-relaxed p-4 -m-4 transition-all duration-200 ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+                    }`}
+                  style={{
                     zIndex: 4,
                     position: 'relative',
                     pointerEvents: 'auto'
@@ -275,22 +276,8 @@ export default function ResponseSection({
                   dangerouslySetInnerHTML={{ __html: processContentLinks(contentToShow) }}
                 />
 
-                {/* Desktop Share Button - Bottom Right */}
-                {onShare && (
-                  <div className="hidden sm:block absolute bottom-4 right-4 z-10">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={onShare}
-                      className="flex items-center justify-center w-12 h-12 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/70 dark:border-gray-700/70 shadow-lg hover:shadow-xl transition-all duration-200 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                      title="Share this content"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                      </svg>
-                    </motion.button>
-                  </div>
-                )}
+                {/* Desktop Share Button - Moved to MinimalHeader */
+                  null}
               </div>
             )}
           </div>

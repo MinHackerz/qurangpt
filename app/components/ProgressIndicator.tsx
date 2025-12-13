@@ -108,6 +108,7 @@ export default function ProgressIndicator({
   ]);
 
   const [completedSteps, setCompletedSteps] = useState<Set<ProgressStep>>(new Set());
+  const [isExpanded, setIsExpanded] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
 
   useEffect(() => {
@@ -178,104 +179,144 @@ export default function ProgressIndicator({
         </div>
       </motion.div>
 
-      {/* Progress Box */}
+      {/* Progress Box with Professional Animation */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-        className="w-full relative px-5"
+        className="w-full relative"
       >
-        {/* Content */}
-        <div className="relative z-20 space-y-4 w-full">
-          <AnimatePresence mode="popLayout">
-            {steps.map((step, index) => {
-              // Chain effect: Show completed steps + current active step + next step (if current is active)
-              // Only reveal next step when current step becomes active
-              const shouldShow = currentStepIndex >= 0
-                ? index <= currentStepIndex + 1  // Show up to next step
-                : index === 0; // Show first step initially when no step is active yet
+        <div className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
 
-              if (!shouldShow) {
-                return null;
-              }
+          {/* Main Background (Transparent) */}
+          <div className="absolute inset-0 bg-transparent z-0"></div>
 
-              const status = getStepStatus(step.key, index);
-              const isActive = status === 'active';
-              const isCompleted = status === 'completed';
-              const isNext = index === currentStepIndex + 1 && currentStepIndex >= 0;
+          {/* Green Wave (Shimmer) - Only this should be going */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent w-[50%] h-full transform -skew-x-12 animate-shimmer" style={{ filter: 'blur(8px)' }} />
+          </div>
 
-              return (
-                <motion.div
-                  key={step.key}
-                  initial={{ opacity: 0, x: -10, height: 0 }}
-                  animate={{
-                    opacity: 1,
-                    x: 0,
-                    height: 'auto',
-                  }}
-                  exit={{
-                    opacity: 0,
-                    height: 0,
-                    transition: { duration: 0.2 }
-                  }}
-                  transition={{
-                    duration: 0.4,
-                    ease: "easeOut",
-                  }}
-                  className="flex items-start space-x-4 w-full"
+          <div className="relative z-20 p-5 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                Thinking Progress
+              </h3>
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs text-gray-500 hover:text-emerald-500 transition-colors flex items-center gap-1 focus:outline-none"
+              >
+                {isExpanded ? 'Show Less' : 'View Full Progress'}
+                <svg
+                  className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  {/* Status Indicator */}
-                  <div className="flex-shrink-0 mt-1">
-                    {isCompleted ? (
-                      <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="w-5 h-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center ring-1 ring-emerald-500/20 dark:ring-emerald-500/30"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </motion.div>
-                    ) : isActive ? (
-                      <div className="w-5 h-5 flex items-center justify-center">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                          className="w-4 h-4 rounded-full border-[2px] border-blue-500/30 border-t-blue-600 dark:border-blue-400/30 dark:border-t-blue-400"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700" />
-                      </div>
-                    )}
-                  </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
 
-                  {/* Step Label */}
-                  <div className="flex-1 min-w-0 pt-0.5">
-                    <motion.p
-                      className={`text-sm leading-relaxed transition-colors duration-300 font-sans ${isActive
-                          ? 'text-gray-800 dark:text-gray-200 font-medium'
-                          : isCompleted
-                            ? 'text-gray-500 dark:text-gray-400'
-                            : 'text-gray-400 dark:text-gray-600'
-                        }`}
+            {/* Steps container with fixed height when collapsed */}
+            <div
+              className={`transition-all duration-300 ease-out ${isExpanded ? '' : 'h-[32px] overflow-hidden'
+                }`}
+            >
+              <AnimatePresence mode="popLayout">
+                {steps.map((step, index) => {
+                  // Determine visibility
+                  // If expanded: Show all steps that have been reached (up to current + 1)
+                  // If collapsed: Show ONLY the current active step (or first if starting, or last if done)
+
+                  const isCurrentIndex = currentStepIndex === index;
+                  const isLastCompleted = currentStepIndex === steps.length && index === steps.length - 1; // All steps done
+
+                  // In collapsed mode, we want a strict "single line" feel.
+                  // Show if it's the active step.
+                  // If nothing is active (e.g. at start), show first.
+                  // If all completed, maybe show "Completed" generic message? 
+                  // But sticking to steps:
+
+                  let shouldShow = false;
+
+                  if (isExpanded) {
+                    // Show history: everything up to current + 1
+                    shouldShow = index <= (currentStepIndex + 1);
+                  } else {
+                    // Collapsed: Show ONLY the active step
+                    // If currentStepIndex is -1 (start), show first step (index 0)
+                    if (currentStepIndex === -1) {
+                      shouldShow = index === 0;
+                    } else {
+                      shouldShow = index === currentStepIndex;
+                    }
+                  }
+
+                  if (!shouldShow) return null;
+
+                  const status = getStepStatus(step.key, index);
+                  const isActive = status === 'active';
+                  const isCompleted = status === 'completed';
+
+                  return (
+                    <motion.div
+                      key={step.key}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center space-x-3 h-[32px]"
                     >
-                      {step.label}
-                    </motion.p>
-                    {isActive && (
-                      <motion.div
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: "100%", opacity: 1 }}
-                        transition={{ duration: 0.8 }}
-                        className="h-0.5 rounded-full bg-gradient-to-r from-blue-500/20 to-transparent mt-2 max-w-[100px]"
-                      />
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                      {/* Status Indicator */}
+                      <div className="flex-shrink-0">
+                        {isCompleted ? (
+                          <motion.div
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="w-5 h-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center ring-1 ring-emerald-500/20 dark:ring-emerald-500/30"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </motion.div>
+                        ) : isActive ? (
+                          <div className="w-5 h-5 flex items-center justify-center">
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                              className="w-4 h-4 rounded-full border-[2px] border-emerald-500/30 border-t-emerald-600 dark:border-emerald-400/30 dark:border-t-emerald-400"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Step Label */}
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`text-sm leading-none truncate transition-colors duration-300 font-sans ${isActive
+                            ? 'text-gray-800 dark:text-gray-200 font-medium'
+                            : isCompleted
+                              ? 'text-gray-500 dark:text-gray-400'
+                              : 'text-gray-400 dark:text-gray-600'
+                            }`}
+                        >
+                          {step.label}
+                        </p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

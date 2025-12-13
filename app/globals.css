@@ -11,11 +11,15 @@
 
 /* Hide scrollbar utility */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  /* Firefox */
 }
-.scrollbar-hide::-webkit-scrollbar { 
-  display: none;  /* Safari and Chrome */
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Safari and Chrome */
 }
 
 :root {
@@ -39,7 +43,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
   padding: 0;
-  
+
   /* PWA optimizations */
   -webkit-touch-callout: none;
   /* Allow text selection globally */
@@ -48,12 +52,12 @@ body {
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
-  
+
   /* Prevent zoom on input focus (iOS) */
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  
+
   /* PWA safe area support */
   padding-top: env(safe-area-inset-top, 0px);
   padding-left: env(safe-area-inset-left, 0px);
@@ -65,12 +69,12 @@ body {
   body {
     @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100;
   }
-  
+
   /* Improve text rendering */
   * {
     text-rendering: optimizeLegibility;
   }
-  
+
   /* Better letter spacing for Inter */
   body {
     letter-spacing: -0.011em;
@@ -78,37 +82,38 @@ body {
 }
 
 @layer components {
+
   /* Consistent background colors */
   .bg-surface {
     @apply bg-white dark:bg-gray-900;
   }
-  
+
   .bg-surface-elevated {
     @apply bg-white dark:bg-gray-800;
   }
-  
+
   .bg-surface-subtle {
     @apply bg-gray-50 dark:bg-gray-800;
   }
-  
+
   /* Consistent border colors */
   .border-surface {
     @apply border-gray-200 dark:border-gray-700;
   }
-  
+
   .border-surface-subtle {
     @apply border-gray-200 dark:border-gray-800;
   }
-  
+
   /* Consistent text colors */
   .text-surface {
     @apply text-gray-900 dark:text-gray-100;
   }
-  
+
   .text-surface-secondary {
     @apply text-gray-600 dark:text-gray-400;
   }
-  
+
   .prose {
     @apply max-w-none;
   }
@@ -121,40 +126,46 @@ body {
     @apply border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-6 py-4 my-6 rounded-r-lg;
   }
 
-  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
     @apply text-emerald-800 dark:text-emerald-300 font-semibold;
   }
-  
+
   /* New enhanced styling */
   .divine-quote-heading {
     @apply text-lg md:text-xl font-semibold text-emerald-700 dark:text-emerald-300 mt-8 mb-3;
   }
-  
+
   .divine-quote {
     @apply border-none relative pl-8 pr-6 py-6 my-6 bg-emerald-50 dark:bg-emerald-900/20 text-gray-800 dark:text-gray-200 rounded-lg font-['Amiri'] text-lg md:text-xl leading-relaxed italic;
   }
-  
+
   .divine-quote::before {
     content: '"';
     @apply absolute left-3 top-0 text-5xl text-emerald-400 dark:text-emerald-600 font-serif opacity-50;
   }
-  
+
   .section-heading {
     @apply text-lg font-semibold text-emerald-700 dark:text-emerald-400 mt-8 mb-3 pb-2 border-b border-emerald-200 dark:border-emerald-800;
   }
-  
-  .quran-link, .surah-reference {
+
+  .quran-link,
+  .surah-reference {
     @apply inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-all duration-200 no-underline;
   }
-  
+
   .surah-name {
     @apply font-medium;
   }
-  
+
   .link-icon {
     @apply text-xs opacity-70;
   }
-  
+
   /* Advanced Arabic-style title */
   .arabic-styled-title {
     @apply relative font-['Scheherazade_New'] font-bold;
@@ -163,7 +174,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   .arabic-styled-title .quran-word {
     @apply relative inline-block;
   }
@@ -197,6 +208,7 @@ body {
     0% {
       text-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
     }
+
     100% {
       text-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 30px rgba(245, 158, 11, 0.6);
     }
@@ -218,7 +230,7 @@ body {
     font-family: 'Cairo', 'Scheherazade New', 'Amiri', serif;
     font-weight: 700;
   }
-  
+
   /* Override font-weight for simple, balanced title */
   .quran-word {
     font-weight: 200 !important;
@@ -342,123 +354,127 @@ body {
     font-family: 'Scheherazade New', 'Amiri', serif;
     font-weight: 700;
     transform: perspective(500px) rotateY(-5deg);
-    text-shadow: 
+    text-shadow:
       2px 2px 0px rgba(0, 0, 0, 0.1),
       4px 4px 8px rgba(0, 0, 0, 0.15),
       -1px -1px 0px rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
   }
-  
+
   .arabic-styled-title .gpt-word {
     @apply relative inline-block ml-6;
     font-family: 'Markazi Text', 'Aref Ruqaa', serif;
     font-weight: 600;
     transform: perspective(500px) rotateY(5deg);
-    text-shadow: 
+    text-shadow:
       -2px 2px 0px rgba(0, 0, 0, 0.1),
       -4px 4px 8px rgba(0, 0, 0, 0.15),
       1px -1px 0px rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
   }
-  
+
   /* Dark mode adjustments */
   .dark .arabic-styled-title .quran-word {
-    text-shadow: 
+    text-shadow:
       2px 2px 0px rgba(255, 255, 255, 0.1),
       4px 4px 8px rgba(0, 0, 0, 0.5),
       -1px -1px 0px rgba(0, 0, 0, 0.3);
   }
-  
+
   .dark .arabic-styled-title .gpt-word {
-    text-shadow: 
+    text-shadow:
       -2px 2px 0px rgba(255, 255, 255, 0.1),
       -4px 4px 8px rgba(0, 0, 0, 0.5),
       1px -1px 0px rgba(0, 0, 0, 0.3);
   }
-  
+
   /* Decorative elements */
   .arabic-styled-title::before {
     content: '۞';
     @apply absolute -left-12 top-1/2 transform -translate-y-1/2 text-2xl opacity-30;
     font-family: 'Scheherazade New', serif;
   }
-  
+
   .arabic-styled-title::after {
     content: '۞';
     @apply absolute -right-12 top-1/2 transform -translate-y-1/2 text-2xl opacity-30;
     font-family: 'Scheherazade New', serif;
   }
-  
+
   /* Hover effects */
   .arabic-styled-title:hover .quran-word {
     transform: perspective(500px) rotateY(0deg) scale(1.02);
   }
-  
+
   .arabic-styled-title:hover .gpt-word {
     transform: perspective(500px) rotateY(0deg) scale(1.02);
   }
-  
+
   /* Ornamental flourishes */
   .arabic-ornament {
     @apply relative;
   }
-  
+
   .arabic-ornament::before {
     content: '◦ ◦ ◦';
     @apply absolute left-1/2 transform -translate-x-1/2 -top-6 text-xs opacity-40 tracking-widest;
   }
-  
+
   .arabic-ornament::after {
     content: '◦ ◦ ◦';
     @apply absolute left-1/2 transform -translate-x-1/2 -bottom-6 text-xs opacity-40 tracking-widest;
   }
-  
+
   /* Responsive adjustments */
   @media (max-width: 768px) {
+
     .arabic-styled-title::before,
     .arabic-styled-title::after {
       @apply hidden;
     }
-    
+
     .arabic-styled-title .gpt-word {
       @apply ml-3;
     }
   }
-  
+
   /* Islamic-inspired send button enhancements */
   .islamic-send-button {
     background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%);
-    box-shadow: 
+    box-shadow:
       0 4px 15px rgba(217, 119, 6, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.2),
       inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   }
-  
+
   .islamic-send-button:hover {
     background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
-    box-shadow: 
+    box-shadow:
       0 8px 25px rgba(217, 119, 6, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.3),
       inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   }
-  
+
   .islamic-send-button:active {
     transform: translateY(1px);
-    box-shadow: 
+    box-shadow:
       0 2px 10px rgba(217, 119, 6, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
-  
+
   /* Golden glow animation */
   @keyframes golden-glow {
-    0%, 100% { 
+
+    0%,
+    100% {
       box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
     }
-    50% { 
+
+    50% {
       box-shadow: 0 4px 20px rgba(217, 119, 6, 0.5), 0 0 30px rgba(217, 119, 6, 0.2);
     }
   }
-  
+
   .islamic-send-button.ready {
     animation: golden-glow 2s ease-in-out infinite;
   }
@@ -472,9 +488,51 @@ body {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Running line border animation */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --border-hue {
+  syntax: '<number>';
+  initial-value: 160;
+  inherits: false;
+}
+
+@keyframes border-run {
+  from {
+    --border-angle: 0deg;
+  }
+
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+@keyframes border-run-smooth {
+  from {
+    --border-angle: 0deg;
+  }
+
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+.animate-border-run {
+  animation: border-run 2s linear infinite;
+}
+
+.animate-border-run-smooth {
+  animation: border-run-smooth 4s linear infinite;
 }
 
 .container {
@@ -543,11 +601,13 @@ body {
 
 /* Ensure AyahBox padding area matches global background */
 .stylish-ayah-reference {
-  background-color: rgb(249 250 251); /* gray-50 */
+  background-color: rgb(249 250 251);
+  /* gray-50 */
 }
 
 .dark .stylish-ayah-reference {
-  background-color: rgb(10 15 23); /* gray-950 */
+  background-color: rgb(10 15 23);
+  /* gray-950 */
 }
 
 /* Dark mode text improvements */
@@ -582,13 +642,15 @@ body {
 .wave-bar {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  background-color: #e5e7eb; /* Default light grey */
+  background-color: #e5e7eb;
+  /* Default light grey */
   border-radius: 2px;
   cursor: pointer;
 }
 
 .dark .wave-bar {
-  background-color: #374151; /* Default dark grey for dark mode */
+  background-color: #374151;
+  /* Default dark grey for dark mode */
 }
 
 /* Enhanced hover effects for progress bars */
@@ -599,7 +661,7 @@ body {
 
 .wave-bar.progress-active:hover {
   transform: scaleY(1.15);
-  box-shadow: 
+  box-shadow:
     0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), 0.6),
     0 0 20px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
@@ -607,7 +669,7 @@ body {
 
 .wave-bar.progress-current:hover {
   transform: scaleY(1.1);
-  box-shadow: 
+  box-shadow:
     0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.7)),
     0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.4)),
     inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
@@ -616,7 +678,7 @@ body {
 /* Dynamic color progress bars - Professional emerald theme with enhanced effects */
 .wave-bar.progress-active {
   background: linear-gradient(135deg, var(--progress-color, #10b981), var(--progress-color, #10b981)) !important;
-  box-shadow: 
+  box-shadow:
     0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
     0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
@@ -627,11 +689,10 @@ body {
 
 /* Current bar with partial progress and dynamic color */
 .wave-bar.progress-current {
-  background: linear-gradient(135deg, 
-    rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.8)),
-    rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.6))
-  ) !important;
-  box-shadow: 
+  background: linear-gradient(135deg,
+      rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.8)),
+      rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.6))) !important;
+  box-shadow:
     0 0 6px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.5)),
     0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.3)),
     inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
@@ -641,17 +702,20 @@ body {
 
 /* Enhanced wave progress animation with emerald theme */
 @keyframes waveProgress {
-  0%, 100% { 
-    opacity: 0.9; 
-    transform: scaleY(1); 
-    box-shadow: 
+
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scaleY(1);
+    box-shadow:
       0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
       0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), 0.2);
   }
-  50% { 
-    opacity: 1; 
-    transform: scaleY(1.05); 
-    box-shadow: 
+
+  50% {
+    opacity: 1;
+    transform: scaleY(1.05);
+    box-shadow:
       0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), 0.6),
       0 0 20px rgba(var(--progress-color-rgb, 16, 185, 129), 0.3);
   }
@@ -660,7 +724,7 @@ body {
 /* Fallback for when CSS custom properties don't work - Emerald theme */
 .wave-bar.progress-active:not([style*="background-color"]) {
   background: linear-gradient(135deg, #10b981, #059669) !important;
-  box-shadow: 
+  box-shadow:
     0 0 8px rgba(16, 185, 129, 0.4),
     0 0 16px rgba(16, 185, 129, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
@@ -668,7 +732,7 @@ body {
 
 .wave-bar.progress-current:not([style*="background-color"]) {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 0.6)) !important;
-  box-shadow: 
+  box-shadow:
     0 0 6px rgba(16, 185, 129, 0.4),
     0 0 12px rgba(16, 185, 129, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
@@ -721,18 +785,23 @@ body {
 }
 
 .chat-input-textarea {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 /* Hide scrollbars globally */
 * {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 *::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 /* Align HeroSection container with sidebar offset on desktop */
@@ -750,7 +819,7 @@ body {
     /* Better touch scrolling on mobile */
     -webkit-overflow-scrolling: touch;
   }
-  
+
   /* Improve mobile text input experience */
   .chat-input-textarea:focus {
     /* Ensure focus state is visible on mobile */
@@ -764,6 +833,7 @@ body {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -773,24 +843,31 @@ body {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 @keyframes chatInputGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.0);
   }
+
   50% {
     box-shadow: 0 0 0 1px rgba(29, 78, 216, 0.6);
   }
 }
 
 @keyframes questionButtonGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.0);
   }
+
   50% {
     box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.6);
   }
@@ -809,14 +886,14 @@ body {
   right: 0;
   bottom: 0;
   border-radius: inherit;
-  padding: 1px; /* Very thin border */
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(29, 78, 216, 0.8), 
-    rgba(126, 34, 206, 0.8), 
-    rgba(219, 39, 119, 0.8), 
-    transparent
-  );
+  padding: 1px;
+  /* Very thin border */
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(29, 78, 216, 0.8),
+      rgba(126, 34, 206, 0.8),
+      rgba(219, 39, 119, 0.8),
+      transparent);
   background-size: 300% 100%;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
@@ -837,13 +914,12 @@ body {
 
 /* Different style for question buttons */
 .interactive-border.question-button::before {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(5, 150, 105, 0.8), 
-    rgba(29, 78, 216, 0.8), 
-    rgba(147, 51, 234, 0.8), 
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(5, 150, 105, 0.8),
+      rgba(29, 78, 216, 0.8),
+      rgba(147, 51, 234, 0.8),
+      transparent);
 }
 
 .interactive-border.question-button:hover::before {
@@ -859,6 +935,7 @@ body {
   0% {
     background-position: -200% 0%;
   }
+
   100% {
     background-position: 200% 0%;
   }
@@ -868,6 +945,7 @@ body {
   0% {
     background-position: -200% 0%;
   }
+
   100% {
     background-position: 200% 0%;
   }
@@ -877,15 +955,19 @@ body {
   0% {
     background-position: -200% 0%;
   }
+
   100% {
     background-position: 200% 0%;
   }
 }
 
 @keyframes islamicGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(120, 53, 15, 0.0);
   }
+
   50% {
     box-shadow: 0 0 0 1px rgba(120, 53, 15, 0.7);
   }
@@ -904,14 +986,14 @@ body {
   right: 0;
   bottom: 0;
   border-radius: inherit;
-  padding: 1px; /* Very thin border */
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(120, 53, 15, 0.8), 
-    rgba(161, 98, 7, 0.8), 
-    rgba(194, 65, 12, 0.8), 
-    transparent
-  );
+  padding: 1px;
+  /* Very thin border */
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(120, 53, 15, 0.8),
+      rgba(161, 98, 7, 0.8),
+      rgba(194, 65, 12, 0.8),
+      transparent);
   background-size: 300% 100%;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
@@ -934,13 +1016,12 @@ body {
 .islamic-border.prayer-widget::after,
 .islamic-border.eid-fitr-widget::after,
 .islamic-border.eid-adha-widget::after {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(5, 150, 105, 0.8), 
-    rgba(29, 78, 216, 0.8), 
-    rgba(147, 51, 234, 0.8), 
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(5, 150, 105, 0.8),
+      rgba(29, 78, 216, 0.8),
+      rgba(147, 51, 234, 0.8),
+      transparent);
 }
 
 .islamic-border.prayer-widget:hover::after {
@@ -1027,35 +1108,33 @@ body {
 
 /* Enhanced dark mode for interactive elements */
 .dark .interactive-border::before {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(59, 130, 246, 0.8), 
-    rgba(147, 51, 234, 0.8), 
-    rgba(236, 72, 153, 0.8), 
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(59, 130, 246, 0.8),
+      rgba(147, 51, 234, 0.8),
+      rgba(236, 72, 153, 0.8),
+      transparent);
 }
 
 .dark .interactive-border.question-button::before {
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(16, 185, 129, 0.8), 
-    rgba(59, 130, 246, 0.8), 
-    rgba(147, 51, 234, 0.8), 
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(16, 185, 129, 0.8),
+      rgba(59, 130, 246, 0.8),
+      rgba(147, 51, 234, 0.8),
+      transparent);
 }
 
 /* Dark mode specific Arabic title styling */
 .dark .arabic-styled-title .quran-word {
-  text-shadow: 
+  text-shadow:
     2px 2px 0px rgba(255, 255, 255, 0.1),
     4px 4px 8px rgba(0, 0, 0, 0.5),
     -1px -1px 0px rgba(0, 0, 0, 0.3);
 }
 
 .dark .arabic-styled-title .gpt-word {
-  text-shadow: 
+  text-shadow:
     -2px 2px 0px rgba(255, 255, 255, 0.1),
     -4px 4px 8px rgba(0, 0, 0, 0.5),
     1px -1px 0px rgba(0, 0, 0, 0.3);
@@ -1063,53 +1142,63 @@ body {
 
 /* Override tafsir content styling to remove bold and green colors */
 .tafsir-content h5 {
-  color: rgb(31 41 55) !important; /* gray-800 */
+  color: rgb(31 41 55) !important;
+  /* gray-800 */
   font-weight: normal !important;
 }
 
 .dark .tafsir-content h5 {
-  color: rgb(229 231 235) !important; /* gray-200 */
+  color: rgb(229 231 235) !important;
+  /* gray-200 */
 }
 
 .tafsir-content strong {
-  color: rgb(55 65 81) !important; /* gray-700 */
+  color: rgb(55 65 81) !important;
+  /* gray-700 */
   font-weight: normal !important;
 }
 
 .dark .tafsir-content strong {
-  color: rgb(209 213 219) !important; /* gray-300 */
+  color: rgb(209 213 219) !important;
+  /* gray-300 */
 }
 
 .tafsir-content em {
-  color: rgb(55 65 81) !important; /* gray-700 */
+  color: rgb(55 65 81) !important;
+  /* gray-700 */
   font-style: italic !important;
 }
 
 .dark .tafsir-content em {
-  color: rgb(209 213 219) !important; /* gray-300 */
+  color: rgb(209 213 219) !important;
+  /* gray-300 */
 }
 
 /* Override prose styling specifically for tafsir content */
 .tafsir-content.prose h5,
 .tafsir-content .prose h5 {
-  color: rgb(31 41 55) !important; /* gray-800 */
+  color: rgb(31 41 55) !important;
+  /* gray-800 */
   font-weight: normal !important;
 }
 
 .dark .tafsir-content.prose h5,
 .dark .tafsir-content .prose h5 {
-  color: rgb(229 231 235) !important; /* gray-200 */
+  color: rgb(229 231 235) !important;
+  /* gray-200 */
 }
 
 .tafsir-content.prose strong,
 .tafsir-content .prose strong {
-  color: rgb(55 65 81) !important; /* gray-700 */
+  color: rgb(55 65 81) !important;
+  /* gray-700 */
   font-weight: normal !important;
 }
 
 .dark .tafsir-content.prose strong,
 .dark .tafsir-content .prose strong {
-  color: rgb(209 213 219) !important; /* gray-300 */
+  color: rgb(209 213 219) !important;
+  /* gray-300 */
 }
 
 /* Force override for any remaining bold text in tafsir */
@@ -1122,318 +1211,333 @@ body {
   font-weight: normal !important;
 }
 
-  /* Suggested questions spacing to prevent overlap with Translate container */
-  .suggested-questions-safe-margin {
-    margin-bottom: 3rem; /* 48px for suggested questions */
-  }
-  
-  /* Main content area spacing when chat is active */
-  .chat-active-content-spacing {
-    padding-bottom: 12rem; /* Extra space so content clears the fixed ChatSection */
-  }
-  
-  /* Response section spacing to prevent overlap with Translate container */
+/* Suggested questions spacing to prevent overlap with Translate container */
+.suggested-questions-safe-margin {
+  margin-bottom: 3rem;
+  /* 48px for suggested questions */
+}
+
+/* Main content area spacing when chat is active */
+.chat-active-content-spacing {
+  padding-bottom: 12rem;
+  /* Extra space so content clears the fixed ChatSection */
+}
+
+/* Response section spacing to prevent overlap with Translate container */
+.response-section-safe-margin {
+  margin-bottom: 5.5rem;
+  /* 88px to ensure no overlap with Translate container */
+}
+
+/* Responsive adjustments for different screen sizes */
+@media (min-width: 640px) {
   .response-section-safe-margin {
-    margin-bottom: 5.5rem; /* 88px to ensure no overlap with Translate container */
-  }
-  
-  /* Responsive adjustments for different screen sizes */
-  @media (min-width: 640px) {
-    .response-section-safe-margin {
-      margin-bottom: 6rem; /* 96px on larger screens for better spacing */
-    }
-    
-    .suggested-questions-safe-margin {
-      margin-bottom: 3.5rem; /* 56px on larger screens */
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .response-section-safe-margin {
-      margin-bottom: 7rem; /* 112px on large screens for optimal spacing */
-    }
-    
-    .suggested-questions-safe-margin {
-      margin-bottom: 4rem; /* 64px on larger screens */
-    }
-  }
-  
-  /* STRICTLY enforce uniform text sizes for combined explanations everywhere */
-  .combined-explanation,
-  .hadith-ai-summary {
-    /* Remove any inherited font sizes and ensure Tailwind classes take precedence */
-    font-size: unset !important;
-  }
-  
-  /* Force text size classes to work correctly - override any parent styles */
-  .combined-explanation.text-base,
-  .hadith-ai-summary.text-base {
-    font-size: 1rem !important; /* 16px - matches Tailwind text-base */
-  }
-  
-  .combined-explanation.text-lg,
-  .hadith-ai-summary.text-lg {
-    font-size: 1.125rem !important; /* 18px - matches Tailwind text-lg */
-  }
-  
-  .combined-explanation.text-xl,
-  .hadith-ai-summary.text-xl {
-    font-size: 1.25rem !important; /* 20px - matches Tailwind text-xl */
+    margin-bottom: 6rem;
+    /* 96px on larger screens for better spacing */
   }
 
-  /* Audio player button fixes for production */
+  .suggested-questions-safe-margin {
+    margin-bottom: 3.5rem;
+    /* 56px on larger screens */
+  }
+}
+
+@media (min-width: 1024px) {
+  .response-section-safe-margin {
+    margin-bottom: 7rem;
+    /* 112px on large screens for optimal spacing */
+  }
+
+  .suggested-questions-safe-margin {
+    margin-bottom: 4rem;
+    /* 64px on larger screens */
+  }
+}
+
+/* STRICTLY enforce uniform text sizes for combined explanations everywhere */
+.combined-explanation,
+.hadith-ai-summary {
+  /* Remove any inherited font sizes and ensure Tailwind classes take precedence */
+  font-size: unset !important;
+}
+
+/* Force text size classes to work correctly - override any parent styles */
+.combined-explanation.text-base,
+.hadith-ai-summary.text-base {
+  font-size: 1rem !important;
+  /* 16px - matches Tailwind text-base */
+}
+
+.combined-explanation.text-lg,
+.hadith-ai-summary.text-lg {
+  font-size: 1.125rem !important;
+  /* 18px - matches Tailwind text-lg */
+}
+
+.combined-explanation.text-xl,
+.hadith-ai-summary.text-xl {
+  font-size: 1.25rem !important;
+  /* 20px - matches Tailwind text-xl */
+}
+
+/* Audio player button fixes for production */
+.ayah-audio-play-btn {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  /* Keep buttons non-selectable, but don't affect general text */
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  position: relative !important;
+  z-index: 10 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2rem !important;
+  min-width: 2rem !important;
+}
+
+.ayah-audio-play-btn:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+.ayah-audio-play-btn:not(:disabled):hover {
+  cursor: pointer !important;
+  transform: scale(1.05) !important;
+  pointer-events: auto !important;
+  z-index: 15 !important;
+}
+
+.ayah-audio-play-btn:not(:disabled):active {
+  transform: scale(0.95) !important;
+  pointer-events: auto !important;
+  z-index: 15 !important;
+}
+
+/* Desktop-specific fixes for clickability issues */
+@media (min-width: 768px) {
   .ayah-audio-play-btn {
-    cursor: pointer !important;
+    /* Ensure buttons are always clickable on desktop */
     pointer-events: auto !important;
-    /* Keep buttons non-selectable, but don't affect general text */
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    position: relative !important;
     z-index: 10 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 2rem !important;
-    min-width: 2rem !important;
-  }
-  
-  .ayah-audio-play-btn:disabled {
-    cursor: not-allowed !important;
-    opacity: 0.5 !important;
-  }
-  
-  .ayah-audio-play-btn:not(:disabled):hover {
-    cursor: pointer !important;
-    transform: scale(1.05) !important;
-    pointer-events: auto !important;
-    z-index: 15 !important;
-  }
-  
-  .ayah-audio-play-btn:not(:disabled):active {
-    transform: scale(0.95) !important;
-    pointer-events: auto !important;
-    z-index: 15 !important;
-  }
-
-  /* Desktop-specific fixes for clickability issues */
-  @media (min-width: 768px) {
-    .ayah-audio-play-btn {
-      /* Ensure buttons are always clickable on desktop */
-      pointer-events: auto !important;
-      z-index: 10 !important;
-      position: relative !important;
-    }
-    
-    .ayah-audio-play-btn:hover {
-      z-index: 15 !important;
-      pointer-events: auto !important;
-    }
-    
-    /* Fix for potential overlay issues */
-    .ayah-audio-play-btn::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      z-index: -1;
-      pointer-events: none;
-    }
-
-    /* Suggested Questions clickability fixes for desktop */
-    [data-suggested-question] {
-      pointer-events: auto !important;
-      position: relative !important;
-      z-index: 3 !important;
-    }
-    
-    [data-suggested-question]:hover {
-      z-index: 5 !important;
-      pointer-events: auto !important;
-    }
-    
-    [data-suggested-question] button {
-      pointer-events: auto !important;
-      position: relative !important;
-      z-index: 4 !important;
-      cursor: pointer !important;
-    }
-    
-    [data-suggested-question] button:hover {
-      z-index: 6 !important;
-      pointer-events: auto !important;
-    }
-    
-    /* Fix for potential overlay issues in suggested questions */
-    [data-suggested-question]::before {
-      content: '';
-      position: absolute;
-      top: -1px;
-      left: -1px;
-      right: -1px;
-      bottom: -1px;
-      z-index: -1;
-      pointer-events: none;
-    }
-  }
-
-  /* Audio button state classes for proper dark mode support */
-  .ayah-audio-play-btn.play-state {
-    @apply bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800;
-  }
-  
-  .ayah-audio-play-btn.pause-state {
-    @apply bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-800;
-  }
-  
-  .ayah-audio-play-btn.loading-state {
-    @apply bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-800 opacity-70;
-  }
-  
-  .ayah-audio-play-btn.error-state {
-    @apply bg-gray-500 dark:bg-gray-500 text-white dark:text-gray-800 opacity-70;
-  }
-
-  /* Tafsir button fixes for production - ensure consistent clickability */
-  .tafsir-toggle-btn,
-  .tafsir-close-btn {
-    cursor: pointer !important;
-    pointer-events: auto !important;
-    user-select: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    position: relative !important;
-    z-index: 10 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: 2rem !important;
-    min-width: 2rem !important;
-  }
-  
-  .tafsir-toggle-btn:disabled,
-  .tafsir-close-btn:disabled {
-    cursor: not-allowed !important;
-    opacity: 0.5 !important;
-  }
-  
-  .tafsir-toggle-btn:not(:disabled):hover,
-  .tafsir-close-btn:not(:disabled):hover {
-    cursor: pointer !important;
-    transform: scale(1.05) !important;
-  }
-  
-  .tafsir-toggle-btn:not(:disabled):active,
-  .tafsir-close-btn:not(:disabled):active {
-    transform: scale(0.95) !important;
-  }
-
-  /* Ensure tafsir button content is also clickable */
-  .tafsir-toggle-btn *,
-  .tafsir-close-btn * {
-    pointer-events: none !important;
-  }
-
-  /* Force tafsir buttons to be above any overlapping elements */
-  .stylish-ayah-reference .tafsir-toggle-btn,
-  .stylish-ayah-reference .tafsir-close-btn {
-    z-index: 20 !important;
     position: relative !important;
   }
 
-  /* Ensure tafsir buttons are not blocked by any pseudo-elements */
-  .stylish-ayah-reference::before,
-  .stylish-ayah-reference::after {
-    pointer-events: none !important;
-  }
-
-  /* Force all tafsir-related elements to be clickable */
-  [class*="tafsir"] {
+  .ayah-audio-play-btn:hover {
+    z-index: 15 !important;
     pointer-events: auto !important;
   }
 
-  /* Override any conflicting styles that might disable pointer events */
-  .tafsir-toggle-btn[style*="pointer-events: none"],
-  .tafsir-close-btn[style*="pointer-events: none"] {
+  /* Fix for potential overlay issues */
+  .ayah-audio-play-btn::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Suggested Questions clickability fixes for desktop */
+  [data-suggested-question] {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+
+  [data-suggested-question]:hover {
+    z-index: 5 !important;
     pointer-events: auto !important;
   }
 
-  /* PWA-specific styles */
-  @media (display-mode: standalone) {
-    /* Hide browser UI elements when in standalone mode */
-    body {
-      /* Allow selection in PWA too */
-      -webkit-user-select: text;
-      -webkit-touch-callout: none;
-    }
-    
-    /* Ensure input fields are still selectable */
-    input, textarea, [contenteditable] {
-      -webkit-user-select: text;
-      -moz-user-select: text;
-      -ms-user-select: text;
-      user-select: text;
-    }
-    
-      /* PWA status bar styling */
+  [data-suggested-question] button {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 4 !important;
+    cursor: pointer !important;
+  }
+
+  [data-suggested-question] button:hover {
+    z-index: 6 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Fix for potential overlay issues in suggested questions */
+  [data-suggested-question]::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+/* Audio button state classes for proper dark mode support */
+.ayah-audio-play-btn.play-state {
+  @apply bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800;
+}
+
+.ayah-audio-play-btn.pause-state {
+  @apply bg-gray-700 dark:bg-gray-300 text-white dark:text-gray-800;
+}
+
+.ayah-audio-play-btn.loading-state {
+  @apply bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-800 opacity-70;
+}
+
+.ayah-audio-play-btn.error-state {
+  @apply bg-gray-500 dark:bg-gray-500 text-white dark:text-gray-800 opacity-70;
+}
+
+/* Tafsir button fixes for production - ensure consistent clickability */
+.tafsir-toggle-btn,
+.tafsir-close-btn {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  position: relative !important;
+  z-index: 10 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2rem !important;
+  min-width: 2rem !important;
+}
+
+.tafsir-toggle-btn:disabled,
+.tafsir-close-btn:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+.tafsir-toggle-btn:not(:disabled):hover,
+.tafsir-close-btn:not(:disabled):hover {
+  cursor: pointer !important;
+  transform: scale(1.05) !important;
+}
+
+.tafsir-toggle-btn:not(:disabled):active,
+.tafsir-close-btn:not(:disabled):active {
+  transform: scale(0.95) !important;
+}
+
+/* Ensure tafsir button content is also clickable */
+.tafsir-toggle-btn *,
+.tafsir-close-btn * {
+  pointer-events: none !important;
+}
+
+/* Force tafsir buttons to be above any overlapping elements */
+.stylish-ayah-reference .tafsir-toggle-btn,
+.stylish-ayah-reference .tafsir-close-btn {
+  z-index: 20 !important;
+  position: relative !important;
+}
+
+/* Ensure tafsir buttons are not blocked by any pseudo-elements */
+.stylish-ayah-reference::before,
+.stylish-ayah-reference::after {
+  pointer-events: none !important;
+}
+
+/* Force all tafsir-related elements to be clickable */
+[class*="tafsir"] {
+  pointer-events: auto !important;
+}
+
+/* Override any conflicting styles that might disable pointer events */
+.tafsir-toggle-btn[style*="pointer-events: none"],
+.tafsir-close-btn[style*="pointer-events: none"] {
+  pointer-events: auto !important;
+}
+
+/* PWA-specific styles */
+@media (display-mode: standalone) {
+
+  /* Hide browser UI elements when in standalone mode */
+  body {
+    /* Allow selection in PWA too */
+    -webkit-user-select: text;
+    -webkit-touch-callout: none;
+  }
+
+  /* Ensure input fields are still selectable */
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
+  /* PWA status bar styling */
   .pwa-status-bar {
     height: env(safe-area-inset-top, 0px);
-    background: #f9fafb; /* Light mode - matches bg-gray-50 */
+    background: #f9fafb;
+    /* Light mode - matches bg-gray-50 */
   }
-  
+
   .dark .pwa-status-bar {
-    background: #030712; /* Dark mode - matches bg-gray-950 */
+    background: #030712;
+    /* Dark mode - matches bg-gray-950 */
   }
-  }
-  
-  /* PWA splash screen styles */
-  .pwa-splash {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    color: white;
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-  
-  /* PWA install prompt styles */
-  .pwa-install-prompt {
-    position: fixed;
-    bottom: 1rem;
-    left: 1rem;
-    right: 1rem;
-    max-width: 24rem;
-    margin: 0 auto;
-    z-index: 50;
-  }
-  
-  /* PWA safe area adjustments */
-  .pwa-safe-area-top {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-  
-  .pwa-safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  
-  .pwa-safe-area-left {
-    padding-left: env(safe-area-inset-left, 0px);
-  }
-  
-  .pwa-safe-area-right {
-    padding-right: env(safe-area-inset-right, 0px);
-  }
+}
+
+/* PWA splash screen styles */
+.pwa-splash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* PWA install prompt styles */
+.pwa-install-prompt {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  max-width: 24rem;
+  margin: 0 auto;
+  z-index: 50;
+}
+
+/* PWA safe area adjustments */
+.pwa-safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pwa-safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pwa-safe-area-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+.pwa-safe-area-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
 
 /* Hadith Box Styling - Clean minimal design matching app patterns */
 .stylish-hadith-reference {
@@ -1498,7 +1602,7 @@ body {
   .stylish-hadith-reference {
     @apply mx-2;
   }
-  
+
   .hadith-text-arabic {
     @apply text-base;
   }
@@ -1528,21 +1632,32 @@ body {
 /* Dynamic border color change animation */
 @keyframes borderColorChange {
   0% {
-    border-color: rgba(16, 185, 129, 0.8); /* Emerald */
+    border-color: rgba(16, 185, 129, 0.8);
+    /* Emerald */
   }
+
   20% {
-    border-color: rgba(34, 197, 94, 0.8); /* Green */
+    border-color: rgba(34, 197, 94, 0.8);
+    /* Green */
   }
+
   40% {
-    border-color: rgba(59, 130, 246, 0.8); /* Blue */
+    border-color: rgba(59, 130, 246, 0.8);
+    /* Blue */
   }
+
   60% {
-    border-color: rgba(147, 51, 234, 0.8); /* Purple */
+    border-color: rgba(147, 51, 234, 0.8);
+    /* Purple */
   }
+
   80% {
-    border-color: rgba(236, 72, 153, 0.8); /* Pink */
+    border-color: rgba(236, 72, 153, 0.8);
+    /* Pink */
   }
+
   100% {
-    border-color: rgba(16, 185, 129, 0.8); /* Back to Emerald */
+    border-color: rgba(16, 185, 129, 0.8);
+    /* Back to Emerald */
   }
 }

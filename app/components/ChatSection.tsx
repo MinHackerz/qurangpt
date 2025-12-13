@@ -174,9 +174,9 @@ export default function ChatSection({
           fontSize: isMobile ? '16px' : 'inherit'
         }}
       >
-        {/* Input Container Background */}
+        {/* Input Container Background - Solid to hide content behind */}
         <div
-          className="w-full mx-auto px-6 sm:px-0 py-6 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-sm"
+          className="w-full mx-auto px-2 sm:px-0 py-3 bg-gray-50 dark:bg-gray-950"
           style={{
             // Advanced mobile container fixes
             position: 'relative',
@@ -194,96 +194,21 @@ export default function ChatSection({
             {/* YouTube Live Popup - Above Input Field */}
             <YouTubeLivePopup />
 
-            {/* Language Reminder - Above Input Field */}
+            {/* Language Reminder - Minimal & Professional */}
             <AnimatePresence>
               {showLanguageReminder && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -5, scale: 0.98 }}
-                  transition={{
-                    duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                    delay: 0.1
-                  }}
-                  className="mb-3"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="mb-3 px-1"
                 >
-                  <div className="relative w-full px-0 sm:px-0">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{
-                        duration: 0.4,
-                        ease: [0.25, 0.46, 0.45, 0.94],
-                        delay: 0.1
-                      }}
-                      className="bg-transparent border-[0.5px] border-gray-200 dark:border-gray-600 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 w-full"
-                    >
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        <motion.div
-                          animate={{ rotate: [0, 5, -5, 0] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                          className="flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 dark:text-emerald-400"
-                        >
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
-                          </svg>
-                        </motion.div>
-                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-1 min-w-0">
-                          <span className="text-xs text-gray-600 dark:text-gray-400 font-mono tracking-wide uppercase truncate">
-                            Type in your native language
-                          </span>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono tracking-wide uppercase hidden sm:inline">
-                            • Multilingual support
-                          </span>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono tracking-wide uppercase sm:hidden">
-                            • Multilingual
-                          </span>
-                        </div>
-                      </div>
-                      <motion.div
-                        animate={{
-                          opacity: [0.4, 0.8, 0.4],
-                          scale: [1, 1.01, 1],
-                          borderColor: [
-                            "rgba(16, 185, 129, 0.2)",
-                            "rgba(16, 185, 129, 0.4)",
-                            "rgba(16, 185, 129, 0.2)"
-                          ]
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          times: [0, 0.5, 1]
-                        }}
-                        className="absolute inset-0 rounded-xl border border-emerald-400/20 dark:border-emerald-500/30 pointer-events-none"
-                      />
-                    </motion.div>
-
-                    {/* Floating particles effect (restored) */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      {[...Array(3)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{
-                            opacity: [0, 1, 0],
-                            scale: [0, 1, 0],
-                            y: [0, -20, -40],
-                            x: [0, Math.random() * 20 - 10, Math.random() * 40 - 20]
-                          }}
-                          transition={{
-                            duration: 2,
-                            delay: i * 0.3,
-                            repeat: Infinity,
-                            repeatDelay: 1
-                          }}
-                          className="absolute w-1 h-1 bg-emerald-400/60 dark:bg-emerald-500/60 rounded-full"
-                          style={{ left: '50%', top: '50%' }}
-                        />
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-center gap-2 py-2">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs text-gray-400 dark:text-gray-500 tracking-wide">
+                      Multilingual support enabled
+                    </span>
                   </div>
                 </motion.div>
               )}

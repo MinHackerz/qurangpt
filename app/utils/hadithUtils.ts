@@ -147,9 +147,9 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
   const hadithId = `hadith-${hadith.bookSlug}-${hadith.hadithNumber}-${index}`;
 
   // Text size classes based on textSize parameter - professional hierarchy
-  const textSizeClass = textSize === 'large' ? 'text-2xl lg:text-3xl' : textSize === 'medium' ? 'text-xl lg:text-2xl' : 'text-lg lg:text-xl'; // Professional hadith text sizing
-  const headerTextSizeClass = textSize === 'large' ? 'text-sm' : textSize === 'medium' ? 'text-xs' : 'text-xs'; // Match ayah header sizing
-  const summaryTextSizeClass = textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base';
+  // Text size classes based on textSize parameter - professional hierarchy
+  // Using responsive classes via TextSizeStyles
+  // params: textSize is kept for API compatibility but styles are now CSS-driven
 
   // Generate context HTML from passed contexts
   let contextHTML = '';
@@ -174,10 +174,10 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
                 href="${context.url}" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                class="group flex flex-col h-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 overflow-hidden relative"
+                class="group flex flex-col h-24 bg-transparent rounded-xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 overflow-hidden relative"
               >
                 <div class="flex h-full">
-                  <div class="w-12 h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 transition-colors">
+                  <div class="w-12 h-full bg-transparent flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 transition-colors">
                     <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
@@ -210,7 +210,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
       
 
 
-      <div class="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden w-full relative group transition-all duration-300">
+      <div class="bg-transparent rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden w-full relative group transition-all duration-300">
         
         <!-- Header -->
         <div class="px-5 py-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50">
@@ -219,7 +219,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
               <span class="font-serif text-lg text-emerald-600 dark:text-emerald-500 font-bold">H</span>
             </div>
             <div>
-              <h3 class="${(textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm')} font-bold text-gray-900 dark:text-gray-100 tracking-wide">${formatted.bookName}</h3>
+              <h3 class="responsive-text-title font-bold text-gray-900 dark:text-gray-100 tracking-wide">${formatted.bookName}</h3>
               <div class="flex items-center gap-2">
                 <span class="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase">Hadith #${formatted.hadithNumber}</span>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${formatted.status.toLowerCase() === 'sahih'
@@ -238,13 +238,13 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
         </div>
         
         <!-- Content Area -->
-        <div class="p-6 sm:p-8 bg-gradient-to-b from-white to-gray-50/30 dark:from-gray-950 dark:to-gray-900/20">
+        <div class="p-6 sm:p-8 bg-transparent">
           <div class="relative">
              <span class="absolute -top-3 -left-2 text-5xl text-gray-100 dark:text-gray-800 opacity-60 font-serif leading-none select-none">“</span>
              
              <!-- English Text (Default) -->
              <div class="hadith-text-english" data-hadith-id="${hadithId}">
-               <blockquote class="text-gray-800 dark:text-gray-100 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] px-4 py-1 relative z-10">
+               <blockquote class="text-gray-800 dark:text-gray-100 leading-relaxed responsive-text-hadith font-[var(--font-amiri)] px-4 py-1 relative z-10">
                  ${formatted.text.english}
                </blockquote>
                ${formatted.narrator ? `
@@ -257,7 +257,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
              
              <!-- Arabic Text (Hidden) -->
              <div class="hadith-text-arabic hidden" data-hadith-id="${hadithId}">
-               <blockquote class="text-gray-800 dark:text-gray-100 leading-relaxed ${textSizeClass} font-[var(--font-amiri)] text-right px-4 py-1 relative z-10" dir="rtl">
+               <blockquote class="text-gray-800 dark:text-gray-100 leading-relaxed responsive-text-hadith font-[var(--font-amiri)] text-right px-4 py-1 relative z-10" dir="rtl">
                  ${formatted.text.arabic}
                </blockquote>
                ${formatted.narrator ? `
@@ -284,7 +284,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
               </span>
               <h5 class="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Explanation</h5>
            </div>
-           <div class="${summaryTextSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed pl-2 border-l-2 border-amber-200 dark:border-amber-800/50">
+           <div class="responsive-text-body text-gray-700 dark:text-gray-300 leading-relaxed pl-2 border-l-2 border-amber-200 dark:border-amber-800/50">
              ${hadith.aiSummary}
            </div>
         </div>

@@ -412,34 +412,48 @@ export default function MinimalHeader({
         </svg>
       </button>
 
-      {/* Desktop: Vertical layout */}
-      <div className="hidden sm:flex flex-col items-start gap-2">
+      {/* Desktop: Vertical layout - Positioned on the Right Side */}
+      <div className="hidden sm:flex flex-col items-end gap-3 absolute top-20 right-6 z-50">
+
+        {/* Back to Home Button - Simplified */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleBackToHome}
-          className="flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-200 backdrop-blur-sm bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all text-gray-600 dark:text-gray-300 min-w-[140px]"
           title="Back to home"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4M4 12L10 6M4 12L10 18" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
+          <span className="text-sm font-medium">Home</span>
         </motion.button>
 
-        {/* Theme Toggle removed on desktop */}
-
-        {/* Text Size Toggle Button - Only show when there's content AND output is generated */}
+        {/* Text Size Toggle Button */}
         {userQuestion && onTextSizeChange && (
           <TextSizeToggle
             onSizeChange={onTextSizeChange}
             currentSize={textSize}
-            className="w-10 h-10"
+            className="shadow-sm hover:shadow-md"
             variant="header"
           />
         )}
 
-
-        {/* Share Button removed from desktop - now shown in ResponseSection */}
+        {/* Share Button */}
+        {userQuestion && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleShareClick}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all text-gray-600 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 min-w-[140px]"
+            title="Share this conversation"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+            </svg>
+            <span className="text-sm font-medium">Share</span>
+          </motion.button>
+        )}
 
       </div>
 

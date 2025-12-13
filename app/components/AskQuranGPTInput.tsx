@@ -321,19 +321,20 @@ export default function AskQuranGPTInput({
         <AnimatePresence>
           {showContentTypeDropdown && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute z-[60] bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-gray-700 rounded-xl shadow-xl shadow-black/5 p-2 min-w-[220px] content-type-dropdown backdrop-blur-xl bottom-[110%] left-4"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.12, ease: "easeOut" }}
+              className="absolute z-[60] bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-xl shadow-xl shadow-gray-900/5 dark:shadow-black/30 py-2 px-1 min-w-[180px] content-type-dropdown bottom-[110%] left-4"
             >
-              <div className="space-y-0.5">
-                {[
-                  { id: 'tafsir', label: 'Tafsir Analysis', color: 'emerald' },
-                  { id: 'hadith', label: 'Hadith References', color: 'emerald' },
-                  { id: 'webSearch', label: 'Web Search', color: 'blue' },
-                  { id: 'suggestedQuestions', label: 'Follow-up Questions', color: 'purple' }
-                ].map((type) => (
+              {[
+                { id: 'tafsir', label: 'Tafsir' },
+                { id: 'hadith', label: 'Hadith' },
+                { id: 'webSearch', label: 'Web Search' },
+                { id: 'suggestedQuestions', label: 'Follow-up' }
+              ].map((type) => {
+                const isActive = currentContentTypes[type.id as keyof typeof currentContentTypes];
+                return (
                   <button
                     key={type.id}
                     onClick={(e) => {
@@ -341,32 +342,106 @@ export default function AskQuranGPTInput({
                       e.stopPropagation();
                       handleContentTypeToggle(type.id as any);
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-all duration-200 flex items-center justify-between group ${currentContentTypes[type.id as keyof typeof currentContentTypes]
-                      ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/30'
-                      }`}
+                    className="w-full px-3 py-2 flex items-center justify-between gap-4 rounded-lg transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-900/50 group"
                   >
-                    <span className="font-medium">{type.label}</span>
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${currentContentTypes[type.id as keyof typeof currentContentTypes]
-                      ? 'border-transparent bg-gray-900 dark:bg-white'
-                      : 'border-gray-300 dark:border-gray-600 group-hover:border-gray-400'
-                      }`}>
-                      {currentContentTypes[type.id as keyof typeof currentContentTypes] && (
-                        <svg className="w-2.5 h-2.5 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
+                    <span className={`text-sm font-medium transition-colors ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {type.label}
+                    </span>
+                    <div className={`w-8 h-5 rounded-full p-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${isActive ? 'translate-x-3' : 'translate-x-0'}`} />
                     </div>
                   </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Wave Animation & Voice Input Status */}
+        <AnimatePresence>
+          {isListening && (
+            <motion.div
+              key="voice-wave"
+              layout
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="flex flex-col items-center justify-center overflow-hidden w-full relative z-50"
+            >
+              <div className="flex items-center justify-center gap-1.5 h-12 mb-2 p-2 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-100 dark:border-gray-700/50">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                    animate={{
+                      height: [8, 32, 8],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                      ease: "easeInOut"
+                    }}
+                  />
                 ))}
               </div>
+              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 animate-pulse text-center">
+                Listening...
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
 
         <div className="relative group">
+          {/* Running Line Border - Shows when typing */}
+          {inputValue.trim() && (
+            <>
+              {/* Light mode: neon green animation */}
+              <div
+                className="absolute -inset-[1px] rounded-2xl animate-border-run-smooth pointer-events-none dark:hidden"
+                style={{
+                  background: `conic-gradient(from var(--border-angle, 0deg), 
+                    rgba(16, 185, 129, 0.4) 0deg,
+                    rgba(52, 211, 153, 0.7) 35deg,
+                    rgba(110, 231, 183, 1) 45deg,
+                    rgba(52, 211, 153, 0.7) 55deg,
+                    rgba(16, 185, 129, 0.2) 100deg,
+                    rgba(209, 213, 219, 0.15) 180deg,
+                    rgba(16, 185, 129, 0.2) 260deg,
+                    rgba(16, 185, 129, 0.4) 360deg
+                  )`,
+                  mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  maskComposite: 'exclude',
+                  WebkitMaskComposite: 'xor',
+                  padding: '1.5px',
+                  filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.5))',
+                }}
+              />
+              {/* Dark mode: bright white/green animation */}
+              <div
+                className="absolute -inset-[1px] rounded-2xl animate-border-run-smooth pointer-events-none hidden dark:block"
+                style={{
+                  background: `conic-gradient(from var(--border-angle, 0deg), 
+                    rgba(52, 211, 153, 0.5) 0deg,
+                    rgba(209, 250, 229, 0.8) 30deg,
+                    rgba(255, 255, 255, 0.95) 45deg,
+                    rgba(209, 250, 229, 0.8) 60deg,
+                    rgba(52, 211, 153, 0.4) 90deg,
+                    rgba(75, 85, 99, 0.3) 180deg,
+                    rgba(52, 211, 153, 0.4) 270deg,
+                    rgba(52, 211, 153, 0.5) 360deg
+                  )`,
+                  mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  maskComposite: 'exclude',
+                  WebkitMaskComposite: 'xor',
+                  padding: '1px',
+                }}
+              />
+            </>
+          )}
+
           {/* Input Container */}
-          <div className={`relative bg-transparent backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-sm focus-within:shadow-md focus-within:border-emerald-500/30 dark:focus-within:border-emerald-500/30 rounded-2xl transition-all duration-300 overflow-hidden ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}>
+          <div className={`relative bg-gray-50 dark:bg-gray-950 ${inputValue.trim() ? '' : 'border border-gray-200 dark:border-gray-800'} rounded-2xl transition-all duration-300 ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}>
 
             {/* Text Area */}
             <textarea
@@ -374,168 +449,137 @@ export default function AskQuranGPTInput({
               onChange={(e) => handleValueChange(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={placeholder}
-              rows={1}
+              rows={2}
               disabled={isProcessing}
-              className="w-full bg-transparent text-gray-900 dark:text-white border-none resize-none focus:outline-none text-base sm:text-lg leading-relaxed placeholder:text-gray-400 dark:placeholder:text-gray-500 py-4 px-5 pr-32 min-h-[64px] max-h-[300px]" // pr-32 for buttons space
+              className="w-full bg-transparent text-gray-900 dark:text-white border-none resize-none focus:outline-none text-base sm:text-lg leading-relaxed placeholder:text-gray-400 dark:placeholder:text-gray-500 py-4 px-3 sm:px-4 pb-12 overflow-y-auto scrollbar-hide"
               style={{
-                height: 'auto',
-                minHeight: '64px'
-              }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto'; // Reset height
-                target.style.height = `${Math.min(target.scrollHeight, 300)}px`; // Set new height capped at 300px
+                minHeight: '80px',
+                maxHeight: '160px',
               }}
             />
 
-            {/* Bottom Bar (Tools & Actions) */}
-            <div className="flex items-center justify-between px-3 pb-3 pt-1">
-
-              {/* Left: Tools */}
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1 max-w-[calc(100%-120px)]">
-                {/* Add Button */}
-                <button
-                  onClick={() => setShowContentTypeDropdown(!showContentTypeDropdown)}
-                  disabled={isProcessing}
-                  className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors plus-icon-button ${showContentTypeDropdown
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                    : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                    }`}
-                  title="Add tools"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </button>
-
-                <div className="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1 flex-shrink-0" />
-
-                {/* Active Tools Pills */}
-                <AnimatePresence mode="popLayout">
-                  {Object.entries(currentContentTypes).map(([key, active]) => {
-                    if (!active) return null;
-                    let label = '';
-                    if (key === 'tafsir') label = 'Tafsir';
-                    if (key === 'hadith') label = 'Hadith';
-                    if (key === 'webSearch') label = 'Web';
-                    if (key === 'suggestedQuestions') label = 'Q&A';
-
-                    return (
-                      <motion.button
-                        key={key}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        onClick={() => handleContentTypeToggle(key as any)}
-                        disabled={isProcessing}
-                        className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
-                      >
-                        <span>{label}</span>
-                        <svg className="w-3 h-3 opacity-60 hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </motion.button>
-                    );
-                  })}
-                  {!Object.values(currentContentTypes).some(Boolean) && (
-                    <span className="text-xs text-gray-400 dark:text-gray-600 pl-1 italic">
-                      No tools selected
-                    </span>
-                  )}
-                </AnimatePresence>
-              </div>
-
-
-              {/* Right: Actions */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Reset Button (only if OnReset provided) */}
-                {onReset && (
-                  <button
-                    onClick={onReset}
+            {/* Floating Action Buttons - Bottom Right */}
+            <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+              {/* Speech Button */}
+              <AnimatePresence>
+                {isSpeechSupported && !inputValue.trim() && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSpeechRecognition();
+                    }}
                     disabled={isProcessing}
-                    className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                    title="Reset"
+                    className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${isListening
+                      ? 'bg-red-50 dark:bg-red-900/20 text-red-500 animate-pulse border border-red-300 dark:border-red-500/50'
+                      : 'text-emerald-500 dark:text-emerald-400/70 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                      }`}
+                    title="Voice input"
+                    type="button"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
+                    {isListening ? (
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" /></svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                    )}
+                  </motion.button>
                 )}
+              </AnimatePresence>
 
-                {/* Improve Button */}
-                <AnimatePresence>
-                  {inputValue.trim() && hasMinimumWords(inputValue) && !hasBeenImproved && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      onClick={handleImproveQuestion}
-                      disabled={isImproving || isProcessing}
-                      className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                      title="Improve with AI"
-                    >
-                      {isImproving ? (
-                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-                      )}
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+              {/* Improve Button */}
+              <AnimatePresence>
+                {inputValue.trim() && hasMinimumWords(inputValue) && !hasBeenImproved && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={handleImproveQuestion}
+                    disabled={isImproving || isProcessing}
+                    className="w-7 h-7 flex items-center justify-center rounded-full text-amber-500 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+                    title="Improve question"
+                  >
+                    {isImproving ? (
+                      <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    )}
+                  </motion.button>
+                )}
+              </AnimatePresence>
 
-                {/* Speech Recognition Button */}
-                <AnimatePresence>
-                  {isSpeechSupported && !inputValue.trim() && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      style={{ pointerEvents: 'auto', zIndex: 30 }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSpeechRecognition();
-                      }}
-                      disabled={isProcessing}
-                      className={`group relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${isListening
-                        ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-800/40 text-red-600 dark:text-red-400 animate-pulse'
-                        : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
-                        }`}
-                      title={isListening ? "Stop recording" : "Start voice input"}
-                      type="button"
-                    >
-                      <div className="relative z-10 flex items-center justify-center">
-                        {isListening ? (
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <rect x="6" y="6" width="12" height="12" rx="2" />
-                          </svg>
-                        ) : (
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                          </svg>
-                        )}
-                      </div>
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-
-                {/* Send Button */}
+              {/* Clear Button */}
+              {onReset && inputValue.trim() && (
                 <button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim() || isProcessing}
-                  className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200 ${inputValue.trim() && !isProcessing
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30 transform hover:-translate-y-0.5'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                    }`}
+                  onClick={onReset}
+                  disabled={isProcessing}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-red-400 dark:text-red-400/70 border border-red-200 dark:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                  title="Clear"
                 >
-                  <svg className="w-4 h-4 translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              </div>
+              )}
 
+              {/* Send Button */}
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isProcessing}
+                className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${inputValue.trim() && !isProcessing
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-105 active:scale-95'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600'
+                  }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Floating Tools Button - Bottom Left */}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              <button
+                onClick={() => setShowContentTypeDropdown(!showContentTypeDropdown)}
+                disabled={isProcessing}
+                className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${showContentTypeDropdown
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20'
+                  }`}
+                title="Tools"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+
+              {/* Active Tools Pills - Full text with minimal styling */}
+              <AnimatePresence mode="popLayout">
+                {Object.entries(currentContentTypes).map(([key, active]) => {
+                  if (!active) return null;
+                  let label = '';
+                  if (key === 'tafsir') label = 'Tafsir';
+                  if (key === 'hadith') label = 'Hadith';
+                  if (key === 'webSearch') label = 'Search';
+                  if (key === 'suggestedQuestions') label = 'Q&A';
+
+                  return (
+                    <motion.button
+                      key={key}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      onClick={() => handleContentTypeToggle(key as any)}
+                      disabled={isProcessing}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all"
+                    >
+                      {label}
+                    </motion.button>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           </div>
 

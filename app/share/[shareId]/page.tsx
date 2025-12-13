@@ -9,6 +9,8 @@ import SourcesSection from '../../components/SourcesSection';
 import { useAIResponse } from '../../hooks/useAIResponse';
 import { useGlobalEventDelegation } from '../../hooks/useGlobalEventDelegation';
 import AskQuranGPTInput from '../../components/AskQuranGPTInput';
+import TextSizeToggle from '../../components/TextSizeToggle';
+import TextSizeStyles from '../../components/TextSizeStyles';
 
 interface SharedContent {
   shareId: string;
@@ -687,6 +689,7 @@ export default function SharePage() {
 
   return (
     <>
+      <TextSizeStyles />
       {/* Google Analytics */}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=G-NMNGXPDXNK"
@@ -767,7 +770,8 @@ export default function SharePage() {
                 </div>
               ) : (
                 <div
-                  className={`text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
+                  data-text-size={textSize}
+                  className={`group/textsize text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'
                     }`}
                   dangerouslySetInnerHTML={{
                     __html: filteredContent
@@ -793,15 +797,11 @@ export default function SharePage() {
                   /* Ask QuranGPT Button with Text Size Toggle and Share Icon */
                   <div className="flex items-center gap-3 justify-center">
                     {/* Text Size Toggle Button with Book Icon */}
-                    <button
-                      onClick={() => handleTextSizeChange(textSize === 'small' ? 'medium' : textSize === 'medium' ? 'large' : 'small')}
-                      className="flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
-                      title={`Text size: ${textSize}`}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </button>
+                    <TextSizeToggle
+                      onSizeChange={handleTextSizeChange}
+                      currentSize={textSize}
+                      variant="default"
+                    />
 
                     <button
                       onClick={handleAskQuranClick}
@@ -820,10 +820,10 @@ export default function SharePage() {
                       onClick={handleShareClick}
                       disabled={isSharing}
                       className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${showShareSuccess
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                          : isSharing
-                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                            : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                        : isSharing
+                          ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                       title={showShareSuccess ? "Share link copied!" : "Share this content"}
                     >

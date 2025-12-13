@@ -560,22 +560,25 @@ Question: ${content}`;
               <button 
                 data-tafsir-id="${tafsirId}"
                 data-ayah-container="${ayahId}"
-                class="tafsir-toggle-btn px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-transparent text-gray-600 dark:text-gray-400 hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 transition-all duration-200 focus:outline-none data-[active=true]:bg-orange-500 data-[active=true]:text-white data-[active=true]:border-orange-500"
+                class="tafsir-toggle-btn px-3 py-1.5 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-transparent text-gray-500 dark:text-gray-400 hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 transition-all duration-200 focus:outline-none data-[active=true]:bg-orange-500 data-[active=true]:text-white data-[active=true]:border-orange-500 dark:data-[active=true]:bg-orange-500 dark:data-[active=true]:text-white"
               >
                 ${tafsir.author}
               </button>`;
 
-            // Minimal professional design - clean and simple
+            // Minimal professional design - Clean and Minimalistic
             tafsirContentHTML += `
               <div id="${tafsirId}" class="tafsir-content w-full hidden">
-                <div class="relative bg-gray-50 dark:bg-gray-900/50 rounded-lg p-5 md:p-6">
-                   <div class="flex items-center justify-between mb-4">
-                     <h5 class="text-sm font-semibold text-gray-900 dark:text-gray-100">${tafsir.author}</h5>
-                     <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1">
-                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <div class="relative pl-6 pr-2 py-2 border-l-2 border-orange-500/50">
+                   <div class="flex items-center justify-between mb-3">
+                     <div class="flex items-center gap-2">
+                       <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                       <h5 class="text-sm font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider">${tafsir.author}</h5>
+                     </div>
+                     <button data-tafsir-id="${tafsirId}" class="tafsir-close-btn text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1" title="Close Tafsir">
+                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" /></svg>
                      </button>
                    </div>
-                   <div class="text-gray-600 dark:text-gray-400 leading-relaxed ${textSize === 'large' ? 'text-base' : textSize === 'medium' ? 'text-sm' : 'text-sm'}">
+                   <div class="text-gray-700 dark:text-gray-300 leading-relaxed font-serif responsive-text-body">
                       ${formattedContent}
                    </div>
                 </div>
@@ -592,16 +595,16 @@ Question: ${content}`;
         return {
           match: match.originalMatch,
           replacement: `<div class="stylish-ayah-reference my-12 max-w-none w-full bg-transparent" data-ayah-id="${ayahId}" data-global-ayah="${globalAyahNumber}" data-surah-name="${surahName}" data-ayah-number="${ayahNumber}" data-surah-number="${finalSurahNumber}" data-is-range="${isRange}" data-audio-range="${audioRange}">
-            <div class="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden w-full relative group transition-all duration-300">
+            <div class="bg-transparent dark:bg-transparent rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden w-full relative group transition-all duration-300">
               <!-- Header: Minimalist -->
-              <div class="px-5 py-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50">
+              <div class="px-5 py-4 flex items-center justify-between border-b border-gray-200/50 dark:border-gray-800/50 bg-transparent">
                 <!-- Left: Surah Info -->
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center border border-gray-100 dark:border-gray-800">
+                  <div class="w-9 h-9 bg-gray-50/50 dark:bg-gray-900/50 rounded-full flex items-center justify-center border border-gray-100 dark:border-gray-800">
                     <span class="font-[var(--font-amiri)] text-lg text-emerald-600 dark:text-emerald-500 pt-1">۞</span>
                   </div>
                   <div>
-                    <h3 class="${(currentTextSize ?? textSize) === 'large' ? 'text-lg' : (currentTextSize ?? textSize) === 'medium' ? 'text-base' : 'text-sm'} font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] tracking-wide">${surahName}</h3>
+                     <h3 class="responsive-text-title font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] tracking-wide">${surahName}</h3>
                     <p class="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase">Verse ${ayahNumberStr}</p>
                   </div>
                 </div>
@@ -609,7 +612,7 @@ Question: ${content}`;
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-2">
                    <!-- Language Toggle -->
-                   <button class="ayah-language-toggle-btn w-8 h-8 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors flex items-center justify-center" 
+                   <button class="ayah-language-toggle-btn w-8 h-8 rounded-full hover:bg-gray-50 dark:hover:bg-gray-900/50 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors flex items-center justify-center" 
                           data-ayah-id="${ayahId}" 
                           data-is-range="${isRange}" 
                           data-surah="${finalSurahNumber}" 
@@ -625,18 +628,18 @@ Question: ${content}`;
               </div>
               
               <!-- Ayah Text -->
-              <div class="p-6 sm:p-8 bg-gradient-to-b from-white to-gray-50/30 dark:from-gray-950 dark:to-gray-900/20">
+              <div class="p-6 sm:p-8 bg-transparent">
                 <div class="relative text-center">
-                  <span class="absolute -top-4 -left-2 text-6xl text-gray-100 dark:text-gray-800 opacity-50 font-serif leading-none select-none">"</span>
-                  <blockquote class="${(currentTextSize ?? textSize) === 'large' ? 'text-3xl lg:text-4xl' : (currentTextSize ?? textSize) === 'medium' ? 'text-2xl lg:text-3xl' : 'text-xl lg:text-2xl'} text-gray-800 dark:text-gray-100 font-[var(--font-amiri)] leading-[2] lg:leading-[2.2] px-4 py-2 relative z-10" dir="rtl">
+                  <span class="absolute -top-4 -left-2 text-6xl text-gray-200 dark:text-gray-800 opacity-30 font-serif leading-none select-none">"</span>
+                  <blockquote class="responsive-text-ayah text-gray-800 dark:text-gray-100 font-[var(--font-amiri)] leading-[2] lg:leading-[2.2] px-4 py-2 relative z-10" dir="rtl">
                     ${finalVerseText}
                   </blockquote>
-                  <span class="absolute -bottom-8 -right-2 text-6xl text-gray-100 dark:text-gray-800 opacity-50 font-serif leading-none select-none transform rotate-180">"</span>
+                  <span class="absolute -bottom-8 -right-2 text-6xl text-gray-200 dark:text-gray-800 opacity-30 font-serif leading-none select-none transform rotate-180">"</span>
                 </div>
               </div>
               
               <!-- Footer: Audio Only -->
-              <div class="px-5 py-4 bg-gray-50/50 dark:bg-gray-900/30 border-t border-gray-50 dark:border-gray-800/50">
+              <div class="px-5 py-4 bg-transparent border-t border-gray-200/50 dark:border-gray-800/50">
                 <!-- Audio Player (Compact) -->
                 <div class="flex items-center gap-4">
                    <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm hover:shadow-md active:scale-95 transition-all duration-200" data-surah="${finalSurahNumber}" data-ayah="${isRange ? audioRange : ayahNumberStr}" data-range="${isRange ? 'true' : 'false'}" type="button">
@@ -810,7 +813,7 @@ Question: ${content}`;
           // STRICTLY match the text size with general content text size (same as ResponseSection)
           const textSizeClass = (currentTextSize ?? textSize) === 'large' ? 'text-xl' : (currentTextSize ?? textSize) === 'medium' ? 'text-lg' : 'text-base';
           const explanationHTML = finalExplanation
-            ? `<div class="mt-6 ayah-explanation ${textSizeClass} text-gray-700 dark:text-gray-300 leading-relaxed">
+            ? `<div class="mt-6 ayah-explanation responsive-text-body text-gray-700 dark:text-gray-300 leading-relaxed">
                 ${finalExplanation}
               </div>`
             : '';
@@ -1118,7 +1121,7 @@ Question: ${content}`;
     // Continue with other formatting
     processedText = processedText
       // Format section headers with enhanced styling
-      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading text-2xl font-bold text-gray-900 dark:text-gray-100 mt-10 mb-5 pb-3 font-[var(--font-amiri)] tracking-wide relative after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:w-16 after:h-0.5 after:bg-emerald-500 dark:after:bg-emerald-400">$1</h3>')
+      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading responsive-text-heading font-bold text-gray-900 dark:text-gray-100 mt-10 mb-5 pb-3 font-[var(--font-amiri)] tracking-wide relative after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:w-16 after:h-0.5 after:bg-emerald-500 dark:after:bg-emerald-400">$1</h3>')
       // Format bold text
       .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
       // Format italic text
@@ -1127,10 +1130,10 @@ Question: ${content}`;
       .replace(/\_\_([^_]+)\_\_/g, '<span class="border-b-2 border-emerald-200 dark:border-emerald-800 pb-0.5">$1</span>')
 
       // Format numbered lists with enhanced styling and spacing
-      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-4 flex items-start pl-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold mr-3 mt-1 flex-shrink-0">$1</span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed flex-1">$2</span></div>')
+      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-4 flex items-start pl-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold mr-3 mt-1 flex-shrink-0">$1</span><span class="text-gray-700 dark:text-gray-300 responsive-text-body leading-relaxed flex-1">$2</span></div>')
 
       // Format bullet points
-      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-3 flex items-start pl-2"><span class="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full mr-4 mt-2.5 flex-shrink-0"></span><span class="text-gray-700 dark:text-gray-300 text-lg leading-relaxed flex-1">$1</span></div>')
+      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-3 flex items-start pl-2"><span class="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full mr-4 mt-2.5 flex-shrink-0"></span><span class="text-gray-700 dark:text-gray-300 responsive-text-body leading-relaxed flex-1">$1</span></div>')
 
       // Format specific Islamic terms with minimalistic underlines
       .replace(/Allah\s*\(SWT\)/g, '<span class="font-medium text-emerald-700 dark:text-emerald-400">Allah (SWT)</span>')
@@ -1145,25 +1148,25 @@ Question: ${content}`;
 
       // Format Explanation headers with distinctive styling
       .replace(/^(Explanation):?\s*$/gmi,
-        '<div class="explanation-section mt-10 mb-6"><h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] mb-2 flex items-center gap-2"><span class="text-emerald-500 text-xl">💡</span> Explanation</h3></div>')
+        '<div class="explanation-section mt-10 mb-6"><h3 class="responsive-text-heading font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] mb-2 flex items-center gap-2"><span class="text-emerald-500 text-xl">💡</span> Explanation</h3></div>')
 
       // Format Tafsir/Tafseer headers with simple styling (matching AI Explanation design)
       .replace(/^(Tafs[ie]r):?\s*$/gmi,
-        `<div class="tafsir-section mt-10 mb-6"><h3 class="${textSize === 'large' ? 'text-2xl' : textSize === 'medium' ? 'text-xl' : 'text-lg'} font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)]">Scholarly Tafsir</h3></div>`)
+        `<div class="tafsir-section mt-10 mb-6"><h3 class="responsive-text-heading font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)]">Scholarly Tafsir</h3></div>`)
 
       // Format AI Explanation sections with simple styling (cleaner)
       .replace(/\[AI Explanation:\s*([\s\S]*?)\]/gi,
-        `<div class="mt-4 mb-8 pl-5 border-l-2 border-emerald-500/30 dark:border-emerald-500/20"><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'}">$1</div></div>`)
+        `<div class="mt-4 mb-8 pl-5 border-l-2 border-emerald-500/30 dark:border-emerald-500/20"><div class="text-gray-700 dark:text-gray-300 leading-relaxed responsive-text-body">$1</div></div>`)
 
       // Format Authentic Tafsir sections with simple styling
       .replace(/\[Authentic Tafsir:\s*([\s\S]*?)\]/g,
-        `<div class="authentic-tafsir-section mt-6 mb-8 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800"><h4 class="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed ${textSize === 'large' ? 'text-xl' : textSize === 'medium' ? 'text-lg' : 'text-base'}">$1</div></div>`)
+        `<div class="authentic-tafsir-section mt-6 mb-8 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800"><h4 class="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Authentic Tafsir</h4><div class="text-gray-700 dark:text-gray-300 leading-relaxed responsive-text-body">$1</div></div>`)
 
       // Clean up any remaining formatting markers
       .replace(/###\s*Quran GPT's Answer:?\s*/gi, '')
       // Format other common section headers with enhanced styling
       .replace(/^(Introduction|Additional Information|References|Conclusion):?\s*$/gmi,
-        '<h3 class="section-heading text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
+        '<h3 class="section-heading responsive-text-heading font-bold text-gray-800 dark:text-gray-200 mt-12 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-500 font-[var(--font-amiri)] tracking-wide">$1</h3>')
 
       // Format Quranic section headers with simple styling
       .replace(/Allah\s*\(SWT\)\s*says\s*in\s*the\s*(Glorious\s*)?Quran:?/gi,

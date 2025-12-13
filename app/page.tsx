@@ -240,6 +240,7 @@ function HomeContent() {
       // Set up auto-scroll interval during processing
       autoScrollIntervalRef.current = setInterval(() => {
         // Scroll to the bottom of the current content to follow progress
+        /* Auto-scroll disabled by user request
         const mainContent = document.querySelector('main');
         if (mainContent) {
           const scrollTarget = mainContent.scrollHeight;
@@ -248,6 +249,7 @@ function HomeContent() {
             behavior: 'smooth'
           });
         }
+        */
       }, 500); // Check every 500ms
     } else {
       // Processing just completed - scroll to top to show output from beginning
