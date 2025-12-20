@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server';
-import { GeminiApiManager } from '../../utils/geminiApiManager';
+import { UnifiedAiManager } from '../../utils/unifiedAiManager';
 
 export async function POST(request: Request) {
   try {
     const { prompt } = await request.json();
-    
-    const model = process.env.NEXT_PUBLIC_GEMINI_MODEL || 'gemini-2.0-flash';
-    
-    let apiManager: GeminiApiManager;
+
+    const model = process.env.NEXT_PUBLIC_GEMINI_MODEL || 'gemini-2.5-flash';
+
+    let apiManager: UnifiedAiManager;
     try {
-      apiManager = new GeminiApiManager();
+      apiManager = new UnifiedAiManager();
     } catch (error) {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'API key is not configured' },
+        { error: error instanceof Error ? error.message : 'No AI provider configured' },
         { status: 500 }
       );
     }
 
-    // Using API keys for content generation
-    
+    // Using unified AI manager (Gemini primary, OpenAI fallback)
+
     const result = await apiManager.generateContent(prompt, model);
-    
+
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || 'Failed to generate response' },
@@ -29,8 +29,8 @@ export async function POST(request: Request) {
     }
 
     const generatedText = result.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    return NextResponse.json({ response: generatedText });
+
+    return NextResponse.json({ response: generatedText, provider: result.provider });
   } catch (error) {
     // API error - silent fail for security
     return NextResponse.json(

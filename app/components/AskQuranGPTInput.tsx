@@ -510,8 +510,8 @@ export default function AskQuranGPTInput({
                 )}
               </AnimatePresence>
 
-              {/* Clear Button */}
-              {onReset && inputValue.trim() && (
+              {/* Clear Button - Always visible when onReset is provided */}
+              {onReset && (
                 <button
                   onClick={onReset}
                   disabled={isProcessing}

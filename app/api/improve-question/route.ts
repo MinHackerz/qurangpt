@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { GeminiApiManager } from '../../utils/geminiApiManager';
+import { UnifiedAiManager } from '../../utils/unifiedAiManager';
 
 export async function POST(request: Request) {
   try {
     const { question, language } = await request.json();
-    
+
     if (!question || !question.trim()) {
       return NextResponse.json(
         { error: 'Question is required' },
@@ -12,14 +12,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const model = process.env.NEXT_PUBLIC_GEMINI_MODEL || 'gemini-2.0-flash';
-    
-    let apiManager: GeminiApiManager;
+    const model = process.env.NEXT_PUBLIC_GEMINI_MODEL || 'gemini-2.5-flash';
+
+    let apiManager: UnifiedAiManager;
     try {
-      apiManager = new GeminiApiManager();
+      apiManager = new UnifiedAiManager();
     } catch (error) {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'API key is not configured' },
+        { error: error instanceof Error ? error.message : 'No AI provider configured' },
         { status: 500 }
       );
     }
@@ -39,7 +39,7 @@ Original question: "${question}"
 Improved question (output only the improved question without any explanations or additional text. The output must be a question seeking information FROM QuranGPT, NOT asking the user anything. If the question cannot be made relevant to Islamic context, return a polite question directed to QuranGPT indicating it's outside scope):`;
 
     const result = await apiManager.generateContent(prompt, model, 0.3);
-    
+
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || 'Failed to improve question' },
@@ -48,7 +48,7 @@ Improved question (output only the improved question without any explanations or
     }
 
     const improvedQuestion = result.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || question;
-    
+
     return NextResponse.json({ improvedQuestion });
   } catch (error) {
     // API error - silent fail for security

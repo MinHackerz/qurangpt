@@ -1203,7 +1203,7 @@ Question: ${content}`;
 
             // Add suggested questions to the response
             const suggestedQuestionsHTML = suggestedData.questions.map((question: string, index: number) =>
-              `<div class="suggested-question-item group relative p-5 bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 cursor-pointer overflow-hidden" data-suggested-question="true">
+              `<div class="suggested-question-item group relative p-5 bg-transparent rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 cursor-pointer overflow-hidden" data-suggested-question="true">
                 <div class="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
                   <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />

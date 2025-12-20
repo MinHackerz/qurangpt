@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GeminiApiManager } from '../../utils/geminiApiManager';
+import { UnifiedAiManager } from '../../utils/unifiedAiManager';
 
 // Simple in-memory rate limiter with improved caching
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -13,17 +13,17 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const userData = rateLimitMap.get(ip);
-  
+
   if (!userData || now > userData.resetTime) {
     // Reset or create new rate limit data
     rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return false;
   }
-  
+
   if (userData.count >= MAX_REQUESTS_PER_WINDOW) {
     return true;
   }
-  
+
   userData.count++;
   return false;
 }
@@ -31,16 +31,16 @@ function isRateLimited(ip: string): boolean {
 function getCachedTranslation(text: string, targetLanguage: string, context: string): any | null {
   const cacheKey = `${text.substring(0, 200)}_${targetLanguage}_${context}`;
   const cached = translationCache.get(cacheKey);
-  
+
   if (cached && (Date.now() - cached.timestamp) < cached.ttl) {
     return cached.translation;
   }
-  
+
   // Remove expired cache entry
   if (cached) {
     translationCache.delete(cacheKey);
   }
-  
+
   return null;
 }
 
@@ -51,12 +51,12 @@ function setCachedTranslation(text: string, targetLanguage: string, context: str
     timestamp: Date.now(),
     ttl: CACHE_TTL
   });
-  
+
   // Clean up old cache entries if cache gets too large
   if (translationCache.size > 1000) {
     const entries = Array.from(translationCache.entries());
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    
+
     // Remove oldest 200 entries
     entries.slice(0, 200).forEach(([key]) => translationCache.delete(key));
   }
@@ -67,7 +67,7 @@ function getClientIP(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for');
   const realIP = req.headers.get('x-real-ip');
   const cfConnectingIP = req.headers.get('cf-connecting-ip');
-  
+
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
@@ -77,7 +77,7 @@ function getClientIP(req: NextRequest): string {
   if (cfConnectingIP) {
     return cfConnectingIP;
   }
-  
+
   // Fallback to connection remote address
   return 'unknown';
 }
@@ -278,7 +278,7 @@ function detectLanguage(text: string): string {
   if (bengaliPattern.test(text)) return 'bn';
   if (tamilPattern.test(text)) return 'ta';
   if (thaiPattern.test(text)) return 'th';
-  
+
   return 'en'; // Default to English
 }
 
@@ -292,9 +292,9 @@ function createTranslationPrompt(
 ): string {
   const targetLanguageInfo = SUPPORTED_LANGUAGES[targetLang as keyof typeof SUPPORTED_LANGUAGES];
   const sourceLanguageInfo = SUPPORTED_LANGUAGES[sourceLang as keyof typeof SUPPORTED_LANGUAGES];
-  
+
   let contextInstructions = '';
-  
+
   switch (context) {
     case 'islamic':
       contextInstructions = `
@@ -321,7 +321,7 @@ This text contains Quranic verses and commentary. Please:
 This is general text that may contain various topics. Please provide an accurate and natural translation.`;
   }
 
-  const formattingInstructions = preserveFormatting 
+  const formattingInstructions = preserveFormatting
     ? `
 IMPORTANT: Preserve ALL HTML formatting, tags, and structure exactly as they appear. This includes:
 - HTML tags like <div>, <span>, <p>, <strong>, <em>, etc.
@@ -390,7 +390,7 @@ export async function POST(request: NextRequest) {
 
     // Detect source language if not provided
     const detectedSourceLang = sourceLanguage || detectLanguage(text);
-    
+
     // Skip translation if source and target are the same
     if (detectedSourceLang === targetLanguage) {
       return NextResponse.json({
@@ -415,13 +415,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Initialize Gemini API Manager for translation
-    let apiManager: GeminiApiManager;
+    // Initialize unified AI manager for translation
+    let apiManager: UnifiedAiManager;
     try {
-      apiManager = new GeminiApiManager();
+      apiManager = new UnifiedAiManager();
     } catch (error) {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Translation service is not configured' },
+        { error: error instanceof Error ? error.message : 'No AI provider configured' },
         { status: 500 }
       );
     }
@@ -445,7 +445,7 @@ export async function POST(request: NextRequest) {
 
     if (!translationResult.success) {
       // Translation API error - silent fail for security
-      
+
       // Handle specific error types
       if (translationResult.statusCode === 429) {
         return NextResponse.json(
@@ -453,21 +453,21 @@ export async function POST(request: NextRequest) {
           { status: 429 }
         );
       }
-      
+
       if (translationResult.statusCode === 403) {
         return NextResponse.json(
           { error: 'Translation quota exceeded. Please try again later.' },
           { status: 403 }
         );
       }
-      
+
       if (translationResult.statusCode === 400) {
         return NextResponse.json(
           { error: 'Translation failed due to invalid request' },
           { status: 400 }
         );
       }
-      
+
       return NextResponse.json(
         { error: translationResult.error || 'Translation failed' },
         { status: 500 }
@@ -483,7 +483,7 @@ export async function POST(request: NextRequest) {
     }
 
     const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
+
     if (!translatedText.trim()) {
       return NextResponse.json(
         { error: 'Translation returned empty result' },
@@ -492,7 +492,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate confidence score based on response quality
-    const confidence = Math.min(0.95, Math.max(0.7, 
+    const confidence = Math.min(0.95, Math.max(0.7,
       1 - (Math.abs(text.length - translatedText.length) / Math.max(text.length, translatedText.length))
     ));
 

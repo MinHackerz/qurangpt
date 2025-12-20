@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GeminiApiManager } from '../../utils/geminiApiManager';
+import { UnifiedAiManager } from '../../utils/unifiedAiManager';
 import { detectLanguage } from '../../utils/languageDetection';
 
 // Hadith API configuration - New API without key requirement
@@ -8,8 +8,8 @@ const HADITH_API_BASE_URL = 'https://hadithapi.pages.dev/api';
 // Translate non-English queries to English using Gemini
 async function translateQueryToEnglish(query: string): Promise<string> {
   try {
-    const apiManager = new GeminiApiManager();
-    
+    const apiManager = new UnifiedAiManager();
+
     const prompt = `You are a professional translator specializing in Islamic terminology. Translate the following query to English while preserving the Islamic context and meaning.
 
 QUERY TO TRANSLATE: "${query}"
@@ -26,7 +26,7 @@ RESPONSE FORMAT:
 Return only the translated query in English, nothing else.`;
 
     const result = await apiManager.generateContent(prompt, 'gemini-2.0-flash', 0.3);
-    
+
     if (result.success && result.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
       const translatedQuery = result.data.candidates[0].content.parts[0].text.trim();
       return translatedQuery;
@@ -41,26 +41,26 @@ Return only the translated query in English, nothing else.`;
 // Generate comprehensive hadith summary using Gemini
 async function generateHadithSummary(hadith: any, userQuery: string, originalQuery: string, detectedLanguage: string): Promise<string> {
   try {
-    const apiManager = new GeminiApiManager();
-    
+    const apiManager = new UnifiedAiManager();
+
     // Determine the target language for the summary
-    const targetLanguage = detectedLanguage === 'en' ? 'English' : 
-                          detectedLanguage === 'ar' ? 'Arabic' :
-                          detectedLanguage === 'bn' ? 'Bengali' :
-                          detectedLanguage === 'ur' ? 'Urdu' :
-                          detectedLanguage === 'hi' ? 'Hindi' :
-                          detectedLanguage === 'tr' ? 'Turkish' :
-                          detectedLanguage === 'fr' ? 'French' :
-                          detectedLanguage === 'es' ? 'Spanish' :
-                          detectedLanguage === 'de' ? 'German' :
-                          detectedLanguage === 'it' ? 'Italian' :
-                          detectedLanguage === 'pt' ? 'Portuguese' :
+    const targetLanguage = detectedLanguage === 'en' ? 'English' :
+      detectedLanguage === 'ar' ? 'Arabic' :
+        detectedLanguage === 'bn' ? 'Bengali' :
+          detectedLanguage === 'ur' ? 'Urdu' :
+            detectedLanguage === 'hi' ? 'Hindi' :
+              detectedLanguage === 'tr' ? 'Turkish' :
+                detectedLanguage === 'fr' ? 'French' :
+                  detectedLanguage === 'es' ? 'Spanish' :
+                    detectedLanguage === 'de' ? 'German' :
+                      detectedLanguage === 'it' ? 'Italian' :
+                        detectedLanguage === 'pt' ? 'Portuguese' :
                           detectedLanguage === 'ru' ? 'Russian' :
-                          detectedLanguage === 'zh' ? 'Chinese' :
-                          detectedLanguage === 'ja' ? 'Japanese' :
-                          detectedLanguage === 'ko' ? 'Korean' :
-                          'English'; // Default fallback
-    
+                            detectedLanguage === 'zh' ? 'Chinese' :
+                              detectedLanguage === 'ja' ? 'Japanese' :
+                                detectedLanguage === 'ko' ? 'Korean' :
+                                  'English'; // Default fallback
+
     const prompt = `You are an expert Islamic scholar tasked with creating a comprehensive summary of a hadith that explains its relevance to a user's question.
 
 HADITH DETAILS:
@@ -105,48 +105,48 @@ IMPORTANT:
 Make it educational, practical, and directly relevant to the user's query. Use clear, accessible language in ${targetLanguage}. Keep it brief and focused.`;
 
     const result = await apiManager.generateContent(prompt, 'gemini-2.0-flash', 0.3);
-    
+
     if (result.success && result.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
       let summary = result.data.candidates[0].content.parts[0].text.trim();
-      
+
       // Remove any markdown formatting
       summary = summary.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove bold
       summary = summary.replace(/\*(.*?)\*/g, '$1'); // Remove italic
       summary = summary.replace(/#{1,6}\s*/g, ''); // Remove headers
       summary = summary.replace(/\n+/g, ' '); // Replace newlines with spaces
       summary = summary.replace(/\s+/g, ' ').trim(); // Clean up whitespace
-      
+
       // Remove common introductory phrases
       summary = summary.replace(/^(Here's a summary[:\s]*|This hadith[:\s]*|The hadith[:\s]*|Summary[:\s]*|In this hadith[:\s]*)/i, '');
       summary = summary.trim();
-      
+
       // Check word count and truncate if necessary
       const words = summary.split(' ');
       if (words.length > 50) {
         summary = words.slice(0, 50).join(' ') + '...';
       }
-      
+
       return summary;
     } else {
       // Fallback to basic summary in target language
-      const fallbackMessage = detectedLanguage === 'bn' ? 
+      const fallbackMessage = detectedLanguage === 'bn' ?
         `এই হাদিস ${userQuery.toLowerCase()} সম্পর্কে শিক্ষা দেয়, মুসলমানদের জন্য ব্যবহারিক নির্দেশনা প্রদান করে।` :
         detectedLanguage === 'ar' ?
-        `هذا الحديث يعلم عن ${userQuery.toLowerCase()}، ويقدم إرشادات عملية للمسلمين.` :
-        detectedLanguage === 'ur' ?
-        `یہ حدیث ${userQuery.toLowerCase()} کے بارے میں سکھاتی ہے، مسلمانوں کے لیے عملی رہنمائی فراہم کرتی ہے۔` :
-        `This hadith teaches about ${userQuery.toLowerCase()}, providing practical guidance for Muslims.`;
+          `هذا الحديث يعلم عن ${userQuery.toLowerCase()}، ويقدم إرشادات عملية للمسلمين.` :
+          detectedLanguage === 'ur' ?
+            `یہ حدیث ${userQuery.toLowerCase()} کے بارے میں سکھاتی ہے، مسلمانوں کے لیے عملی رہنمائی فراہم کرتی ہے۔` :
+            `This hadith teaches about ${userQuery.toLowerCase()}, providing practical guidance for Muslims.`;
       return fallbackMessage;
     }
   } catch (error) {
     // Fallback to basic summary in target language
-    const fallbackMessage = detectedLanguage === 'bn' ? 
+    const fallbackMessage = detectedLanguage === 'bn' ?
       `এই হাদিস ${userQuery.toLowerCase()} সম্পর্কে শিক্ষা দেয়, মুসলমানদের জন্য ব্যবহারিক নির্দেশনা প্রদান করে।` :
       detectedLanguage === 'ar' ?
-      `هذا الحديث يعلم عن ${userQuery.toLowerCase()}، ويقدم إرشادات عملية للمسلمين.` :
-      detectedLanguage === 'ur' ?
-      `یہ حدیث ${userQuery.toLowerCase()} کے بارے میں سکھاتی ہے، مسلمانوں کے لیے عملی رہنمائی فراہم کرتی ہے۔` :
-      `This hadith teaches about ${userQuery.toLowerCase()}, providing practical guidance for Muslims.`;
+        `هذا الحديث يعلم عن ${userQuery.toLowerCase()}، ويقدم إرشادات عملية للمسلمين.` :
+        detectedLanguage === 'ur' ?
+          `یہ حدیث ${userQuery.toLowerCase()} کے بارے میں سکھاتی ہے، مسلمانوں کے لیے عملی رہنمائی فراہم کرتی ہے۔` :
+          `This hadith teaches about ${userQuery.toLowerCase()}, providing practical guidance for Muslims.`;
     return fallbackMessage;
   }
 }
@@ -159,8 +159,8 @@ async function findRelevantHadithWithGemini(query: string): Promise<Array<{
   reasoning: string;
 }> | null> {
   try {
-    const apiManager = new GeminiApiManager();
-    
+    const apiManager = new UnifiedAiManager();
+
     const prompt = `You are an expert Islamic scholar with comprehensive knowledge of Hadith literature and the six main collections. Your task is to deeply analyze the user's question and suggest the most relevant Sahih hadiths that directly address their specific query.
 
 USER'S QUESTION: "${query}"
@@ -251,7 +251,7 @@ CONSISTENCY REQUIREMENTS:
 Be precise, accurate, and only respond with valid JSON.`;
 
     const result = await apiManager.generateContent(prompt, 'gemini-2.0-flash', 0.3);
-    
+
     if (!result.success || !result.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
       return null;
     }
@@ -269,7 +269,7 @@ Be precise, accurate, and only respond with valid JSON.`;
     // Parse the JSON response
     try {
       const parsed = JSON.parse(cleanedResponse);
-      
+
       // Validate the response structure
       if (parsed.suggestions && Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
         return parsed.suggestions;
@@ -336,7 +336,7 @@ export async function GET(request: NextRequest) {
 
     // STRICT QUERY VALIDATION AND PROCESSING
     if (!rawQuery || rawQuery.trim().length === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'A meaningful query is required. Please provide a clear question about Islamic topics.',
         suggestion: 'Try asking about topics like prayer, charity, patience, family, or other Islamic concepts.'
       }, { status: 400 });
@@ -344,26 +344,26 @@ export async function GET(request: NextRequest) {
 
     // Clean and validate the raw query
     const cleanedQuery = rawQuery.trim().replace(/\s+/g, ' ');
-    
+
     // Check for meaningless queries (fragmented, nonsensical text)
     const words = cleanedQuery.toLowerCase().split(' ');
-    
+
     // Check if query is too short or fragmented
     if (words.length < 3) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Please provide a more specific question about Islamic topics.',
         suggestion: 'Try asking about specific topics like "How to perform prayer?", "What is charity in Islam?", or "Teachings about patience".'
       }, { status: 400 });
     }
-    
+
     // Check for fragmented queries (like "the prophet an in and")
     const commonWords = ['the', 'in', 'are', 'good', 'or', 'and', 'is', 'a', 'an', 'to', 'of', 'for', 'with', 'by', 'at', 'on', 'up', 'out', 'if', 'as', 'be', 'so', 'my', 'one', 'all', 'would', 'there', 'their', 'this', 'that', 'these', 'those', 'it', 'he', 'she', 'we', 'they', 'you', 'me', 'him', 'her', 'us', 'them'];
     const meaningfulWords = words.filter(word => word.length > 2 && !commonWords.includes(word));
-    
+
     // Check if query is mostly common words (fragmented)
     const meaningfulRatio = meaningfulWords.length / words.length;
     if (meaningfulRatio < 0.3) { // Less than 30% meaningful words
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Please provide a more specific question about Islamic topics.',
         suggestion: 'Try asking about specific topics like "How to perform prayer?", "What is charity in Islam?", or "Teachings about patience".'
       }, { status: 400 });
@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
 
     // Detect language and translate if needed
     const detectedLanguage = detectLanguage(cleanedQuery);
-    
+
     let finalQuery = cleanedQuery;
     if (detectedLanguage !== 'en') {
       finalQuery = await translateQueryToEnglish(cleanedQuery);
@@ -380,33 +380,33 @@ export async function GET(request: NextRequest) {
 
     // Use Gemini to find the most relevant specific hadiths
     const geminiSuggestions = await findRelevantHadithWithGemini(finalQuery);
-    
+
     if (geminiSuggestions && geminiSuggestions.length > 0) {
-      
+
       // Filter for high-confidence suggestions only (0.9+)
       const highConfidenceSuggestions = geminiSuggestions.filter(suggestion => suggestion.confidence >= 0.9);
-      
+
       if (highConfidenceSuggestions.length === 0) {
         return NextResponse.json({
           success: false,
           error: 'No highly relevant hadiths found for your question',
           suggestion: 'Please try rephrasing your question or asking about a different Islamic topic.',
           query: finalQuery,
-           method: 'gemini-suggested-specific'
+          method: 'gemini-suggested-specific'
         }, { status: 404 });
       }
-      
-      
+
+
       // Fetch all suggested hadiths directly using bookSlug + hadithNumber
       const fetchedHadiths: any[] = [];
       const failedFetches: string[] = [];
-      
+
       // Use Promise.allSettled for better error handling and parallel processing
       const fetchPromises = highConfidenceSuggestions
         .map(async (suggestion) => {
           try {
             const specificHadith = await fetchSpecificHadith(suggestion.hadithNumber, suggestion.bookSlug);
-            
+
             if (specificHadith.status === 200) {
               const hadithData = await specificHadith.json();
               if (hadithData.success && hadithData.hadith) {
@@ -432,7 +432,7 @@ export async function GET(request: NextRequest) {
 
       // Wait for all fetches to complete
       const results = await Promise.allSettled(fetchPromises);
-      
+
       // Process results
       results.forEach((result) => {
         if (result.status === 'fulfilled') {
@@ -445,12 +445,12 @@ export async function GET(request: NextRequest) {
           failedFetches.push(`Promise rejected: ${result.reason || 'Unknown error'}`);
         }
       });
-      
+
       if (failedFetches.length > 0) {
       }
-      
+
       if (fetchedHadiths.length > 0) {
-        
+
         // Generate comprehensive summaries for each hadith
         const hadithsWithSummaries = await Promise.all(fetchedHadiths.map(async (hadith) => {
           const summary = await generateHadithSummary(hadith, finalQuery, rawQuery, detectedLanguage);
@@ -459,7 +459,7 @@ export async function GET(request: NextRequest) {
             aiSummary: summary
           };
         }));
-        
+
         return NextResponse.json({
           success: true,
           hadiths: hadithsWithSummaries,
@@ -473,7 +473,7 @@ export async function GET(request: NextRequest) {
       } else {
       }
     }
-    
+
     // If no hadiths were found through Gemini suggestions, return appropriate response
     return NextResponse.json({
       success: false,
@@ -486,7 +486,7 @@ export async function GET(request: NextRequest) {
     }, { status: 404 });
 
   } catch (error) {
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
@@ -521,9 +521,9 @@ async function fetchSpecificHadith(hadithNumber: string, bookSlug: string) {
       'ibn-majah': 'ibnmajah',
       'al-tirmidhi': 'tirmidhi'
     };
-    
+
     const apiBookSlug = bookSlugMap[bookSlug] || bookSlug;
-    
+
     // Check if hadith number is within valid range
     const range = validRanges[apiBookSlug];
     if (range && (hadithNum < range.min || hadithNum > range.max)) {
@@ -533,11 +533,11 @@ async function fetchSpecificHadith(hadithNumber: string, bookSlug: string) {
       }, { status: 400 });
     }
     const url = `${HADITH_API_BASE_URL}/${apiBookSlug}/${hadithNumber}`;
-    
+
     // Add timeout and retry logic
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for better performance
-    
+
     try {
       const response = await fetch(url, {
         signal: controller.signal,
@@ -546,10 +546,10 @@ async function fetchSpecificHadith(hadithNumber: string, bookSlug: string) {
           'Accept': 'application/json'
         }
       });
-      
+
       clearTimeout(timeoutId);
-      
-      
+
+
       if (!response.ok) {
         if (response.status === 404) {
           return NextResponse.json({
@@ -557,15 +557,15 @@ async function fetchSpecificHadith(hadithNumber: string, bookSlug: string) {
             error: 'Hadith not found'
           }, { status: 404 });
         }
-        
+
         const errorText = await response.text();
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const data = await response.json();
-      
+
       if (data && data.hadith_english) {
-        
+
         // Map the new API response to our expected format
         const mappedHadith = {
           id: data.id,
@@ -590,7 +590,7 @@ async function fetchSpecificHadith(hadithNumber: string, bookSlug: string) {
             bookSlug: bookSlug
           }
         };
-        
+
         return NextResponse.json({
           success: true,
           hadith: mappedHadith,

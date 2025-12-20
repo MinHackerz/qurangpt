@@ -1,44 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GeminiApiManager } from '../../utils/geminiApiManager';
+import { UnifiedAiManager } from '../../utils/unifiedAiManager';
 import { getLanguageName } from '../../utils/languageDetection';
 
 export async function POST(request: NextRequest) {
   let aiExplanation = '';
-  
+
   try {
     const body = await request.json();
     aiExplanation = body.aiExplanation || '';
-    const { 
-      contexts, 
-      reference, 
-      type, 
-      userQuery, 
-      detectedLanguage = 'en' 
+    const {
+      contexts,
+      reference,
+      type,
+      userQuery,
+      detectedLanguage = 'en'
     } = body;
 
     // Early returns if no contexts or no AI explanation
     if (!contexts || contexts.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        combinedExplanation: aiExplanation 
+      return NextResponse.json({
+        success: true,
+        combinedExplanation: aiExplanation
       });
     }
 
     if (!aiExplanation) {
-      return NextResponse.json({ 
-        success: true, 
-        combinedExplanation: '' 
+      return NextResponse.json({
+        success: true,
+        combinedExplanation: ''
       });
     }
 
-    let apiManager: GeminiApiManager;
+    let apiManager: UnifiedAiManager;
     try {
-      apiManager = new GeminiApiManager();
+      apiManager = new UnifiedAiManager();
     } catch (error) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: error instanceof Error ? error.message : 'API key is not configured',
+          error: error instanceof Error ? error.message : 'No AI provider configured',
           combinedExplanation: aiExplanation // Fallback to original
         },
         { status: 500 }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const targetLanguage = getLanguageName(detectedLanguage);
 
     // Format context information
-    const contextInfo = contexts.map((ctx: any, idx: number) => 
+    const contextInfo = contexts.map((ctx: any, idx: number) =>
       `Source ${idx + 1}: ${ctx.title}\nSnippet: ${ctx.snippet}\nURL: ${ctx.url}`
     ).join('\n\n');
 
@@ -112,9 +112,9 @@ IMPORTANT:
     });
   } catch (error) {
     console.error('Error combining AI explanation with contexts:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to process request',
         combinedExplanation: aiExplanation // Use the stored original explanation as fallback

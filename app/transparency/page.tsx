@@ -51,19 +51,25 @@ export default function TransparencyPage() {
                 AI Technology
               </h2>
               <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
-                Powered by Google Gemini
+                Powered by Google Gemini & OpenAI
               </h3>
               <div className="space-y-6">
                 <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Language Model</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Primary: Google Gemini</h4>
                   <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
-                    Google's Gemini AI model, designed for multilingual understanding with high accuracy and nuanced responses.
+                    Google's Gemini AI model serves as our primary language model, designed for multilingual understanding with high accuracy and nuanced responses.
+                  </p>
+                </div>
+                <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">Fallback: OpenAI GPT-4o-mini</h4>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
+                    OpenAI's GPT-4o-mini model is available as a fallback when Gemini is unavailable, ensuring uninterrupted service and reliable responses at all times.
                   </p>
                 </div>
                 <div className="border-l-2 border-gray-200 dark:border-gray-800 pl-6">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-2">Training Data</h4>
                   <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
-                    Diverse dataset including Islamic texts, scholarly works, and general knowledge to provide contextual and accurate responses.
+                    Both models are trained on diverse datasets including Islamic texts, scholarly works, and general knowledge to provide contextual and accurate responses.
                   </p>
                 </div>
               </div>
@@ -182,7 +188,7 @@ export default function TransparencyPage() {
             {/* Footer */}
             <footer className="text-center pt-8">
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                Last updated: December 7, 2025
+                Last updated: December 20, 2025
               </p>
             </footer>
 
