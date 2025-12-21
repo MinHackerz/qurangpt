@@ -140,36 +140,6 @@ const combineAIExplanationWithContexts = async (
   }
 };
 
-// Helper function to extract AI explanation text between ayah references
-const extractAIExplanationForAyah = (
-  response: string,
-  ayahMatch: AyahMatch,
-  nextAyahMatch?: AyahMatch
-): string => {
-  const matchIndex = response.indexOf(ayahMatch.originalMatch);
-  if (matchIndex === -1) return '';
-
-  const startIndex = matchIndex + ayahMatch.originalMatch.length;
-  const endIndex = nextAyahMatch
-    ? response.indexOf(nextAyahMatch.originalMatch, startIndex)
-    : response.length;
-
-  if (endIndex === -1 || endIndex <= startIndex) return '';
-
-  let explanation = response.substring(startIndex, endIndex).trim();
-
-  // Clean up the explanation
-  explanation = explanation
-    .replace(/^\s*[.\-•]\s*/gm, '') // Remove leading bullets/dashes
-    .replace(/\n{3,}/g, '\n\n') // Normalize line breaks
-    .trim();
-
-  // Remove any markdown links or formatting
-  explanation = explanation.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
-
-  // Only return if substantial (at least 20 characters)
-  return explanation.length >= 20 ? explanation : '';
-};
 
 export const useAIResponse = (textSize: 'small' | 'medium' | 'large' = 'small', selectedContentTypes?: {
   tafsir: boolean;
@@ -340,47 +310,79 @@ Question: ${content}`;
 
     // Extract AI explanations for each ayah BEFORE processing (since replacement removes the text)
     // ALWAYS extract explanations so they can be displayed below ayah boxes
-    const ayahAIExplanations = new Map<string, string>();
-    let responseWithExplanationsRemoved = validatedResponse;
+    const ayahAIExplanations = new Map<number, string>(); // Use index as key to handle duplicates
+    let lastFoundIndex = 0;
 
-    // Always extract AI explanations for each ayah
+    // First pass: Extract explanations and store them with their match index
     ayahMatches.forEach((ayahMatch, index) => {
+      // Find this specific instance of the match after the previous one
+      const matchPos = validatedResponse.indexOf(ayahMatch.originalMatch, lastFoundIndex);
+      if (matchPos === -1) return;
+
       const nextAyahMatch = index < ayahMatches.length - 1 ? ayahMatches[index + 1] : undefined;
-      const aiExplanation = extractAIExplanationForAyah(validatedResponse, ayahMatch, nextAyahMatch);
-      if (aiExplanation) {
-        // Store by surah:ayah reference
-        const surahNumber = getSurahNumber(ayahMatch.surahName.trim());
-        if (surahNumber) {
-          const reference = `${surahNumber}:${ayahMatch.ayahNumber}`;
-          ayahAIExplanations.set(reference, aiExplanation);
 
-          // Remove the original AI explanation from response text to prevent duplicate display
-          // Only remove when web search is enabled (to show combined version) OR always remove (to show in dedicated section)
-          const matchIndex = validatedResponse.indexOf(ayahMatch.originalMatch);
-          if (matchIndex !== -1) {
-            const startIndex = matchIndex + ayahMatch.originalMatch.length;
-            const endIndex = nextAyahMatch
-              ? validatedResponse.indexOf(nextAyahMatch.originalMatch, startIndex)
-              : validatedResponse.length;
+      // Calculate start and end for extraction
+      const startIndex = matchPos + ayahMatch.originalMatch.length;
+      let endIndex = validatedResponse.length;
 
-            if (endIndex > startIndex) {
-              // Extract the text between ayah references
-              const textBetween = validatedResponse.substring(startIndex, endIndex);
-              // Remove the AI explanation part (keep any other content if needed)
-              const cleanedText = textBetween.replace(aiExplanation.trim(), '').trim();
-              // Update the response
-              responseWithExplanationsRemoved = responseWithExplanationsRemoved.replace(
-                textBetween,
-                cleanedText
-              );
-            }
-          }
+      if (nextAyahMatch) {
+        const nextMatchPos = validatedResponse.indexOf(nextAyahMatch.originalMatch, startIndex);
+        if (nextMatchPos !== -1) {
+          endIndex = nextMatchPos;
         }
       }
+
+      // Extract raw explanation text
+      let rawExplanation = validatedResponse.substring(startIndex, endIndex).trim();
+
+      // Clean up the explanation (similar to extractAIExplanationForAyah but inline to use correct indices)
+      let cleanedExplanation = rawExplanation
+        .replace(/^\s*[.\-•]\s*/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Remove markdown links
+        .trim();
+
+      if (cleanedExplanation.length >= 5) {
+        ayahAIExplanations.set(index, cleanedExplanation);
+      }
+
+      lastFoundIndex = matchPos + ayahMatch.originalMatch.length;
     });
 
-    // Always use response with explanations removed (they'll be added back in the dedicated section)
-    const responseForProcessing = responseWithExplanationsRemoved;
+    // Create a version of the response where we mark where ayahs go
+    // This avoids fragile string replacement issues
+    let responseWithMarkers = validatedResponse;
+    const markers: string[] = [];
+
+    // We replace from back to front to preserve indices
+    for (let i = ayahMatches.length - 1; i >= 0; i--) {
+      const match = ayahMatches[i];
+      // Find the LAST occurrence that fits before the next match
+      // This is still a bit tricky, but since we sorted them, it's better
+      const matchPos = responseWithMarkers.lastIndexOf(match.originalMatch);
+      if (matchPos !== -1) {
+        // We'll replace the match AND the following explanation text (if we extracted it)
+        const explanation = ayahAIExplanations.get(i);
+        const startIndex = matchPos;
+        let endIndex = matchPos + match.originalMatch.length;
+
+        // Find if this explanation is actually in the text immediately after the match
+        const textAfter = responseWithMarkers.substring(endIndex);
+        if (explanation && textAfter.trim().startsWith(explanation.substring(0, 10))) {
+          // This is a rough check, but likely correct given how Gemini formats things
+          // Let's find where the explanation ends in the original text
+          const explIndex = textAfter.indexOf(explanation);
+          if (explIndex !== -1 && explIndex < 20) { // Small buffer for newlines/spacing
+            endIndex += explIndex + explanation.length;
+          }
+        }
+
+        const marker = `__AYAH_MARKER_${i}__`;
+        responseWithMarkers = responseWithMarkers.substring(0, startIndex) + marker + responseWithMarkers.substring(endIndex);
+      }
+    }
+
+    const responseForProcessing = responseWithMarkers;
 
     setCurrentStep?.('fetching_ayahs');
 
@@ -776,14 +778,14 @@ Question: ${content}`;
     }
 
     const updatedAyahReplacements = await Promise.all(
-      ayahReplacements.map(async (replacement) => {
+      ayahReplacements.map(async (replacement, index) => {
         // Find the matching context request by reference stored in replacement
         const reference = (replacement as any).reference;
         if (reference) {
           const contexts = ayahContextMap.get(reference);
 
-          // Get the AI explanation from the pre-extracted map
-          const aiExplanation = ayahAIExplanations.get(reference);
+          // Get the AI explanation from the map using the index
+          const aiExplanation = ayahAIExplanations.get(index);
 
           // Determine what explanation to show
           let finalExplanation = '';
@@ -840,11 +842,15 @@ Question: ${content}`;
       })
     );
 
-    // Apply all ayah replacements using the cleaned response
+    // Apply all ayah replacements using the marked response
     let processedText = responseForProcessing;
-    updatedAyahReplacements.forEach(({ match, replacement }) => {
-      processedText = processedText.replace(match, replacement);
+    updatedAyahReplacements.forEach((replacement, index) => {
+      const marker = `__AYAH_MARKER_${index}__`;
+      processedText = processedText.replace(marker, replacement.replacement);
     });
+
+    // Clean up any missing markers in case something went wrong
+    processedText = processedText.replace(/__AYAH_MARKER_\d+__/g, '');
 
     // Check if operation was aborted before processing hadiths
     if (abortManager.isAborted() || isAborted?.() || abortController?.signal.aborted) {

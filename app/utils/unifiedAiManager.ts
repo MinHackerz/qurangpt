@@ -40,6 +40,10 @@ export class UnifiedAiManager {
     private openaiManager: OpenAIApiManager | null = null;
     private geminiAvailable: boolean = false;
     private openaiAvailable: boolean = false;
+    private static geminiFailureCount: number = 0;
+    private static lastGeminiFailureTime: number = 0;
+    private static readonly COOLDOWN_DURATION = 5 * 60 * 1000; // 5 minutes
+    private static readonly MAX_FAILURES = 3;
 
     constructor() {
         // Try to initialize Gemini
@@ -92,19 +96,37 @@ export class UnifiedAiManager {
     }
 
     async generateContent(prompt: string, model: string = 'gemini-2.0-flash', temperature: number = 0.7): Promise<ApiKeyResult> {
-        // Try Gemini first if available
-        if (this.geminiAvailable && this.geminiManager) {
+        // Check for Gemini cooldown
+        const isGeminiInCooldown =
+            UnifiedAiManager.geminiFailureCount >= UnifiedAiManager.MAX_FAILURES &&
+            (Date.now() - UnifiedAiManager.lastGeminiFailureTime) < UnifiedAiManager.COOLDOWN_DURATION;
+
+        // Try Gemini first if available and not in cooldown
+        if (this.geminiAvailable && this.geminiManager && !isGeminiInCooldown) {
             const geminiResult = await this.geminiManager.generateContent(prompt, model, temperature);
 
-            if (geminiResult.success) {
+            // Improved validation: Check if Gemini returned actual content
+            const hasContent = !!(geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim());
+
+            if (geminiResult.success && hasContent) {
+                // Reset failure count on success
+                UnifiedAiManager.geminiFailureCount = 0;
                 return {
                     ...geminiResult,
                     provider: 'gemini'
                 };
             }
 
-            // Gemini failed, log and try OpenAI fallback
-            console.log('[UnifiedAiManager] Gemini failed, attempting OpenAI fallback...');
+            // Gemini failed or returned safety-blocked/empty content
+            UnifiedAiManager.geminiFailureCount++;
+            UnifiedAiManager.lastGeminiFailureTime = Date.now();
+            console.log(`[UnifiedAiManager] Gemini ${!geminiResult.success ? 'failed' : 'returned empty/blocked content'} (Attempt ${UnifiedAiManager.geminiFailureCount}), attempting OpenAI fallback...`);
+
+            if (UnifiedAiManager.geminiFailureCount >= UnifiedAiManager.MAX_FAILURES) {
+                console.warn('[UnifiedAiManager] Gemini reached max failure count. Entering 5-minute cooldown.');
+            }
+        } else if (isGeminiInCooldown) {
+            console.log('[UnifiedAiManager] Gemini is in cooldown, skipping to OpenAI...');
         }
 
         // Try OpenAI fallback if available

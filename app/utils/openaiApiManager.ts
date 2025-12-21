@@ -138,7 +138,7 @@ export class OpenAIApiManager {
                 },
             ],
             temperature: temperature,
-            max_tokens: 1024,
+            max_tokens: 2048,
         };
 
         // Try each available key

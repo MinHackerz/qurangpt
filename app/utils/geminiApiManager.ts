@@ -29,10 +29,10 @@ export class GeminiApiManager {
     if (!apiKeyEnv) {
       throw new Error('GEMINI_API_KEY environment variable is not configured');
     }
-    
+
     // Split by comma and trim whitespace
     this.apiKeys = apiKeyEnv.split(',').map(key => key.trim()).filter(key => key.length > 0);
-    
+
     if (this.apiKeys.length === 0) {
       throw new Error('No valid API keys found in GEMINI_API_KEY');
     }
@@ -81,7 +81,7 @@ export class GeminiApiManager {
         return this.apiKeys[keyIndex];
       }
     }
-    
+
     // If all keys have failed, reset and try again
     this.failedKeys.clear();
     this.currentKeyIndex = 0;
@@ -108,7 +108,7 @@ export class GeminiApiManager {
         temperature: temperature,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 4096,
       },
     };
 
@@ -124,11 +124,11 @@ export class GeminiApiManager {
 
       const keyIndex = this.currentKeyIndex;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      
+
       // Attempting API call with current key
-      
+
       const result = await this.makeApiCall(apiKey, apiUrl, body);
-      
+
       if (result.success) {
         // Reset failed keys on success
         this.failedKeys.clear();
@@ -137,10 +137,10 @@ export class GeminiApiManager {
 
       // Check if this is a key-specific failure that should mark the key as failed
       if (result.statusCode === 429 || // Rate limit
-          result.statusCode === 403 || // Quota exceeded
-          result.statusCode === 400 || // Bad request (often quota related)
-          (result.data?.error?.message?.toLowerCase().includes('quota')) ||
-          (result.data?.error?.message?.toLowerCase().includes('rate limit'))) {
+        result.statusCode === 403 || // Quota exceeded
+        result.statusCode === 400 || // Bad request (often quota related)
+        (result.data?.error?.message?.toLowerCase().includes('quota')) ||
+        (result.data?.error?.message?.toLowerCase().includes('rate limit'))) {
         this.markKeyAsFailed(keyIndex, result.error || 'API limit exceeded');
       } else {
         // For other errors, don't mark the key as failed (might be temporary)
@@ -223,11 +223,11 @@ export class GeminiApiManager {
 
       const keyIndex = this.currentKeyIndex;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      
+
       // Attempting translation with current key
-      
+
       const result = await this.makeApiCall(apiKey, apiUrl, body);
-      
+
       if (result.success) {
         // Reset failed keys on success
         this.failedKeys.clear();
@@ -236,10 +236,10 @@ export class GeminiApiManager {
 
       // Check if this is a key-specific failure
       if (result.statusCode === 429 || // Rate limit
-          result.statusCode === 403 || // Quota exceeded
-          result.statusCode === 400 || // Bad request (often quota related)
-          (result.data?.error?.message?.toLowerCase().includes('quota')) ||
-          (result.data?.error?.message?.toLowerCase().includes('rate limit'))) {
+        result.statusCode === 403 || // Quota exceeded
+        result.statusCode === 400 || // Bad request (often quota related)
+        (result.data?.error?.message?.toLowerCase().includes('quota')) ||
+        (result.data?.error?.message?.toLowerCase().includes('rate limit'))) {
         this.markKeyAsFailed(keyIndex, result.error || 'API limit exceeded');
       } else {
         // API call failed with current key - silent fail for security
@@ -263,17 +263,17 @@ export class GeminiApiManager {
     preserveFormatting?: boolean
   ): string {
     let prompt = `Translate the following text from ${sourceLanguage} to ${targetLanguage}`;
-    
+
     if (context) {
       prompt += `\n\nContext: ${context}`;
     }
-    
+
     if (preserveFormatting) {
       prompt += `\n\nImportant: Preserve the exact formatting, line breaks, and structure of the original text.`;
     }
-    
+
     prompt += `\n\nText to translate:\n${text}`;
-    
+
     return prompt;
   }
 
@@ -286,17 +286,17 @@ export class GeminiApiManager {
   ): string {
     // Optimized prompt for faster translation
     let prompt = `Translate from ${sourceLanguage} to ${targetLanguage}. `;
-    
+
     if (context === 'islamic') {
       prompt += `Preserve Islamic terms and religious accuracy. `;
     }
-    
+
     if (preserveFormatting) {
       prompt += `Keep exact formatting and structure. `;
     }
-    
+
     prompt += `\n\nText:\n${text}`;
-    
+
     return prompt;
   }
 

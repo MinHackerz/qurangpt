@@ -30,6 +30,13 @@ export async function POST(request: Request) {
 
     const generatedText = result.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
+    if (!generatedText.trim()) {
+      return NextResponse.json(
+        { error: 'AI generated an empty response. This might be due to safety filters.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ response: generatedText, provider: result.provider });
   } catch (error) {
     // API error - silent fail for security
