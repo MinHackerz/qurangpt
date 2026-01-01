@@ -1016,20 +1016,28 @@ function HomeContent() {
 
   // Fetch Islamic Data
   useEffect(() => {
-    const fetchIslamicData = async () => {
+    const fetchIslamicData = async (lat?: number, lng?: number) => {
       try {
-        // Try cache first
-        const cachedData = localStorage.getItem('quran-gpt-islamic-data');
-        const cacheTime = localStorage.getItem('quran-gpt-islamic-data-time');
-        if (cachedData && cacheTime) {
-          const cacheAge = Date.now() - parseInt(cacheTime);
-          if (cacheAge < 15 * 60 * 1000) { // 15 mins cache
-            setIslamicData(JSON.parse(cachedData));
-            return;
+        // Try cache first (but only if no new location provided)
+        if (!lat && !lng) {
+          const cachedData = localStorage.getItem('quran-gpt-islamic-data');
+          const cacheTime = localStorage.getItem('quran-gpt-islamic-data-time');
+          if (cachedData && cacheTime) {
+            const cacheAge = Date.now() - parseInt(cacheTime);
+            if (cacheAge < 15 * 60 * 1000) { // 15 mins cache
+              setIslamicData(JSON.parse(cachedData));
+              return;
+            }
           }
         }
 
-        const res = await fetch('/api/islamic-data');
+        // Build URL with optional location params
+        let url = '/api/islamic-data';
+        if (lat !== undefined && lng !== undefined) {
+          url += `?lat=${lat}&lng=${lng}&useLocation=true`;
+        }
+
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setIslamicData(data);
@@ -1040,7 +1048,24 @@ function HomeContent() {
         console.error("Failed to fetch Islamic data", e);
       }
     };
-    fetchIslamicData();
+
+    // Try browser geolocation first for accurate location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Success - use browser coordinates
+          fetchIslamicData(position.coords.latitude, position.coords.longitude);
+        },
+        () => {
+          // Denied or error - fall back to IP-based detection
+          fetchIslamicData();
+        },
+        { timeout: 5000 } // 5 second timeout
+      );
+    } else {
+      // Geolocation not supported - fall back to IP-based detection
+      fetchIslamicData();
+    }
   }, []);
 
   // Get greeting message

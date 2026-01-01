@@ -6,10 +6,17 @@ function getClientIP(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for');
   const realIP = request.headers.get('x-real-ip');
   const cfConnectingIP = request.headers.get('cf-connecting-ip'); // Cloudflare
+  const nfClientIP = request.headers.get('x-nf-client-connection-ip'); // Netlify
   const forwarded = request.headers.get('x-forwarded');
   const clientIP = request.headers.get('x-client-ip');
   const trueClientIP = request.headers.get('x-true-client-ip'); // Akamai
   const via = request.headers.get('via');
+
+  // Netlify-specific header (most reliable for Netlify deployments)
+  if (nfClientIP && nfClientIP !== 'unknown' && nfClientIP !== '::1' && nfClientIP !== '127.0.0.1' &&
+    !nfClientIP.startsWith('10.') && !nfClientIP.startsWith('172.') && !nfClientIP.startsWith('192.168.')) {
+    return nfClientIP;
+  }
 
   // Try to extract IP from x-forwarded-for (most common)
   if (forwardedFor) {
@@ -592,14 +599,21 @@ export async function GET(request: NextRequest) {
       eidAdhaDate = await getGregorianDateForHijri('10', '12', (currentHijriYear + 1).toString());
     }
 
-    // Fallback if API fails (approximate 2026/2027 dates)
+    // Fallback if API fails - use approximate dates for current/next year
+    // Eid ul Fitr 2026: ~March 20, Eid ul Fitr 2027: ~March 10
+    // Eid al Adha 2026: ~May 27, Eid al Adha 2027: ~May 16
     if (!eidFitrDate) {
       console.warn('Failed to fetch Eid Fitr date, using fallback');
-      eidFitrDate = new Date(year + 1, 2, 20); // Default to next year approx date if fetch fails
+      // Check if we're past approximate date for this year
+      const thisYearEidFitr = new Date(year, 2, 20); // March 20
+      const nextYearEidFitr = new Date(year + 1, 2, 10); // March 10 next year
+      eidFitrDate = currentDate < thisYearEidFitr ? thisYearEidFitr : nextYearEidFitr;
     }
     if (!eidAdhaDate) {
       console.warn('Failed to fetch Eid Adha date, using fallback');
-      eidAdhaDate = new Date(year + 1, 4, 27); // Default to next year approx date if fetch fails
+      const thisYearEidAdha = new Date(year, 4, 27); // May 27
+      const nextYearEidAdha = new Date(year + 1, 4, 16); // May 16 next year
+      eidAdhaDate = currentDate < thisYearEidAdha ? thisYearEidAdha : nextYearEidAdha;
     }
 
     const daysToEidFitr = eidFitrDate ? Math.ceil((eidFitrDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
