@@ -1011,13 +1011,47 @@ function HomeContent() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   }, []);
 
+  // Islamic Data State
+  const [islamicData, setIslamicData] = useState<any>(null);
+
+  // Fetch Islamic Data
+  useEffect(() => {
+    const fetchIslamicData = async () => {
+      try {
+        // Try cache first
+        const cachedData = localStorage.getItem('quran-gpt-islamic-data');
+        const cacheTime = localStorage.getItem('quran-gpt-islamic-data-time');
+        if (cachedData && cacheTime) {
+          const cacheAge = Date.now() - parseInt(cacheTime);
+          if (cacheAge < 15 * 60 * 1000) { // 15 mins cache
+            setIslamicData(JSON.parse(cachedData));
+            return;
+          }
+        }
+
+        const res = await fetch('/api/islamic-data');
+        if (res.ok) {
+          const data = await res.json();
+          setIslamicData(data);
+          localStorage.setItem('quran-gpt-islamic-data', JSON.stringify(data));
+          localStorage.setItem('quran-gpt-islamic-data-time', Date.now().toString());
+        }
+      } catch (e) {
+        console.error("Failed to fetch Islamic data", e);
+      }
+    };
+    fetchIslamicData();
+  }, []);
+
   // Get greeting message
   const getGreetingMessage = useCallback(() => {
-    const today = new Date();
-    const ramadanEnd = new Date(today.getFullYear(), 2, 31); // March 31st
-    const eidDate = new Date(today.getFullYear(), 2, 31); // March 31st
+    if (!islamicData?.hijri) return '';
 
-    if (today <= ramadanEnd) {
+    const hijriMonth = parseInt(islamicData.hijri.month.number);
+    const hijriDay = parseInt(islamicData.hijri.day);
+
+    // Ramadan (Month 9)
+    if (hijriMonth === 9) {
       return (
         <div className="flex items-center justify-center gap-3">
           <span className="text-4xl md:text-5xl">🌙</span>
@@ -1027,7 +1061,10 @@ function HomeContent() {
           <span className="text-4xl md:text-5xl">⭐</span>
         </div>
       );
-    } else if (today.toDateString() === eidDate.toDateString()) {
+    }
+
+    // Eid ul Fitr (Month 10, Day 1-3)
+    else if (hijriMonth === 10 && hijriDay >= 1 && hijriDay <= 3) {
       return (
         <div className="flex items-center justify-center gap-3">
           <span className="text-4xl md:text-4xl">🎉</span>
@@ -1038,8 +1075,22 @@ function HomeContent() {
         </div>
       );
     }
+
+    // Eid al Adha (Month 12, Day 10-13)
+    else if (hijriMonth === 12 && hijriDay >= 10 && hijriDay <= 13) {
+      return (
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-4xl md:text-4xl">🎉</span>
+          <span className="text-xl md:text-2xl font-semibold text-black dark:text-white">
+            Eid Mubarak
+          </span>
+          <span className="text-4xl md:text-4xl">🎊</span>
+        </div>
+      );
+    }
+
     return '';
-  }, []);
+  }, [islamicData]);
 
   // Update document metadata dynamically
   useEffect(() => {
@@ -1164,7 +1215,7 @@ function HomeContent() {
         {/* Main Content or Native Components */}
         {showTimeDashboard ? (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
-            <TimeDashboard />
+            <TimeDashboard initialData={islamicData} />
           </div>
         ) : (
           <main className="relative z-10 pb-56 mt-16 sm:mt-0">

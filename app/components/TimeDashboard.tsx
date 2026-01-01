@@ -37,11 +37,11 @@ interface IslamicData {
   };
 }
 
-export default function TimeDashboard() {
+export default function TimeDashboard({ initialData }: { initialData?: IslamicData | null }) {
   const { theme } = useTheme();
-  const [islamicData, setIslamicData] = useState<IslamicData | null>(null);
+  const [islamicData, setIslamicData] = useState<IslamicData | null>(initialData || null);
   const [now, setNow] = useState<Date>(new Date());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialData);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -49,6 +49,13 @@ export default function TimeDashboard() {
   }, []);
 
   useEffect(() => {
+    // If initialData is provided, use it and don't fetch
+    if (initialData) {
+      setIslamicData(initialData);
+      setLoading(false);
+      return;
+    }
+
     const fetchIslamicData = async () => {
       try {
         setLoading(true);
@@ -78,7 +85,7 @@ export default function TimeDashboard() {
       }
     };
     fetchIslamicData();
-  }, []);
+  }, [initialData]);
 
   const timeString = now.toLocaleTimeString('en-US', {
     hour: '2-digit',
