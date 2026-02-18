@@ -209,10 +209,10 @@ export default function MinimalHeader({
       className="fixed top-0 left-0 right-0 z-40 sm:p-6"
     >
       {/* Mobile: Minimalist horizontal header layout */}
-      <div className="flex sm:hidden items-center justify-between w-full px-5 py-4 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-100/50 dark:border-gray-800/50 transition-all duration-300">
+      <div className="flex sm:hidden items-center justify-between w-full px-5 py-4 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-amber-100/50 dark:border-amber-900/20 transition-all duration-300">
         {/* Left side: QuranGPT Title */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20">
             <span className="text-white font-serif font-bold text-lg">Q</span>
           </div>
           <h1 className="text-xl font-medium tracking-tight text-gray-900 dark:text-white font-[var(--font-inter)]">
@@ -276,7 +276,7 @@ export default function MinimalHeader({
                     window.dispatchEvent(event);
                   })}
                   className={`text-2xl font-light text-left transition-colors ${activeButton === 'ask-quran'
-                    ? 'text-emerald-600 dark:text-emerald-400 font-normal'
+                    ? 'text-amber-600 dark:text-amber-400 font-normal'
                     : 'text-gray-900 dark:text-white'
                     }`}
                 >
@@ -289,7 +289,7 @@ export default function MinimalHeader({
                     window.dispatchEvent(event);
                   })}
                   className={`text-2xl font-light text-left transition-colors ${activeButton === 'read-quran'
-                    ? 'text-emerald-600 dark:text-emerald-400 font-normal'
+                    ? 'text-amber-600 dark:text-amber-400 font-normal'
                     : 'text-gray-900 dark:text-white'
                     }`}
                 >
@@ -302,7 +302,7 @@ export default function MinimalHeader({
                     window.dispatchEvent(event);
                   })}
                   className={`text-2xl font-light text-left transition-colors ${activeButton === 'mosque-finder'
-                    ? 'text-emerald-600 dark:text-emerald-400 font-normal'
+                    ? 'text-amber-600 dark:text-amber-400 font-normal'
                     : 'text-gray-900 dark:text-white'
                     }`}
                 >
@@ -315,7 +315,7 @@ export default function MinimalHeader({
                     window.dispatchEvent(event);
                   })}
                   className={`text-2xl font-light text-left transition-colors ${activeButton === 'zakat-calculator'
-                    ? 'text-emerald-600 dark:text-emerald-400 font-normal'
+                    ? 'text-amber-600 dark:text-amber-400 font-normal'
                     : 'text-gray-900 dark:text-white'
                     }`}
                 >
@@ -328,7 +328,7 @@ export default function MinimalHeader({
                     window.dispatchEvent(event);
                   })}
                   className={`text-2xl font-light text-left transition-colors ${activeButton === 'time-dashboard'
-                    ? 'text-emerald-600 dark:text-emerald-400 font-normal'
+                    ? 'text-amber-600 dark:text-amber-400 font-normal'
                     : 'text-gray-900 dark:text-white'
                     }`}
                 >
@@ -445,7 +445,7 @@ export default function MinimalHeader({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleShareClick}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all text-gray-600 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 min-w-[140px]"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all text-gray-600 dark:text-gray-300 hover:text-amber-500 dark:hover:text-amber-400 min-w-[140px]"
             title="Share this conversation"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

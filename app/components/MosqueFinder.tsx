@@ -363,8 +363,8 @@ export default function MosqueFinder() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${location ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                  <MapPinIcon className={`w-6 h-6 ${location ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${location ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <MapPinIcon className={`w-6 h-6 ${location ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400'}`} />
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900 dark:text-white">
@@ -380,7 +380,7 @@ export default function MosqueFinder() {
               <button
                 onClick={getUserLocation}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-colors disabled:opacity-50"
               >
                 <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 {isLoading ? 'Searching...' : 'Refresh'}
@@ -393,7 +393,7 @@ export default function MosqueFinder() {
             <button
               onClick={() => setTravelMode('WALKING')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${travelMode === 'WALKING'
-                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
             >
@@ -402,7 +402,7 @@ export default function MosqueFinder() {
             <button
               onClick={() => setTravelMode('DRIVING')}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${travelMode === 'DRIVING'
-                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
             >
@@ -412,7 +412,7 @@ export default function MosqueFinder() {
 
           {/* Mosque List */}
           <div className="space-y-4">
-            <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase">
+            <h2 className="text-xs font-medium tracking-wide text-amber-600 dark:text-amber-400 uppercase">
               {mosques.length > 0 ? `${mosques.length} Mosques Found` : 'Nearby Mosques'}
             </h2>
 
@@ -429,14 +429,14 @@ export default function MosqueFinder() {
                     key={mosque.id}
                     onClick={() => setSelectedMosque(selectedMosque?.id === mosque.id ? null : mosque)}
                     className={`group p-5 rounded-xl border transition-all cursor-pointer ${selectedMosque?.id === mosque.id
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
-                      : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-emerald-200 dark:hover:border-emerald-800'
+                      ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+                      : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-amber-200 dark:hover:border-amber-800'
                       }`}
                   >
                     {/* Mosque Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                           {mosque.name}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-light mt-1">
@@ -451,7 +451,7 @@ export default function MosqueFinder() {
                             {getDirectionArrow(mosque.direction)}
                           </span>
                           <div className="text-right">
-                            <span className="block text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="block text-lg font-semibold text-amber-600 dark:text-amber-400">
                               {typeof mosque.distance === 'number' ? mosque.distance.toFixed(1) : mosque.distance}
                               <span className="text-xs font-normal text-gray-400 ml-0.5">km</span>
                             </span>
@@ -474,7 +474,7 @@ export default function MosqueFinder() {
                           </div>
                         )}
                         {mosque.opening_hours?.open_now !== undefined && (
-                          <span className={`text-sm font-medium ${mosque.opening_hours.open_now ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                          <span className={`text-sm font-medium ${mosque.opening_hours.open_now ? 'text-amber-600 dark:text-amber-400' : 'text-rose-500'}`}>
                             {mosque.opening_hours.open_now ? '● Open Now' : '○ Closed'}
                           </span>
                         )}
@@ -485,7 +485,7 @@ export default function MosqueFinder() {
                           e.stopPropagation();
                           openGoogleMapsDirections(mosque);
                         }}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
                       >
                         <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                         Directions
@@ -508,7 +508,7 @@ export default function MosqueFinder() {
               >
                 <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                   <h3 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <MapPinIcon className="w-4 h-4 text-emerald-500" />
+                    <MapPinIcon className="w-4 h-4 text-amber-500" />
                     Step-by-Step Directions to {selectedMosque.name}
                   </h3>
                 </div>
@@ -516,13 +516,13 @@ export default function MosqueFinder() {
                 <div className="max-h-[300px] overflow-y-auto">
                   {isLoadingRoute ? (
                     <div className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500 mx-auto"></div>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500 mx-auto"></div>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-50 dark:divide-gray-800">
                       {directions.map((step, index) => (
                         <div key={index} className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-lg font-medium">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 text-lg font-medium">
                             {getManeuverIcon(step.maneuver)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -542,7 +542,7 @@ export default function MosqueFinder() {
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
                   <button
                     onClick={() => openGoogleMapsDirections(selectedMosque)}
-                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                     Open in Google Maps for Navigation

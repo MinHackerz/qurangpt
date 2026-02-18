@@ -1079,11 +1079,11 @@ function HomeContent() {
     if (hijriMonth === 9) {
       return (
         <div className="flex items-center justify-center gap-3">
-          <span className="text-4xl md:text-5xl">🌙</span>
-          <span className="text-xl md:text-2xl font-semibold text-black dark:text-white">
+          <span className="text-4xl md:text-5xl" style={{ animation: 'gentle-float 2s ease-in-out infinite' }}>🌙</span>
+          <span className="text-xl md:text-2xl font-semibold ramadan-text-shimmer">
             Ramadan Mubarak
           </span>
-          <span className="text-4xl md:text-5xl">⭐</span>
+          <span className="text-4xl md:text-5xl" style={{ animation: 'gentle-float 2s ease-in-out infinite', animationDelay: '1s' }}>⭐</span>
         </div>
       );
     }
@@ -1184,7 +1184,7 @@ function HomeContent() {
 
 
       <div
-        className={`min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden transition-all duration-300 ${isModalOpen ? 'blur-sm pointer-events-none' : ''}`}
+        className={`min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden transition-all duration-300 ramadan-bg ${isModalOpen ? 'blur-sm pointer-events-none' : ''}`}
         style={{
           paddingLeft: isMobile ? '0px' : `${sidebarOffset}px`
         }}
@@ -1305,11 +1305,11 @@ function HomeContent() {
                           }
                         }}
                         disabled={isSharing}
-                        className={`p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 hover:animate-none ${showShareSuccess
-                          ? 'text-green-700 dark:text-green-300'
+                        className={`p-2 rounded-lg transition-all duration-200 bg-amber-50/90 dark:bg-amber-900/20 backdrop-blur-sm border border-amber-300/70 dark:border-amber-600/40 hover:animate-none ${showShareSuccess
+                          ? 'text-amber-700 dark:text-amber-300'
                           : isSharing
-                            ? 'text-green-400 dark:text-green-600 cursor-not-allowed'
-                            : 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40'
+                            ? 'text-amber-400 dark:text-amber-600 cursor-not-allowed'
+                            : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-800/30'
                           }`}
                         style={{ animation: 'bounce 4s infinite' }}
                         title={showShareSuccess ? "Share link copied!" : "Share this content"}
@@ -1331,7 +1331,7 @@ function HomeContent() {
                           const nextIndex = (currentIndex + 1) % sizes.length;
                           setTextSize(sizes[nextIndex]);
                         }}
-                        className="p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40"
+                        className="p-2 rounded-lg transition-all duration-200 bg-amber-50/90 dark:bg-amber-900/20 backdrop-blur-sm border border-amber-300/70 dark:border-amber-600/40 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-800/30"
                         title={`Text size: ${textSize} (click to change)`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1374,11 +1374,11 @@ function HomeContent() {
                           }
                         }}
                         disabled={isSharing}
-                        className={`p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 hover:animate-none ${showShareSuccess
-                          ? 'text-green-700 dark:text-green-300'
+                        className={`p-2 rounded-lg transition-all duration-200 bg-amber-50/90 dark:bg-amber-900/20 backdrop-blur-sm border border-amber-300/70 dark:border-amber-600/40 hover:animate-none ${showShareSuccess
+                          ? 'text-amber-700 dark:text-amber-300'
                           : isSharing
-                            ? 'text-green-400 dark:text-green-600 cursor-not-allowed'
-                            : 'text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40'
+                            ? 'text-amber-400 dark:text-amber-600 cursor-not-allowed'
+                            : 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-800/30'
                           }`}
                         style={{ animation: 'bounce 4s infinite' }}
                         title={showShareSuccess ? "Share link copied!" : "Share this content"}
@@ -1400,7 +1400,7 @@ function HomeContent() {
                           const nextIndex = (currentIndex + 1) % sizes.length;
                           setTextSize(sizes[nextIndex]);
                         }}
-                        className="p-2 rounded-lg transition-all duration-200 bg-green-50/90 dark:bg-green-900/30 backdrop-blur-sm border border-green-300/70 dark:border-green-600/70 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-100/90 dark:hover:bg-green-800/40"
+                        className="p-2 rounded-lg transition-all duration-200 bg-amber-50/90 dark:bg-amber-900/20 backdrop-blur-sm border border-amber-300/70 dark:border-amber-600/40 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-100/90 dark:hover:bg-amber-800/30"
                         title={`Text size: ${textSize} (click to change)`}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1422,8 +1422,8 @@ function HomeContent() {
                         className="bg-transparent dark:bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg p-4 shadow-sm"
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mt-0.5">
-                            <svg className="w-3 h-3 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex-shrink-0 w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mt-0.5">
+                            <svg className="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
@@ -1511,7 +1511,7 @@ function HomeContent() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Gradient */}
-            <div className="relative bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 p-4 sm:p-6">
+            <div className="relative bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg sm:text-xl font-mono tracking-wide text-white">
@@ -1522,7 +1522,7 @@ function HomeContent() {
                       year: 'numeric'
                     }).format(modalData.selectedDate.gDate)}
                   </h3>
-                  <p className="text-emerald-100 text-sm mt-1 font-mono tracking-wide">Islamic Calendar Event</p>
+                  <p className="text-amber-100 text-sm mt-1 font-mono tracking-wide">Islamic Calendar Event</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1575,8 +1575,8 @@ function HomeContent() {
                       <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-600">
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                              <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </div>

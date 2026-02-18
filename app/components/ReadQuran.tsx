@@ -220,9 +220,9 @@ export default function ReadQuran() {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           // Highlight the ayah temporarily
-          element.classList.add('bg-emerald-50', 'dark:bg-emerald-900/20');
+          element.classList.add('bg-amber-50', 'dark:bg-amber-900/20');
           setTimeout(() => {
-            element.classList.remove('bg-emerald-50', 'dark:bg-emerald-900/20');
+            element.classList.remove('bg-amber-50', 'dark:bg-amber-900/20');
           }, 2000);
           setPendingScrollAyah(null);
         }
@@ -386,7 +386,7 @@ export default function ReadQuran() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 dark:border-emerald-400 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 dark:border-amber-400 mx-auto mb-4"></div>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Loading Quran...</p>
         </div>
       </div>
@@ -422,7 +422,7 @@ export default function ReadQuran() {
                   placeholder="Search Surah..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-4 py-3 text-lg border-b border-gray-200 dark:border-gray-800 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full pl-8 pr-4 py-3 text-lg border-b border-gray-200 dark:border-gray-800 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 transition-colors"
                 />
               </div>
             </header>
@@ -439,7 +439,7 @@ export default function ReadQuran() {
                   <div className="flex items-baseline gap-4">
                     <span className="text-sm font-mono text-gray-300 dark:text-gray-700 w-8">{surah.number.toString().padStart(2, '0')}</span>
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{surah.englishName}</h3>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{surah.englishName}</h3>
                       <p className="text-sm text-gray-500 font-light">{surah.englishNameTranslation}</p>
                     </div>
                   </div>
@@ -539,14 +539,14 @@ export default function ReadQuran() {
                             exit={{ opacity: 0, height: 0 }}
                             className="text-left w-full pl-0 md:pl-8 mb-2"
                           >
-                            <p className="text-base text-emerald-600 dark:text-emerald-400 font-medium tracking-wide font-sans opacity-80">
+                            <p className="text-base text-amber-600 dark:text-amber-400 font-medium tracking-wide font-sans opacity-80">
                               {ayah.transliteration}
                             </p>
                           </motion.div>
                         )}
 
                         {/* Translation */}
-                        <div className="text-left w-full pl-0 md:pl-8 border-l-2 border-transparent group-hover:border-emerald-500/30 transition-colors">
+                        <div className="text-left w-full pl-0 md:pl-8 border-l-2 border-transparent group-hover:border-amber-500/30 transition-colors">
                           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 font-light leading-relaxed font-serif">
                             {ayah.translation}
                           </p>
@@ -556,7 +556,7 @@ export default function ReadQuran() {
                         <div className="flex xl:hidden items-center justify-start gap-2 mt-4">
                           <button
                             onClick={() => playAyahAudio(ayah.number)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${audioState.isPlaying && audioState.currentAyah === ayah.number ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${audioState.isPlaying && audioState.currentAyah === ayah.number ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400' : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             title="Play Audio"
                           >
                             {audioState.isPlaying && audioState.currentAyah === ayah.number ? (
@@ -569,7 +569,7 @@ export default function ReadQuran() {
 
                           <button
                             onClick={() => toggleTransliteration(ayah.number)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${visibleTransliterations.has(ayah.number) ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${visibleTransliterations.has(ayah.number) ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400' : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             title="Show/Hide Transliteration"
                           >
                             <LanguageIcon className="w-4 h-4" />
@@ -591,7 +591,7 @@ export default function ReadQuran() {
                       <div className="absolute -left-16 top-2 flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity hidden xl:flex text-gray-300 dark:text-gray-600">
                         <button
                           onClick={() => playAyahAudio(ayah.number)}
-                          className={`p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 ${audioState.isPlaying && audioState.currentAyah === ayah.number ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'}`}
+                          className={`p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 ${audioState.isPlaying && audioState.currentAyah === ayah.number ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-gray-400 hover:text-amber-600 dark:hover:text-amber-400'}`}
                           title="Play Audio"
                         >
                           {audioState.isPlaying && audioState.currentAyah === ayah.number ? (
@@ -603,7 +603,7 @@ export default function ReadQuran() {
 
                         <button
                           onClick={() => toggleTransliteration(ayah.number)}
-                          className={`p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 ${visibleTransliterations.has(ayah.number) ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'}`}
+                          className={`p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 ${visibleTransliterations.has(ayah.number) ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'text-gray-400 hover:text-amber-600 dark:hover:text-amber-400'}`}
                           title="Show/Hide Transliteration"
                         >
                           <LanguageIcon className="w-5 h-5" />
@@ -611,7 +611,7 @@ export default function ReadQuran() {
 
                         <button
                           onClick={() => fetchTafsirForAyah(selectedSurah?.number || 1, ayah.number)}
-                          className="p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400"
+                          className="p-2 rounded-full transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400"
                           title="Read Tafsir"
                         >
                           <BookOpenIcon className="w-5 h-5" />
@@ -691,7 +691,7 @@ export default function ReadQuran() {
 
                 {/* Title section */}
                 <div className="pr-10">
-                  <p className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-1">
+                  <p className="text-xs font-medium tracking-wide text-amber-600 dark:text-amber-400 uppercase mb-1">
                     Tafsir
                   </p>
                   <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
@@ -708,7 +708,7 @@ export default function ReadQuran() {
                           key={tafsir.author}
                           onClick={() => setSelectedTafsirAuthor(tafsir.author)}
                           className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedTafsirAuthor === tafsir.author
-                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                            ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                         >

@@ -174,16 +174,16 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
                 href="${context.url}" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                class="group flex flex-col h-24 bg-transparent rounded-xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 overflow-hidden relative"
+                class="group flex flex-col h-24 bg-transparent rounded-xl border border-gray-200 dark:border-gray-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all duration-200 overflow-hidden relative"
               >
                 <div class="flex h-full">
-                  <div class="w-12 h-full bg-transparent flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 transition-colors">
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="w-12 h-full bg-transparent flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-amber-50 dark:group-hover:bg-amber-900/20 transition-colors">
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
                   </div>
                   <div class="flex-1 p-3 min-w-0 flex flex-col justify-center">
-                      <h6 class="text-xs font-semibold text-gray-900 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 mb-1">
+                      <h6 class="text-xs font-semibold text-gray-900 dark:text-gray-100 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-1 mb-1">
                         ${context.title}
                       </h6>
                       <p class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-1">
@@ -215,15 +215,15 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
         <!-- Header -->
         <div class="px-5 py-4 flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50">
           <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center border border-emerald-100 dark:border-emerald-800/30">
-              <span class="font-serif text-lg text-emerald-600 dark:text-emerald-500 font-bold">H</span>
+            <div class="w-9 h-9 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center border border-amber-100 dark:border-amber-800/30">
+              <span class="font-serif text-lg text-amber-600 dark:text-amber-500 font-bold">H</span>
             </div>
             <div>
               <h3 class="responsive-text-title font-bold text-gray-900 dark:text-gray-100 tracking-wide">${formatted.bookName}</h3>
               <div class="flex items-center gap-2">
                 <span class="text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide uppercase">Hadith #${formatted.hadithNumber}</span>
                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${formatted.status.toLowerCase() === 'sahih'
-      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
       : formatted.status.toLowerCase() === 'hasan'
         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
         : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
@@ -248,7 +248,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
                  ${formatted.text.english}
                </blockquote>
                ${formatted.narrator ? `
-                 <div class="mt-4 pl-4 border-l-2 border-emerald-500/30 dark:border-emerald-500/20">
+                 <div class="mt-4 pl-4 border-l-2 border-amber-500/30 dark:border-amber-500/20">
                    <p class="text-sm font-bold text-gray-900 dark:text-gray-100">Narrated by:</p>
                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">${formatted.narrator}</p>
                  </div>
@@ -261,7 +261,7 @@ export function generateHadithBoxHTML(hadith: HadithData, index: number = 0, tex
                  ${formatted.text.arabic}
                </blockquote>
                ${formatted.narrator ? `
-                 <div class="mt-4 pr-4 border-r-2 border-emerald-500/30 dark:border-emerald-500/20 text-right">
+                 <div class="mt-4 pr-4 border-r-2 border-amber-500/30 dark:border-amber-500/20 text-right">
                     <p class="text-sm font-bold text-gray-900 dark:text-gray-100">Narrated by:</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400 italic">${formatted.narrator}</p>
                  </div>

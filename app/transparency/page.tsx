@@ -47,7 +47,7 @@ export default function TransparencyPage() {
 
             {/* AI Technology */}
             <section>
-              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
+              <h2 className="text-xs font-medium tracking-wide text-amber-600 dark:text-amber-400 uppercase mb-3">
                 AI Technology
               </h2>
               <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
@@ -77,7 +77,7 @@ export default function TransparencyPage() {
 
             {/* Data Sources */}
             <section>
-              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
+              <h2 className="text-xs font-medium tracking-wide text-amber-600 dark:text-amber-400 uppercase mb-3">
                 Data Sources
               </h2>
               <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
@@ -107,7 +107,7 @@ export default function TransparencyPage() {
 
             {/* Privacy & Security */}
             <section>
-              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
+              <h2 className="text-xs font-medium tracking-wide text-amber-600 dark:text-amber-400 uppercase mb-3">
                 Privacy & Security
               </h2>
               <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
@@ -137,7 +137,7 @@ export default function TransparencyPage() {
 
             {/* Accuracy & Reliability */}
             <section>
-              <h2 className="text-xs font-medium tracking-wide text-emerald-600 dark:text-emerald-400 uppercase mb-3">
+              <h2 className="text-xs font-medium tracking-wide text-amber-600 dark:text-amber-400 uppercase mb-3">
                 Accuracy & Reliability
               </h2>
               <h3 className="text-2xl font-serif text-gray-900 dark:text-white mb-6">
@@ -156,7 +156,7 @@ export default function TransparencyPage() {
                     We regularly update and refine our system to improve response accuracy and reliability.
                   </p>
                 </div>
-                <div className="border-l-2 border-emerald-500/30 dark:border-emerald-500/30 pl-6 bg-emerald-50/50 dark:bg-emerald-900/10 py-4 pr-4 rounded-r-lg">
+                <div className="border-l-2 border-amber-500/30 dark:border-amber-500/30 pl-6 bg-amber-50/50 dark:bg-amber-900/10 py-4 pr-4 rounded-r-lg">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-2">Important Note</h4>
                   <p className="text-gray-600 dark:text-gray-400 leading-relaxed font-light">
                     AI responses are educational starting points only. Always verify with authentic Islamic scholars and trusted sources before making any religious decisions.
@@ -175,7 +175,7 @@ export default function TransparencyPage() {
                   href="https://menajul.vercel.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
                 >
                   Contact the Developer
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

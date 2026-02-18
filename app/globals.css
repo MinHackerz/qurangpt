@@ -119,11 +119,11 @@ body {
   }
 
   .prose a {
-    @apply text-emerald-600 dark:text-emerald-400 no-underline hover:underline transition-all duration-200;
+    @apply text-amber-600 dark:text-amber-400 no-underline hover:underline transition-all duration-200;
   }
 
   .prose blockquote {
-    @apply border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-6 py-4 my-6 rounded-r-lg;
+    @apply border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-900/30 px-6 py-4 my-6 rounded-r-lg;
   }
 
   .prose h1,
@@ -132,30 +132,30 @@ body {
   .prose h4,
   .prose h5,
   .prose h6 {
-    @apply text-emerald-800 dark:text-emerald-300 font-semibold;
+    @apply text-amber-800 dark:text-amber-300 font-semibold;
   }
 
   /* New enhanced styling */
   .divine-quote-heading {
-    @apply text-lg md:text-xl font-semibold text-emerald-700 dark:text-emerald-300 mt-8 mb-3;
+    @apply text-lg md:text-xl font-semibold text-amber-700 dark:text-amber-300 mt-8 mb-3;
   }
 
   .divine-quote {
-    @apply border-none relative pl-8 pr-6 py-6 my-6 bg-emerald-50 dark:bg-emerald-900/20 text-gray-800 dark:text-gray-200 rounded-lg font-['Amiri'] text-lg md:text-xl leading-relaxed italic;
+    @apply border-none relative pl-8 pr-6 py-6 my-6 bg-amber-50 dark:bg-amber-900/20 text-gray-800 dark:text-gray-200 rounded-lg font-['Amiri'] text-lg md:text-xl leading-relaxed italic;
   }
 
   .divine-quote::before {
     content: '"';
-    @apply absolute left-3 top-0 text-5xl text-emerald-400 dark:text-emerald-600 font-serif opacity-50;
+    @apply absolute left-3 top-0 text-5xl text-amber-400 dark:text-amber-600 font-serif opacity-50;
   }
 
   .section-heading {
-    @apply text-lg font-semibold text-emerald-700 dark:text-emerald-400 mt-8 mb-3 pb-2 border-b border-emerald-200 dark:border-emerald-800;
+    @apply text-lg font-semibold text-amber-700 dark:text-amber-400 mt-8 mb-3 pb-2 border-b border-amber-200 dark:border-amber-800;
   }
 
   .quran-link,
   .surah-reference {
-    @apply inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-800/40 transition-all duration-200 no-underline;
+    @apply inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded hover:bg-amber-100 dark:hover:bg-amber-800/40 transition-all duration-200 no-underline;
   }
 
   .surah-name {
@@ -328,7 +328,7 @@ body {
 
   .tafsir-section::before {
     content: '';
-    @apply absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full opacity-30;
+    @apply absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-amber-400 to-amber-600 rounded-full opacity-30;
   }
 
   /* Animation for section headers */
@@ -346,8 +346,8 @@ body {
 
   .tafsir-section::after {
     content: '';
-    @apply absolute inset-0 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl opacity-20 pointer-events-none;
-    background-image: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    @apply absolute inset-0 bg-amber-50 dark:bg-amber-900/10 rounded-2xl opacity-20 pointer-events-none;
+    background-image: radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 50%);
   }
 
   .arabic-styled-title .quran-word {
@@ -540,7 +540,7 @@ body {
 }
 
 .btn {
-  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500;
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500;
 }
 
 .btn-secondary {
@@ -548,7 +548,7 @@ body {
 }
 
 .input-field {
-  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500;
+  @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500;
 }
 
 .error-message {
@@ -556,11 +556,11 @@ body {
 }
 
 .copy-button {
-  @apply absolute top-4 right-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500;
+  @apply absolute top-4 right-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500;
 }
 
 .copy-button.copied {
-  @apply bg-emerald-500 text-white;
+  @apply bg-amber-500 text-white;
 }
 
 /* Dark mode improvements - Updated for class-based approach */
@@ -573,7 +573,7 @@ body {
 }
 
 .dark .prose blockquote {
-  @apply border-emerald-500 bg-emerald-900/20 text-gray-200;
+  @apply border-amber-500 bg-amber-900/20 text-gray-200;
 }
 
 /* Additional dark mode enhancements */
@@ -582,7 +582,7 @@ body {
 }
 
 .dark .copy-button.copied {
-  @apply bg-emerald-500 text-white;
+  @apply bg-amber-500 text-white;
 }
 
 /* Enhanced dark mode background patterns */
@@ -670,17 +670,17 @@ body {
 .wave-bar.progress-current:hover {
   transform: scaleY(1.1);
   box-shadow:
-    0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.7)),
-    0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.4)),
+    0 0 8px rgba(var(--progress-color-rgb, 245, 158, 11), calc(var(--progress-opacity, 0.7) * 0.7)),
+    0 0 16px rgba(var(--progress-color-rgb, 245, 158, 11), calc(var(--progress-opacity, 0.7) * 0.4)),
     inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
-/* Dynamic color progress bars - Professional emerald theme with enhanced effects */
+/* Dynamic color progress bars - Professional amber theme with enhanced effects */
 .wave-bar.progress-active {
-  background: linear-gradient(135deg, var(--progress-color, #10b981), var(--progress-color, #10b981)) !important;
+  background: linear-gradient(135deg, var(--progress-color, #f59e0b), var(--progress-color, #f59e0b)) !important;
   box-shadow:
-    0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
-    0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), 0.2),
+    0 0 8px rgba(var(--progress-color-rgb, 245, 158, 11), 0.4),
+    0 0 16px rgba(var(--progress-color-rgb, 245, 158, 11), 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   animation: waveProgress 1.5s ease-in-out infinite !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -690,17 +690,17 @@ body {
 /* Current bar with partial progress and dynamic color */
 .wave-bar.progress-current {
   background: linear-gradient(135deg,
-      rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.8)),
-      rgba(var(--progress-color-rgb, 16, 185, 129), var(--progress-opacity, 0.6))) !important;
+      rgba(var(--progress-color-rgb, 245, 158, 11), var(--progress-opacity, 0.8)),
+      rgba(var(--progress-color-rgb, 245, 158, 11), var(--progress-opacity, 0.6))) !important;
   box-shadow:
-    0 0 6px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.5)),
-    0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), calc(var(--progress-opacity, 0.7) * 0.3)),
+    0 0 6px rgba(var(--progress-color-rgb, 245, 158, 11), calc(var(--progress-opacity, 0.7) * 0.5)),
+    0 0 12px rgba(var(--progress-color-rgb, 245, 158, 11), calc(var(--progress-opacity, 0.7) * 0.3)),
     inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
   transition: all 0.1s ease-out !important;
   position: relative !important;
 }
 
-/* Enhanced wave progress animation with emerald theme */
+/* Enhanced wave progress animation with amber theme */
 @keyframes waveProgress {
 
   0%,
@@ -708,33 +708,33 @@ body {
     opacity: 0.9;
     transform: scaleY(1);
     box-shadow:
-      0 0 8px rgba(var(--progress-color-rgb, 16, 185, 129), 0.4),
-      0 0 16px rgba(var(--progress-color-rgb, 16, 185, 129), 0.2);
+      0 0 8px rgba(var(--progress-color-rgb, 245, 158, 11), 0.4),
+      0 0 16px rgba(var(--progress-color-rgb, 245, 158, 11), 0.2);
   }
 
   50% {
     opacity: 1;
     transform: scaleY(1.05);
     box-shadow:
-      0 0 12px rgba(var(--progress-color-rgb, 16, 185, 129), 0.6),
-      0 0 20px rgba(var(--progress-color-rgb, 16, 185, 129), 0.3);
+      0 0 12px rgba(var(--progress-color-rgb, 245, 158, 11), 0.6),
+      0 0 20px rgba(var(--progress-color-rgb, 245, 158, 11), 0.3);
   }
 }
 
-/* Fallback for when CSS custom properties don't work - Emerald theme */
+/* Fallback for when CSS custom properties don't work - Amber theme */
 .wave-bar.progress-active:not([style*="background-color"]) {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
   box-shadow:
-    0 0 8px rgba(16, 185, 129, 0.4),
-    0 0 16px rgba(16, 185, 129, 0.2),
+    0 0 8px rgba(245, 158, 11, 0.4),
+    0 0 16px rgba(245, 158, 11, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 .wave-bar.progress-current:not([style*="background-color"]) {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 0.6)) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.8), rgba(245, 158, 11, 0.6)) !important;
   box-shadow:
-    0 0 6px rgba(16, 185, 129, 0.4),
-    0 0 12px rgba(16, 185, 129, 0.2),
+    0 0 6px rgba(245, 158, 11, 0.4),
+    0 0 12px rgba(245, 158, 11, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
@@ -1583,7 +1583,7 @@ body {
 
 /* Hadith status badge styling */
 .hadith-status-sahih {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  @apply bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200;
 }
 
 .hadith-status-hasan {
@@ -1615,7 +1615,7 @@ body {
 
 /* Hadith box focus states for accessibility */
 .stylish-hadith-reference:focus-within {
-  @apply ring-2 ring-emerald-500 ring-opacity-50;
+  @apply ring-2 ring-amber-500 ring-opacity-50;
 }
 
 /* Hadith box loading state */
@@ -1632,13 +1632,13 @@ body {
 /* Dynamic border color change animation */
 @keyframes borderColorChange {
   0% {
-    border-color: rgba(16, 185, 129, 0.8);
-    /* Emerald */
+    border-color: rgba(245, 158, 11, 0.8);
+    /* Amber */
   }
 
   20% {
-    border-color: rgba(34, 197, 94, 0.8);
-    /* Green */
+    border-color: rgba(251, 191, 36, 0.8);
+    /* Golden */
   }
 
   40% {
@@ -1657,7 +1657,263 @@ body {
   }
 
   100% {
-    border-color: rgba(16, 185, 129, 0.8);
-    /* Back to Emerald */
+    border-color: rgba(245, 158, 11, 0.8);
+    /* Back to Amber */
   }
+}
+
+/* ============================================
+   RAMADAN THEME STYLES
+   ============================================ */
+
+/* Floating star animation */
+@keyframes float-star {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+
+  25% {
+    transform: translateY(-15px) scale(1.1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateY(-8px) scale(0.95);
+    opacity: 0.8;
+  }
+
+  75% {
+    transform: translateY(-20px) scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Twinkle animation */
+@keyframes twinkle {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Crescent moon glow */
+@keyframes moon-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.7)) drop-shadow(0 0 40px rgba(251, 191, 36, 0.3));
+  }
+}
+
+/* Lantern swing */
+@keyframes lantern-swing {
+
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+/* Lantern glow pulse */
+@keyframes lantern-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.3));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.6)) drop-shadow(0 0 30px rgba(217, 119, 6, 0.2));
+  }
+}
+
+/* Gentle float for decorative elements */
+@keyframes gentle-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Shimmer effect for Ramadan text */
+@keyframes ramadan-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Particle drift animation */
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.8;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateY(-100vh) translateX(50px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Ramadan background with subtle pattern */
+.ramadan-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.ramadan-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(251, 191, 36, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 0%, rgba(147, 51, 234, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dark .ramadan-bg::before {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 0%, rgba(147, 51, 234, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+
+/* Ramadan stars container */
+.ramadan-stars .star {
+  animation: twinkle var(--twinkle-duration, 3s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+/* Ramadan floating particle */
+.ramadan-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(251, 191, 36, 0.5);
+  animation: particle-drift var(--drift-duration, 12s) linear infinite;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+.dark .ramadan-particle {
+  background: rgba(251, 191, 36, 0.4);
+}
+
+/* Ramadan greeting text shimmer */
+.ramadan-text-shimmer {
+  background: linear-gradient(90deg,
+      #d97706 0%,
+      #fbbf24 25%,
+      #f59e0b 50%,
+      #fbbf24 75%,
+      #d97706 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ramadan-shimmer 4s linear infinite;
+}
+
+.dark .ramadan-text-shimmer {
+  background: linear-gradient(90deg,
+      #fbbf24 0%,
+      #fde68a 25%,
+      #fbbf24 50%,
+      #fde68a 75%,
+      #fbbf24 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================
+   SIDEBAR RAMADAN ENHANCEMENTS
+   ============================================ */
+
+/* Sidebar glassmorphism with warm accent */
+.sidebar-ramadan {
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(255, 255, 255, 0.78) 50%,
+      rgba(254, 243, 199, 0.15) 100%) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border-right: 1px solid rgba(251, 191, 36, 0.15) !important;
+}
+
+.dark .sidebar-ramadan {
+  background: linear-gradient(180deg,
+      rgba(15, 23, 42, 0.9) 0%,
+      rgba(15, 23, 42, 0.85) 50%,
+      rgba(120, 53, 15, 0.08) 100%) !important;
+  border-right: 1px solid rgba(251, 191, 36, 0.1) !important;
+}
+
+/* Sidebar nav button active state with warm glow */
+.sidebar-nav-ramadan.active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+}
+
+.dark .sidebar-nav-ramadan.active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(245, 158, 11, 0.04) 100%);
+}
+
+/* Sidebar active indicator with amber color */
+.sidebar-active-indicator-ramadan {
+  background: linear-gradient(180deg, #f59e0b, #d97706) !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+/* Sidebar subtle top decoration */
+.sidebar-ramadan-accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.4), transparent);
+  border-radius: 1px;
 }

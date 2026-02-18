@@ -42,19 +42,19 @@ export const useGlobalEventDelegation = () => {
     };
 
     // Function to get progress color based on audio progress
-    // Professional emerald-based gradient that matches the website's theme
+    // Professional amber-based gradient that matches the website's theme
     const getProgressColor = (progress: number) => {
-      // Create a sophisticated emerald gradient that matches the website's color scheme
+      // Create a sophisticated amber gradient that matches the website's color scheme
       if (progress < 20) {
-        return '#34d399'; // emerald-400 - Light, welcoming start
+        return '#fbbf24'; // amber-400 - Light, welcoming start
       } else if (progress < 40) {
-        return '#10b981'; // emerald-500 - Primary brand color
+        return '#f59e0b'; // amber-500 - Primary brand color
       } else if (progress < 60) {
-        return '#059669'; // emerald-600 - Deeper, more confident
+        return '#d97706'; // amber-600 - Deeper, more confident
       } else if (progress < 80) {
-        return '#047857'; // emerald-700 - Rich, professional
+        return '#b45309'; // amber-700 - Rich, professional
       } else {
-        return '#065f46'; // emerald-800 - Deep, completion state
+        return '#92400e'; // amber-800 - Deep, completion state
       }
     };
 
@@ -134,48 +134,15 @@ export const useGlobalEventDelegation = () => {
       return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Function to update duration display
+    // Function to update duration display - DISABLED (duration hidden from output)
     const updateDurationDisplay = (surah: string, ayah: string, currentTime: number, duration: number) => {
-      // Find the audio button first
-      const audioButton = document.querySelector(`button[data-surah="${surah}"][data-ayah="${ayah}"].ayah-audio-play-btn`);
-      if (!audioButton) return;
-
-      // Find the "Play Recitation" box container (the parent container with the audio controls)
-      const playRecitationBox = audioButton.closest('.bg-gray-50, .bg-gray-900') as HTMLElement;
-      if (!playRecitationBox) return;
-
-      // Ensure the container has relative positioning
-      if (playRecitationBox.style.position !== 'relative') {
-        playRecitationBox.style.position = 'relative';
-      }
-
-      let durationDisplay = playRecitationBox.querySelector('.duration-display');
-      if (!durationDisplay) {
-        // Create duration display element positioned in top right of the Play Recitation box
-        durationDisplay = document.createElement('div');
-        durationDisplay.className = 'duration-display absolute top-3 right-3 text-xs text-gray-500 dark:text-gray-400 font-mono bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded-md backdrop-blur-sm border border-gray-200 dark:border-gray-600';
-        playRecitationBox.appendChild(durationDisplay);
-      }
-
-      const current = formatTime(currentTime);
-      const total = formatTime(duration);
-      durationDisplay.textContent = `${current} / ${total}`;
+      // Duration display removed per design update
     };
 
-    // Function to clear duration display
+    // Function to clear duration display - DISABLED (duration hidden from output)
     const clearDurationDisplay = (surah: string, ayah: string) => {
-      // Find the audio button first
-      const audioButton = document.querySelector(`button[data-surah="${surah}"][data-ayah="${ayah}"].ayah-audio-play-btn`);
-      if (!audioButton) return;
-
-      // Find the "Play Recitation" box container
-      const playRecitationBox = audioButton.closest('.bg-gray-50, .bg-gray-900');
-      if (!playRecitationBox) return;
-
-      const durationDisplay = playRecitationBox.querySelector('.duration-display');
-      if (durationDisplay) {
-        durationDisplay.remove();
-      }
+      // Also remove any existing duration displays that might be lingering
+      document.querySelectorAll('.duration-display').forEach(el => el.remove());
     };
 
     const handleAudioPlayback = async (audioButton: HTMLButtonElement, surah: string, ayah: string) => {

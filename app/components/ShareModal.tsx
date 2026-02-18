@@ -229,8 +229,8 @@ export default function ShareModal({
         </svg>
       ),
       action: handleWhatsAppShare,
-      color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30',
+      color: 'text-amber-600 dark:text-amber-400',
+      bgColor: 'bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30',
       description: 'Share on WhatsApp'
     },
     {
@@ -398,7 +398,7 @@ export default function ShareModal({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleNativeShare}
-                  className="w-full mt-2 flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg transition-all duration-200"
+                  className="w-full mt-2 flex items-center justify-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg transition-all duration-200"
                 >
                   <ShareIcon className="w-4 h-4" />
                   <span className="font-medium text-sm">More Options</span>

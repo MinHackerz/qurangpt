@@ -347,7 +347,7 @@ export default function AskQuranGPTInput({
                     <span className={`text-sm font-medium transition-colors ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
                       {type.label}
                     </span>
-                    <div className={`w-8 h-5 rounded-full p-0.5 transition-all duration-200 ${isActive ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                    <div className={`w-8 h-5 rounded-full p-0.5 transition-all duration-200 ${isActive ? 'bg-amber-500' : 'bg-gray-200 dark:bg-gray-700'}`}>
                       <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${isActive ? 'translate-x-3' : 'translate-x-0'}`} />
                     </div>
                   </button>
@@ -372,7 +372,7 @@ export default function AskQuranGPTInput({
                 {[...Array(5)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="w-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                    className="w-1.5 bg-amber-500 dark:bg-amber-400 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.4)]"
                     animate={{
                       height: [8, 32, 8],
                     }}
@@ -385,7 +385,7 @@ export default function AskQuranGPTInput({
                   />
                 ))}
               </div>
-              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 animate-pulse text-center">
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400 animate-pulse text-center">
                 Listening...
               </p>
             </motion.div>
@@ -401,20 +401,20 @@ export default function AskQuranGPTInput({
                 className="absolute -inset-[1px] rounded-2xl animate-border-run-smooth pointer-events-none dark:hidden"
                 style={{
                   background: `conic-gradient(from var(--border-angle, 0deg), 
-                    rgba(16, 185, 129, 0.4) 0deg,
-                    rgba(52, 211, 153, 0.7) 35deg,
-                    rgba(110, 231, 183, 1) 45deg,
-                    rgba(52, 211, 153, 0.7) 55deg,
-                    rgba(16, 185, 129, 0.2) 100deg,
+                    rgba(245, 158, 11, 0.4) 0deg,
+                    rgba(251, 191, 36, 0.7) 35deg,
+                    rgba(252, 211, 77, 1) 45deg,
+                    rgba(251, 191, 36, 0.7) 55deg,
+                    rgba(245, 158, 11, 0.2) 100deg,
                     rgba(209, 213, 219, 0.15) 180deg,
-                    rgba(16, 185, 129, 0.2) 260deg,
-                    rgba(16, 185, 129, 0.4) 360deg
+                    rgba(245, 158, 11, 0.2) 260deg,
+                    rgba(245, 158, 11, 0.4) 360deg
                   )`,
                   mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                   maskComposite: 'exclude',
                   WebkitMaskComposite: 'xor',
                   padding: '1.5px',
-                  filter: 'drop-shadow(0 0 2px rgba(16, 185, 129, 0.5))',
+                  filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.5))',
                 }}
               />
               {/* Dark mode: bright white/green animation */}
@@ -422,14 +422,14 @@ export default function AskQuranGPTInput({
                 className="absolute -inset-[1px] rounded-2xl animate-border-run-smooth pointer-events-none hidden dark:block"
                 style={{
                   background: `conic-gradient(from var(--border-angle, 0deg), 
-                    rgba(52, 211, 153, 0.5) 0deg,
-                    rgba(209, 250, 229, 0.8) 30deg,
+                    rgba(251, 191, 36, 0.5) 0deg,
+                    rgba(253, 230, 138, 0.8) 30deg,
                     rgba(255, 255, 255, 0.95) 45deg,
-                    rgba(209, 250, 229, 0.8) 60deg,
-                    rgba(52, 211, 153, 0.4) 90deg,
+                    rgba(253, 230, 138, 0.8) 60deg,
+                    rgba(251, 191, 36, 0.4) 90deg,
                     rgba(75, 85, 99, 0.3) 180deg,
-                    rgba(52, 211, 153, 0.4) 270deg,
-                    rgba(52, 211, 153, 0.5) 360deg
+                    rgba(251, 191, 36, 0.4) 270deg,
+                    rgba(251, 191, 36, 0.5) 360deg
                   )`,
                   mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                   maskComposite: 'exclude',
@@ -475,7 +475,7 @@ export default function AskQuranGPTInput({
                     disabled={isProcessing}
                     className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${isListening
                       ? 'bg-red-50 dark:bg-red-900/20 text-red-500 animate-pulse border border-red-300 dark:border-red-500/50'
-                      : 'text-emerald-500 dark:text-emerald-400/70 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                      : 'text-amber-500 dark:text-amber-400/70 border border-amber-200 dark:border-amber-500/30 hover:bg-amber-50 dark:hover:bg-amber-900/20'
                       }`}
                     title="Voice input"
                     type="button"
@@ -529,7 +529,7 @@ export default function AskQuranGPTInput({
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isProcessing}
                 className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${inputValue.trim() && !isProcessing
-                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 hover:scale-105 active:scale-95'
+                  ? 'bg-amber-500 text-white hover:bg-amber-600 hover:scale-105 active:scale-95'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600'
                   }`}
               >
@@ -545,8 +545,8 @@ export default function AskQuranGPTInput({
                 onClick={() => setShowContentTypeDropdown(!showContentTypeDropdown)}
                 disabled={isProcessing}
                 className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${showContentTypeDropdown
-                  ? 'bg-emerald-500 text-white'
-                  : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:text-gray-500 dark:hover:text-amber-400 dark:hover:bg-amber-900/20'
                   }`}
                 title="Tools"
               >
@@ -573,7 +573,7 @@ export default function AskQuranGPTInput({
                       exit={{ opacity: 0, scale: 0.9 }}
                       onClick={() => handleContentTypeToggle(key as any)}
                       disabled={isProcessing}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all"
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all"
                     >
                       {label}
                     </motion.button>

@@ -212,7 +212,7 @@ export default function ZakatCalculator() {
                   {isLoadingPrices ? (
                     <ArrowPathIcon className="w-4 h-4 animate-spin text-gray-400" />
                   ) : (
-                    <span className="text-lg font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(calculateNisab())}</span>
+                    <span className="text-lg font-medium text-amber-600 dark:text-amber-400">{formatCurrency(calculateNisab())}</span>
                   )}
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function ZakatCalculator() {
                 {assets.map((asset) => (
                   <div key={asset.id} className="group">
                     <div className="flex items-baseline justify-between mb-2">
-                      <label className="text-base font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      <label className="text-base font-medium text-gray-700 dark:text-gray-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                         {asset.name}
                       </label>
                       <div className="relative">
@@ -238,7 +238,7 @@ export default function ZakatCalculator() {
                           value={asset.amount || ''}
                           onChange={(e) => updateAsset(asset.id, parseFloat(e.target.value) || 0)}
                           placeholder="0"
-                          className="w-32 text-right bg-transparent border-b border-gray-200 dark:border-gray-800 focus:border-emerald-500 outline-none py-1 text-lg font-mono text-gray-900 dark:text-gray-100 placeholder-gray-300 transition-colors"
+                          className="w-32 text-right bg-transparent border-b border-gray-200 dark:border-gray-800 focus:border-amber-500 outline-none py-1 text-lg font-mono text-gray-900 dark:text-gray-100 placeholder-gray-300 transition-colors"
                         />
                       </div>
                     </div>
@@ -302,7 +302,7 @@ export default function ZakatCalculator() {
               </div>
 
               <div className={`p-6 rounded-2xl text-center transition-colors ${calculation?.isEligible
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
                 : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                 }`}
               >

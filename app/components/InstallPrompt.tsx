@@ -109,8 +109,8 @@ export default function InstallPrompt() {
           {/* Minimal One-liner Design */}
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                <DevicePhoneMobileIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                <DevicePhoneMobileIcon className="w-3 h-3 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-800 dark:text-gray-200 font-medium truncate">
@@ -125,7 +125,7 @@ export default function InstallPrompt() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleInstallClick}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors duration-200"
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors duration-200"
                 >
                   Install
                 </motion.button>

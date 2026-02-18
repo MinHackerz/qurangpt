@@ -603,7 +603,7 @@ Question: ${content}`;
                 <!-- Left: Surah Info -->
                 <div class="flex items-center gap-3">
                   <div class="w-9 h-9 bg-gray-50/50 dark:bg-gray-900/50 rounded-full flex items-center justify-center border border-gray-100 dark:border-gray-800">
-                    <span class="font-[var(--font-amiri)] text-lg text-emerald-600 dark:text-emerald-500 pt-1">۞</span>
+                    <span class="font-[var(--font-amiri)] text-lg text-amber-600 dark:text-amber-500 pt-1">۞</span>
                   </div>
                   <div>
                      <h3 class="responsive-text-title font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] tracking-wide">${surahName}</h3>
@@ -644,7 +644,7 @@ Question: ${content}`;
               <div class="px-5 py-4 bg-transparent border-t border-gray-200/50 dark:border-gray-800/50">
                 <!-- Audio Player (Compact) -->
                 <div class="flex items-center gap-4">
-                   <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm hover:shadow-md active:scale-95 transition-all duration-200" data-surah="${finalSurahNumber}" data-ayah="${isRange ? audioRange : ayahNumberStr}" data-range="${isRange ? 'true' : 'false'}" type="button">
+                   <button class="ayah-audio-play-btn play-state w-10 h-10 rounded-full bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-amber-200 dark:hover:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm hover:shadow-md active:scale-95 transition-all duration-200" data-surah="${finalSurahNumber}" data-ayah="${isRange ? audioRange : ayahNumberStr}" data-range="${isRange ? 'true' : 'false'}" type="button">
                       <svg class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
                       </svg>
@@ -652,7 +652,7 @@ Question: ${content}`;
                    
                    <!-- Waveform -->
                    <div class="flex-1 h-8 flex items-end gap-[2px] opacity-40 hover:opacity-100 transition-opacity cursor-pointer group/wave" data-surah="${finalSurahNumber}" data-ayah="${isRange ? audioRange : ayahNumberStr}" data-range="${isRange ? 'true' : 'false'}">
-                      ${Array.from({ length: 40 }).map((_, i) => `<div class="wave-bar flex-1 bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-300" style="height: ${Math.max(20, Math.random() * 100)}%" data-bar="${i}"></div>`).join('')}
+                      ${Array.from({ length: 40 }).map((_, i) => `<div class="wave-bar flex-1 bg-amber-500 dark:bg-amber-400 rounded-full transition-all duration-300" style="height: ${Math.max(20, Math.random() * 100)}%" data-bar="${i}"></div>`).join('')}
                    </div>
                 </div>
               </div>
@@ -741,16 +741,16 @@ Question: ${content}`;
                     href="${context.url}" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    class="group flex flex-col h-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-200 overflow-hidden relative"
+                    class="group flex flex-col h-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all duration-200 overflow-hidden relative"
                   >
                     <div class="flex h-full">
-                      <div class="w-12 h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 transition-colors">
-                        <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div class="w-12 h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 border-r border-gray-100 dark:border-gray-800/50 group-hover:bg-amber-50 dark:group-hover:bg-amber-900/20 transition-colors">
+                        <svg class="w-5 h-5 text-gray-400 group-hover:text-amber-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
                       </div>
                       <div class="flex-1 p-3 min-w-0 flex flex-col justify-center">
-                          <h6 class="text-xs font-semibold text-gray-900 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 mb-1">
+                          <h6 class="text-xs font-semibold text-gray-900 dark:text-gray-100 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-1 mb-1">
                             ${context.title}
                           </h6>
                           <p class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-1">
@@ -759,7 +759,7 @@ Question: ${content}`;
                           <div class="text-[10px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1 mt-auto">
                             <span>${getHostname(context.url)}</span>
                             <span class="w-0.5 h-0.5 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-emerald-600 dark:text-emerald-500 font-medium">Visit &rarr;</span>
+                            <span class="opacity-0 group-hover:opacity-100 transition-opacity text-amber-600 dark:text-amber-500 font-medium">Visit &rarr;</span>
                           </div>
                       </div>
                     </div>
@@ -928,7 +928,7 @@ Question: ${content}`;
             // Fallback: create a simple reference link
             return {
               match: ref.originalMatch,
-              replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors duration-200 font-medium text-sm">
+              replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg border border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors duration-200 font-medium text-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7L12 12L22 7L12 2Z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 17L12 22L22 17"/>
@@ -941,7 +941,7 @@ Question: ${content}`;
         } catch (error) {
           return {
             match: ref.originalMatch,
-            replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors duration-200 font-medium text-sm">
+            replacement: `<span class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg border border-amber-200 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors duration-200 font-medium text-sm">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7L12 12L22 7L12 2Z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 17L12 22L22 17"/>
@@ -1094,7 +1094,7 @@ Question: ${content}`;
          <div class="mt-12 mb-6">
            <!-- Universal Related Hadiths Title -->
            <h3 class="section-heading text-xl font-bold text-gray-900 dark:text-gray-100 mb-6 font-[var(--font-amiri)] tracking-wide flex items-center gap-3">
-              <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+              <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 19.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                  </svg>
@@ -1114,47 +1114,47 @@ Question: ${content}`;
     const fallbackAyahPattern = /"([^"]+)"\s*\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
     processedText = processedText.replace(fallbackAyahPattern, (match, verseText, surahName, ayahNumber, url) => {
       // Convert to simple inline format: "verse text" [Surah Name: Ayah Number](link)
-      return `"${verseText}" <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 underline decoration-green-500 hover:decoration-green-600 transition-colors duration-200 font-medium">[${surahName}: ${ayahNumber}]</a>`;
+      return `"${verseText}" <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline decoration-amber-500 hover:decoration-amber-600 transition-colors duration-200 font-medium">[${surahName}: ${ayahNumber}]</a>`;
     });
 
     // Also handle unquoted ayah references as fallback
     const fallbackUnquotedPattern = /\[([^:]+)\:\s*(\d+(?:-\d+)?)\]\((https?:\/\/[^\s)]+)\)/g;
     processedText = processedText.replace(fallbackUnquotedPattern, (match, surahName, ayahNumber, url) => {
       // Convert to simple inline format: [Surah Name: Ayah Number](link)
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 underline decoration-green-500 hover:decoration-green-600 transition-colors duration-200 font-medium">[${surahName}: ${ayahNumber}]</a>`;
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline decoration-amber-500 hover:decoration-amber-600 transition-colors duration-200 font-medium">[${surahName}: ${ayahNumber}]</a>`;
     });
 
     // Continue with other formatting
     processedText = processedText
       // Format section headers with enhanced styling
-      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading responsive-text-heading font-bold text-gray-900 dark:text-gray-100 mt-10 mb-5 pb-3 font-[var(--font-amiri)] tracking-wide relative after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:w-16 after:h-0.5 after:bg-emerald-500 dark:after:bg-emerald-400">$1</h3>')
+      .replace(/^#{1,3}\s*(.+)$/gm, '<h3 class="section-heading responsive-text-heading font-bold text-gray-900 dark:text-gray-100 mt-10 mb-5 pb-3 font-[var(--font-amiri)] tracking-wide relative after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:w-16 after:h-0.5 after:bg-amber-500 dark:after:bg-amber-400">$1</h3>')
       // Format bold text
       .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
       // Format italic text
       .replace(/\*([^*]+)\*/g, '<em class="italic text-gray-700 dark:text-gray-300 font-serif">$1</em>')
       // Format underlined text
-      .replace(/\_\_([^_]+)\_\_/g, '<span class="border-b-2 border-emerald-200 dark:border-emerald-800 pb-0.5">$1</span>')
+      .replace(/\_\_([^_]+)\_\_/g, '<span class="border-b-2 border-amber-200 dark:border-amber-800 pb-0.5">$1</span>')
 
       // Format numbered lists with enhanced styling and spacing
-      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-4 flex items-start pl-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-bold mr-3 mt-1 flex-shrink-0">$1</span><span class="text-gray-700 dark:text-gray-300 responsive-text-body leading-relaxed flex-1">$2</span></div>')
+      .replace(/^(\d+)\.\s+(.+)$/gm, '<div class="mb-4 flex items-start pl-2"><span class="inline-flex items-center justify-center w-6 h-6 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold mr-3 mt-1 flex-shrink-0">$1</span><span class="text-gray-700 dark:text-gray-300 responsive-text-body leading-relaxed flex-1">$2</span></div>')
 
       // Format bullet points
-      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-3 flex items-start pl-2"><span class="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full mr-4 mt-2.5 flex-shrink-0"></span><span class="text-gray-700 dark:text-gray-300 responsive-text-body leading-relaxed flex-1">$1</span></div>')
+      .replace(/^[-•]\s+(.+)$/gm, '<div class="mb-3 flex items-start pl-2"><span class="w-1.5 h-1.5 bg-amber-500 dark:bg-amber-400 rounded-full mr-4 mt-2.5 flex-shrink-0"></span><span class="text-gray-700 dark:text-gray-300 responsive-text-body leading-relaxed flex-1">$1</span></div>')
 
       // Format specific Islamic terms with minimalistic underlines
-      .replace(/Allah\s*\(SWT\)/g, '<span class="font-medium text-emerald-700 dark:text-emerald-400">Allah (SWT)</span>')
+      .replace(/Allah\s*\(SWT\)/g, '<span class="font-medium text-amber-700 dark:text-amber-400">Allah (SWT)</span>')
       .replace(/Allah\s*SWT/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah SWT</span>')
-      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="font-medium text-emerald-700 dark:text-emerald-400">Prophet Muhammad (PBUH)</span>')
-      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Prophet Muhammad PBUH</span>')
+      .replace(/Prophet Muhammad\s*\(PBUH\)/g, '<span class="font-medium text-amber-700 dark:text-amber-400">Prophet Muhammad (PBUH)</span>')
+      .replace(/Prophet Muhammad\s*PBUH/g, '<span class="underline decoration-amber-400 dark:decoration-amber-500 underline-offset-2">Prophet Muhammad PBUH</span>')
       .replace(/\(peace be upon him\)/g, '<span class="text-sm text-gray-600 dark:text-gray-400 font-medium">(peace be upon him)</span>')
-      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Muhammad (PBUH)</span>')
-      .replace(/Muhammad\s*PBUH/g, '<span class="underline decoration-emerald-400 dark:decoration-emerald-500 underline-offset-2">Muhammad PBUH</span>')
+      .replace(/Muhammad\s*\(PBUH\)/g, '<span class="underline decoration-amber-400 dark:decoration-amber-500 underline-offset-2">Muhammad (PBUH)</span>')
+      .replace(/Muhammad\s*PBUH/g, '<span class="underline decoration-amber-400 dark:decoration-amber-500 underline-offset-2">Muhammad PBUH</span>')
       .replace(/Allah\s*\(Subhanahu wa Ta\'ala\)/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah (Subhanahu wa Ta\'ala)</span>')
       .replace(/Allah\s*Subhanahu wa Ta\'ala/g, '<span class="underline decoration-gray-400 dark:decoration-gray-500 underline-offset-2">Allah Subhanahu wa Ta\'ala</span>')
 
       // Format Explanation headers with distinctive styling
       .replace(/^(Explanation):?\s*$/gmi,
-        '<div class="explanation-section mt-10 mb-6"><h3 class="responsive-text-heading font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] mb-2 flex items-center gap-2"><span class="text-emerald-500 text-xl">💡</span> Explanation</h3></div>')
+        '<div class="explanation-section mt-10 mb-6"><h3 class="responsive-text-heading font-bold text-gray-900 dark:text-gray-100 font-[var(--font-amiri)] mb-2 flex items-center gap-2"><span class="text-amber-500 text-xl">💡</span> Explanation</h3></div>')
 
       // Format Tafsir/Tafseer headers with simple styling (matching AI Explanation design)
       .replace(/^(Tafs[ie]r):?\s*$/gmi,
@@ -1162,7 +1162,7 @@ Question: ${content}`;
 
       // Format AI Explanation sections with simple styling (cleaner)
       .replace(/\[AI Explanation:\s*([\s\S]*?)\]/gi,
-        `<div class="mt-4 mb-8 pl-5 border-l-2 border-emerald-500/30 dark:border-emerald-500/20"><div class="text-gray-700 dark:text-gray-300 leading-relaxed responsive-text-body">$1</div></div>`)
+        `<div class="mt-4 mb-8 pl-5 border-l-2 border-amber-500/30 dark:border-amber-500/20"><div class="text-gray-700 dark:text-gray-300 leading-relaxed responsive-text-body">$1</div></div>`)
 
       // Format Authentic Tafsir sections with simple styling
       .replace(/\[Authentic Tafsir:\s*([\s\S]*?)\]/g,
@@ -1209,15 +1209,15 @@ Question: ${content}`;
 
             // Add suggested questions to the response
             const suggestedQuestionsHTML = suggestedData.questions.map((question: string, index: number) =>
-              `<div class="suggested-question-item group relative p-5 bg-transparent rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 cursor-pointer overflow-hidden" data-suggested-question="true">
+              `<div class="suggested-question-item group relative p-5 bg-transparent rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all duration-300 cursor-pointer overflow-hidden" data-suggested-question="true">
                 <div class="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
-                  <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </div>
                 <div class="flex items-start gap-4">
-                  <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50 transition-colors">
-                    <span class="text-emerald-600 dark:text-emerald-400 font-bold text-sm">${index + 1}</span>
+                  <div class="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50 transition-colors">
+                    <span class="text-amber-600 dark:text-amber-400 font-bold text-sm">${index + 1}</span>
                   </div>
                   <p class="text-gray-700 dark:text-gray-300 font-medium leading-relaxed pr-6 ${textSize === 'large' ? 'text-lg' : textSize === 'medium' ? 'text-base' : 'text-sm'}">${question}</p>
                 </div>

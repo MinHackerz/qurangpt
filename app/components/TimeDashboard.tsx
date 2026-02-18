@@ -128,7 +128,7 @@ export default function TimeDashboard({ initialData }: { initialData?: IslamicDa
     >
       <header className="mb-16 text-center">
         {islamicData?.location && (
-          <div className="flex items-center justify-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center justify-center gap-2 mb-4 text-amber-600 dark:text-amber-400">
             <MapPinIcon className="w-4 h-4" />
             <span className="text-xs font-bold tracking-widest uppercase">{islamicData.location.city}, {islamicData.location.country}</span>
           </div>
@@ -139,7 +139,7 @@ export default function TimeDashboard({ initialData }: { initialData?: IslamicDa
         </h1>
         <div className="flex flex-col items-center gap-2 text-gray-500 dark:text-gray-400 font-light text-lg">
           <p>{dateString}</p>
-          <p className="font-serif italic text-emerald-700 dark:text-emerald-400">{hijriDateString}</p>
+          <p className="font-serif italic text-amber-700 dark:text-amber-400">{hijriDateString}</p>
         </div>
       </header>
 
@@ -149,7 +149,7 @@ export default function TimeDashboard({ initialData }: { initialData?: IslamicDa
           <div className="flex justify-between items-start">
             <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Current Prayer</span>
             {islamicData?.currentPrayer && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
             )}
           </div>
 
@@ -174,27 +174,27 @@ export default function TimeDashboard({ initialData }: { initialData?: IslamicDa
         </div>
 
         {/* Eid Countdown Card */}
-        <div className="bg-emerald-900 text-white rounded-3xl p-8 border border-emerald-800/50 flex flex-col justify-between h-64 shadow-xl">
+        <div className="bg-amber-900 text-white rounded-3xl p-8 border border-amber-800/50 flex flex-col justify-between h-64 shadow-xl">
           <div className="flex justify-between items-start">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-200/60">Upcoming Eid</span>
-            <CalendarDaysIcon className="w-5 h-5 text-emerald-200/60" />
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-200/60">Upcoming Eid</span>
+            <CalendarDaysIcon className="w-5 h-5 text-amber-200/60" />
           </div>
 
           {islamicData?.eidFitr && islamicData.eidFitr.daysRemaining >= 0 ? (
             <div className="text-center">
               <h2 className="text-2xl font-serif mb-2">Eid Al-Fitr</h2>
               <div className="text-5xl font-mono font-bold mb-2">{islamicData.eidFitr.daysRemaining}</div>
-              <p className="text-emerald-200 text-sm">Days Remaining</p>
+              <p className="text-amber-200 text-sm">Days Remaining</p>
             </div>
           ) : (
             <div className="text-center">
               <h2 className="text-2xl font-serif mb-2">Eid Al-Adha</h2>
               <div className="text-5xl font-mono font-bold mb-2">{islamicData?.eidAdha?.daysRemaining ?? '--'}</div>
-              <p className="text-emerald-200 text-sm">Days Remaining</p>
+              <p className="text-amber-200 text-sm">Days Remaining</p>
             </div>
           )}
 
-          <div className="text-center text-xs text-emerald-200/50 uppercase tracking-widest">
+          <div className="text-center text-xs text-amber-200/50 uppercase tracking-widest">
             May Allah accept our deeds
           </div>
         </div>
