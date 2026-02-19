@@ -189,7 +189,7 @@ export default function VerticalActionBar() {
       <motion.div
         initial={false}
         animate={{ width: isExpanded ? 220 : 70 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         className="hidden sm:flex fixed left-0 top-0 bottom-0 z-50 flex-col sidebar-ramadan sidebar-ramadan-accent"
       >
         {/* Ramadan decorative top crescent */}

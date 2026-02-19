@@ -316,6 +316,7 @@ export default function AskQuranGPTInput({
         exit={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.3 }}
         className="w-full max-w-4xl mx-auto px-4 sm:px-0"
+        style={{ overflow: 'visible' }}
       >
         {/* Content Type Dropdown - Floating above input */}
         <AnimatePresence>
@@ -398,7 +399,7 @@ export default function AskQuranGPTInput({
             <>
               {/* Light mode: neon green animation */}
               <div
-                className="absolute -inset-[1px] rounded-2xl animate-border-run-smooth pointer-events-none dark:hidden"
+                className="absolute -inset-[1px] rounded-3xl animate-border-run-smooth pointer-events-none dark:hidden blur-[1px]"
                 style={{
                   background: `conic-gradient(from var(--border-angle, 0deg), 
                     rgba(245, 158, 11, 0.4) 0deg,
@@ -419,7 +420,7 @@ export default function AskQuranGPTInput({
               />
               {/* Dark mode: bright white/green animation */}
               <div
-                className="absolute -inset-[1px] rounded-2xl animate-border-run-smooth pointer-events-none hidden dark:block"
+                className="absolute -inset-[1px] rounded-3xl animate-border-run-smooth pointer-events-none hidden dark:block blur-[1px]"
                 style={{
                   background: `conic-gradient(from var(--border-angle, 0deg), 
                     rgba(251, 191, 36, 0.5) 0deg,
@@ -441,7 +442,7 @@ export default function AskQuranGPTInput({
           )}
 
           {/* Input Container */}
-          <div className={`relative bg-gray-50 dark:bg-gray-950 ${inputValue.trim() ? '' : 'border border-gray-200 dark:border-gray-800'} rounded-2xl transition-all duration-300 ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}>
+          <div className={`relative bg-white/60 dark:bg-gray-950/60 backdrop-blur-2xl ${inputValue.trim() ? '' : 'border border-gray-200 dark:border-gray-800'} rounded-3xl transition-all duration-300 ${isProcessing ? 'opacity-70 pointer-events-none' : ''}`}>
 
             {/* Text Area */}
             <textarea
@@ -544,7 +545,7 @@ export default function AskQuranGPTInput({
               <button
                 onClick={() => setShowContentTypeDropdown(!showContentTypeDropdown)}
                 disabled={isProcessing}
-                className={`flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${showContentTypeDropdown
+                className={`plus-icon-button flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${showContentTypeDropdown
                   ? 'bg-amber-500 text-white'
                   : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:text-gray-500 dark:hover:text-amber-400 dark:hover:bg-amber-900/20'
                   }`}

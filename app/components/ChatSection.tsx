@@ -63,13 +63,19 @@ export default function ChatSection({
   // Hero section props
   getGreetingMessage,
   // Content type selection props
-  selectedContentTypes = { tafsir: false, hadith: false, webSearch: false, suggestedQuestions: false },
+  selectedContentTypes = { tafsir: true, hadith: false, webSearch: false, suggestedQuestions: false },
   onContentTypeChange,
   // Stop operation functionality
   onStopOperation
 }: ChatSectionProps) {
   const [sidebarOffset, setSidebarOffset] = useState<number>(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  // Mounted state to safely render random decorative elements
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Hadith management
   useHadithManager();
@@ -148,7 +154,8 @@ export default function ChatSection({
             {/* Ramadan Decorative Elements */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               {/* Twinkling Stars */}
-              {starPositions.map((star, i) => (
+              {/* Twinkling Stars - Client-side only to avoid hydration mismatch */}
+              {mounted && starPositions.map((star, i) => (
                 <div
                   key={`star-${i}`}
                   className="absolute rounded-full"
@@ -165,7 +172,8 @@ export default function ChatSection({
               ))}
 
               {/* Floating Particles */}
-              {particlePositions.map((p, i) => (
+              {/* Floating Particles - Client-side only to avoid hydration mismatch */}
+              {mounted && particlePositions.map((p, i) => (
                 <div
                   key={`particle-${i}`}
                   className="ramadan-particle"
@@ -311,9 +319,11 @@ export default function ChatSection({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="mb-0 fixed bottom-0 left-0 right-0 z-30"
+        className="mb-0 fixed bottom-0 left-0 right-0 z-50"
         style={{
           paddingLeft: !isMobile ? sidebarOffset : 0,
+          // Smooth transition for sidebar open/close
+          transition: 'padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           // Advanced mobile touch fixes
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
@@ -325,13 +335,15 @@ export default function ChatSection({
           fontSize: isMobile ? '16px' : 'inherit'
         }}
       >
-        {/* Input Container Background - Solid to hide content behind */}
+        {/* Input Container Background - Matches main page ramadan background with glassmorphism */}
         <div
-          className="w-full mx-auto px-2 sm:px-0 py-3 ramadan-bg bg-gray-50 dark:bg-gray-950"
+          className="w-full mx-auto px-2 sm:px-0 pt-0 pb-6"
           style={{
             // Advanced mobile container fixes
             position: 'relative',
             zIndex: 1,
+            // Allow dropdown popups to overflow above
+            overflow: 'visible',
             // Prevent touch event bubbling issues
             touchAction: 'manipulation',
             // Ensure proper rendering on mobile
@@ -341,7 +353,15 @@ export default function ChatSection({
             willChange: 'transform'
           }}
         >
-          <div className="w-full max-w-4xl mx-auto relative">
+          {/* Background - Solid/Blurred to hide content behind */}
+          <div
+            className="absolute inset-0 !bg-white dark:!bg-gray-950 !opacity-100 backdrop-blur-[50px] rounded-t-3xl shadow-[0_-15px_30px_rgba(255,255,255,0.5)] dark:shadow-[0_-15px_30px_rgba(3,7,18,0.8)]"
+            style={{
+              pointerEvents: 'none'
+            }}
+          />
+
+          <div className="w-full max-w-4xl mx-auto relative z-10" style={{ overflow: 'visible' }}>
 
 
             {/* Language Reminder - Minimal & Professional */}
@@ -373,6 +393,13 @@ export default function ChatSection({
               onReset={resetForm}
               isProcessing={isProcessing}
             />
+
+            {/* Disclaimer */}
+            <div className="text-center mt-2 pointer-events-none">
+              <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium tracking-wide">
+                AI-generated content may contain errors. Please verify with Islamic scholars.
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>
