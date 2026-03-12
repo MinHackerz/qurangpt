@@ -165,7 +165,7 @@ export default function ChatSection({
     <>
       {/* Hero Section - Show only in default state — Non-scrollable, top-aligned */}
       {isDefaultState && (
-        <header className="relative z-10 h-[calc(100dvh-180px)] sm:h-[calc(100dvh-120px)] flex flex-col justify-start overflow-hidden pt-20 sm:pt-2">
+        <header className="relative z-10 h-[calc(100dvh-180px)] sm:h-[calc(100dvh-120px)] flex flex-col justify-start overflow-hidden pt-[88px] sm:pt-[15px]">
           <div className="container max-w-4xl mx-auto px-6 chat-hero-container relative">
 
             {/* Ramadan Decorative Elements */}

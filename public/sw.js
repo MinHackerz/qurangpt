@@ -1,8 +1,6 @@
-const CACHE_NAME = 'quran-gpt-v1';
+const CACHE_NAME = 'quran-gpt-v2';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png'
