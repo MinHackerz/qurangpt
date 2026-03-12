@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, PauseIcon, BookOpenIcon, LanguageIcon, MusicalNoteIcon, MagnifyingGlassIcon, ChevronDownIcon, ClipboardDocumentIcon, XMarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, PlayIcon, PauseIcon, BookOpenIcon, LanguageIcon, MusicalNoteIcon, MagnifyingGlassIcon, ChevronDownIcon, ClipboardDocumentIcon, XMarkIcon, DocumentTextIcon, SpeakerWaveIcon, StopIcon } from '@heroicons/react/24/outline';
 import { fetchTafsir, formatTafsirContent, TafsirData } from '../utils/tafsirUtils';
 
 interface Ayah {
@@ -73,6 +73,12 @@ export default function ReadQuran() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTranslationDropdown, setShowTranslationDropdown] = useState(false);
 
+  // Continuous audio playback mode (plays all ayahs in sequence)
+  const [continuousAudio, setContinuousAudio] = useState(false);
+  const continuousAudioRef = useRef(false);
+  // Show all transliterations at once
+  const [showAllTransliterations, setShowAllTransliterations] = useState(false);
+
   // State for toggling transliteration per ayah
   const [visibleTransliterations, setVisibleTransliterations] = useState<Set<number>>(new Set());
 
@@ -87,6 +93,33 @@ export default function ReadQuran() {
       return next;
     });
   };
+
+  // Toggle all transliterations on/off
+  const toggleAllTransliterations = useCallback(() => {
+    setShowAllTransliterations(prev => {
+      const next = !prev;
+      if (next && ayahs.length > 0) {
+        setVisibleTransliterations(new Set(ayahs.map(a => a.number)));
+      } else {
+        setVisibleTransliterations(new Set());
+      }
+      return next;
+    });
+  }, [ayahs]);
+
+  // Track sidebar width for centering floating bar in tab context
+  const [sidebarWidth, setSidebarWidth] = useState(0);
+  useEffect(() => {
+    const onSidebar = (e: any) => {
+      if (e?.detail?.width !== undefined) {
+        setSidebarWidth(e.detail.width);
+      }
+    };
+    // Request current width on mount
+    window.dispatchEvent(new CustomEvent('qgpt:request-sidebar-width'));
+    window.addEventListener('qgpt:sidebar', onSidebar as EventListener);
+    return () => window.removeEventListener('qgpt:sidebar', onSidebar as EventListener);
+  }, []);
 
   // Tafsir state
   const [tafsirData, setTafsirData] = useState<TafsirData | null>(null);
@@ -251,7 +284,7 @@ export default function ReadQuran() {
   }, []);
 
   // Helper function to stop audio immediately
-  const stopCurrentAudio = () => {
+  const stopCurrentAudio = useCallback(() => {
     if (audioRef.current) {
       try {
         audioRef.current.pause();
@@ -261,6 +294,8 @@ export default function ReadQuran() {
         console.log('Error stopping audio:', error);
       }
     }
+    setContinuousAudio(false);
+    continuousAudioRef.current = false;
     setAudioState(prev => ({
       ...prev,
       isPlaying: false,
@@ -268,10 +303,12 @@ export default function ReadQuran() {
       currentTime: 0,
       isLoading: false
     }));
-  };
+  }, []);
 
   const handleSurahSelect = (surah: Surah) => {
     stopCurrentAudio();
+    setShowAllTransliterations(false);
+    setVisibleTransliterations(new Set());
     setSelectedSurah(surah);
     setShowSurahList(false);
     fetchAyahs(surah.number);
@@ -284,6 +321,8 @@ export default function ReadQuran() {
     if (!nextSurah) return;
 
     stopCurrentAudio();
+    setShowAllTransliterations(false);
+    setVisibleTransliterations(new Set());
     setSelectedSurah(nextSurah);
     setShowSurahList(false);
     fetchAyahs(nextSurah.number);
@@ -297,6 +336,8 @@ export default function ReadQuran() {
     if (!prevSurah) return;
 
     stopCurrentAudio();
+    setShowAllTransliterations(false);
+    setVisibleTransliterations(new Set());
     setSelectedSurah(prevSurah);
     setShowSurahList(false);
     fetchAyahs(prevSurah.number);
@@ -323,9 +364,23 @@ export default function ReadQuran() {
     };
   }, []);
 
-  // Audio playback functionality
-  const playAyahAudio = async (ayahNumber: number) => {
-    if (audioState.isPlaying && audioState.currentAyah === ayahNumber) {
+  // Scroll to a specific ayah smoothly
+  const scrollToAyah = useCallback((ayahNumber: number) => {
+    const element = document.getElementById(`ayah-${ayahNumber}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
+
+  // Surah ayah counts for global number calculation
+  const surahAyahCounts = useMemo(() => [
+    7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
+  ], []);
+
+  // Audio playback functionality (supports continuous mode)
+  const playAyahAudio = useCallback(async (ayahNumber: number, isContinuous?: boolean) => {
+    // If clicking the same ayah that's playing, toggle pause (only in manual mode)
+    if (!isContinuous && audioState.isPlaying && audioState.currentAyah === ayahNumber) {
       if (audioRef.current) {
         audioRef.current.pause();
         setAudioState(prev => ({ ...prev, isPlaying: false, currentAyah: null }));
@@ -338,11 +393,6 @@ export default function ReadQuran() {
     setAudioState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Calculate global ayah number
-      const surahAyahCounts = [
-        7, 286, 200, 176, 120, 165, 206, 75, 129, 109, 123, 111, 43, 52, 99, 128, 111, 110, 98, 135, 112, 78, 118, 64, 77, 227, 93, 88, 69, 60, 34, 30, 73, 54, 45, 83, 182, 88, 75, 85, 54, 53, 89, 59, 37, 35, 38, 29, 18, 45, 60, 49, 62, 55, 78, 96, 29, 22, 24, 13, 14, 11, 11, 18, 12, 12, 30, 52, 52, 44, 28, 28, 20, 56, 40, 31, 50, 40, 46, 42, 29, 19, 36, 25, 22, 17, 19, 26, 30, 20, 15, 21, 11, 8, 8, 19, 5, 8, 8, 11, 11, 8, 3, 9, 5, 4, 7, 3, 6, 3, 5, 4, 5, 6
-      ];
-
       let baseGlobalAyah = 0;
       for (let i = 0; i < (selectedSurah?.number || 1) - 1; i++) {
         baseGlobalAyah += surahAyahCounts[i];
@@ -363,9 +413,34 @@ export default function ReadQuran() {
           audioRef.current = audio;
 
           audio.oncanplay = () => setAudioState(prev => ({ ...prev, isLoading: false }));
-          audio.onplay = () => setAudioState(prev => ({ ...prev, isPlaying: true, currentAyah: ayahNumber }));
-          audio.onpause = () => setAudioState(prev => ({ ...prev, isPlaying: false, currentAyah: null }));
-          audio.onended = () => setAudioState(prev => ({ ...prev, isPlaying: false, currentAyah: null }));
+          audio.onplay = () => {
+            setAudioState(prev => ({ ...prev, isPlaying: true, currentAyah: ayahNumber }));
+            // Auto-scroll to this ayah
+            scrollToAyah(ayahNumber);
+          };
+          audio.onpause = () => {
+            // Only clear if not in continuous mode, or if the pause wasn't from switching tracks
+            if (!continuousAudioRef.current) {
+              setAudioState(prev => ({ ...prev, isPlaying: false, currentAyah: null }));
+            }
+          };
+          audio.onended = () => {
+            // If continuous mode is on, play next ayah
+            if (continuousAudioRef.current && selectedSurah) {
+              const maxAyah = selectedSurah.numberOfAyahs;
+              if (ayahNumber < maxAyah) {
+                // Play next ayah
+                playAyahAudio(ayahNumber + 1, true);
+              } else {
+                // Surah finished
+                setContinuousAudio(false);
+                continuousAudioRef.current = false;
+                setAudioState(prev => ({ ...prev, isPlaying: false, currentAyah: null }));
+              }
+            } else {
+              setAudioState(prev => ({ ...prev, isPlaying: false, currentAyah: null }));
+            }
+          };
 
           await audio.play();
         }
@@ -373,7 +448,21 @@ export default function ReadQuran() {
     } catch (error) {
       setAudioState(prev => ({ ...prev, isLoading: false, error: 'Failed to load audio' }));
     }
-  };
+  }, [audioState.isPlaying, audioState.currentAyah, selectedSurah, selectedReciter, surahAyahCounts, scrollToAyah]);
+
+  // Toggle continuous audio mode
+  const toggleContinuousAudio = useCallback(() => {
+    if (continuousAudio) {
+      // Stop continuous playback
+      stopCurrentAudio();
+    } else {
+      // Start from ayah 1 (or current ayah)
+      setContinuousAudio(true);
+      continuousAudioRef.current = true;
+      const startAyah = audioState.currentAyah || 1;
+      playAyahAudio(startAyah, true);
+    }
+  }, [continuousAudio, audioState.currentAyah, playAyahAudio, stopCurrentAudio]);
 
   const filteredSurahs = surahs.filter(surah =>
     searchQuery === '' ||
@@ -519,7 +608,7 @@ export default function ReadQuran() {
               <div className="space-y-12">
                 {ayahs.length > 0 ? (
                   ayahs.map((ayah, index) => (
-                    <article key={ayah.number} id={`ayah-${ayah.number}`} className="group relative scroll-mt-32">
+                    <article key={ayah.number} id={`ayah-${ayah.number}`} className={`group relative scroll-mt-32 transition-all duration-500 rounded-xl px-3 py-4 -mx-3 ${audioState.currentAyah === ayah.number ? 'bg-amber-50/60 dark:bg-amber-900/10 ring-1 ring-amber-300/40 dark:ring-amber-600/30' : ''}`}>
                       <div className="flex flex-col gap-6">
                         {/* Arabic */}
                         <div className="text-right w-full leading-loose">
@@ -656,6 +745,98 @@ export default function ReadQuran() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Action Bar — Outside AnimatePresence so fixed positioning works correctly */}
+      {!showSurahList && ayahs.length > 0 && (
+        <div
+          className="fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-4 transition-[padding] duration-300"
+          style={{ pointerEvents: 'none', paddingLeft: sidebarWidth > 0 ? `${sidebarWidth}px` : undefined }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 22 }}
+            className="relative flex items-center gap-1 p-1.5 rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-gray-200/50 dark:border-gray-700/50"
+            style={{ pointerEvents: 'auto' }}
+          >
+            {/* Continuous Audio Button */}
+            <button
+              onClick={toggleContinuousAudio}
+              className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-sm font-semibold tracking-tight transition-all duration-300 ${continuousAudio
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-800/80'
+                }`}
+            >
+              {continuousAudio ? (
+                <>
+                  <StopIcon className="w-[18px] h-[18px]" />
+                  <span className="hidden sm:inline">Stop</span>
+                  <span className="sm:hidden">Stop</span>
+                  {/* Audio wave bars */}
+                  <span className="flex items-end gap-[3px] ml-0.5 h-4">
+                    <span className="w-[3px] rounded-full bg-white/90" style={{ animation: 'audioBar1 0.8s ease-in-out infinite', height: '60%' }} />
+                    <span className="w-[3px] rounded-full bg-white/90" style={{ animation: 'audioBar2 0.8s ease-in-out infinite 0.2s', height: '100%' }} />
+                    <span className="w-[3px] rounded-full bg-white/90" style={{ animation: 'audioBar3 0.8s ease-in-out infinite 0.4s', height: '40%' }} />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <SpeakerWaveIcon className="w-[18px] h-[18px]" />
+                  <span className="hidden sm:inline">Play Surah</span>
+                  <span className="sm:hidden">Play</span>
+                </>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-gray-200/70 dark:bg-gray-700/70 mx-0.5" />
+
+            {/* Transliteration Button */}
+            <button
+              onClick={toggleAllTransliterations}
+              className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-sm font-semibold tracking-tight transition-all duration-300 ${showAllTransliterations
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/30'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-800/80'
+                }`}
+            >
+              <LanguageIcon className="w-[18px] h-[18px]" />
+              <span className="hidden sm:inline">{showAllTransliterations ? 'Hide Transliteration' : 'Transliteration'}</span>
+              <span className="sm:hidden">{showAllTransliterations ? 'Hide' : 'Abc'}</span>
+            </button>
+
+            {/* Progress badge */}
+            <AnimatePresence>
+              {continuousAudio && audioState.currentAyah && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.9 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 bg-gray-900/90 dark:bg-white/90 text-white dark:text-gray-900 text-[11px] font-semibold rounded-full backdrop-blur-sm shadow-lg tracking-wide"
+                >
+                  {audioState.currentAyah} / {selectedSurah?.numberOfAyahs}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Audio bar keyframes */}
+      <style jsx global>{`
+        @keyframes audioBar1 {
+          0%, 100% { height: 40%; }
+          50% { height: 100%; }
+        }
+        @keyframes audioBar2 {
+          0%, 100% { height: 100%; }
+          50% { height: 30%; }
+        }
+        @keyframes audioBar3 {
+          0%, 100% { height: 60%; }
+          50% { height: 90%; }
+        }
+      `}</style>
 
       {/* Minimalistic Professional Tafsir Bottom Sheet */}
       <AnimatePresence>

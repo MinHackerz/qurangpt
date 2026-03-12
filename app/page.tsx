@@ -1243,7 +1243,7 @@ function HomeContent() {
             <TimeDashboard initialData={islamicData} />
           </div>
         ) : (
-          <main className="relative z-10 pb-56 mt-16 sm:mt-0">
+          <main className={`relative z-10 sm:mt-0 ${!chatManager.content && !chatManager.isProcessing && !chatManager.showSummary ? 'hidden' : 'pb-56 mt-16'}`}>
 
 
             <div className="w-full max-w-4xl mx-auto px-6 sm:px-0">
