@@ -12,10 +12,7 @@ import {
   SourcesSection,
   ThemeToggle,
   VerticalActionBar,
-  TimeDashboard,
   ReadQuran,
-  MosqueFinder,
-  ZakatCalculator,
 } from './components';
 import ShareModal from './components/ShareModal';
 import { useTheme } from './contexts/ThemeContext';
@@ -54,7 +51,6 @@ function HomeContent() {
   // Sidebar offset state
   const [sidebarOffset, setSidebarOffset] = useState<number>(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
-  const [showTimeDashboard, setShowTimeDashboard] = useState<boolean>(false);
 
   const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
@@ -64,14 +60,13 @@ function HomeContent() {
     console.log('onShowComponent called with:', component); // Debug log
     if (component) {
       // First, hide all other components and views
-      setShowTimeDashboard(false);
       setActiveComponent(null);
 
       // Reset chat state completely to prevent chat outputs from appearing in new tabs
       chatManager.resetForm();
 
       // Then show only the requested component
-      if (component === 'read-quran' || component === 'mosque-finder' || component === 'zakat-calculator') {
+      if (component === 'read-quran') {
         setActiveComponent(component);
       }
       console.log('Active component set to:', component); // Debug log
@@ -104,19 +99,8 @@ function HomeContent() {
         }
       }
     };
-    const onToggleTime = (e: any) => {
-      const shouldOpen = !!e?.detail?.open;
-      setShowTimeDashboard(shouldOpen);
-      // Hide all other components and views when opening dashboard
-      if (shouldOpen) {
-        setActiveComponent(null);
-        // Reset chat state completely when opening time dashboard
-        chatManager.resetForm();
-      }
-    };
     const onOpenChat = () => {
       // Hide all components and views first
-      setShowTimeDashboard(false);
       setActiveComponent(null);
 
       // Toggle chat state - if chat is already active, close it; if not, open it
@@ -153,7 +137,6 @@ function HomeContent() {
 
     const onResetToDefault = () => {
       // Hide all components and views first
-      setShowTimeDashboard(false);
       setActiveComponent(null);
       // Reset chat state to default (like clicking Clear and Reset)
       chatManager.resetForm();
@@ -190,7 +173,6 @@ function HomeContent() {
     };
 
     window.addEventListener('qgpt:sidebar', onSidebar as EventListener);
-    window.addEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
     window.addEventListener('qgpt:open-chat', onOpenChat as EventListener);
     window.addEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
     window.addEventListener('qgpt:set-theme', onSetTheme as EventListener);
@@ -199,7 +181,6 @@ function HomeContent() {
     window.addEventListener('qgpt:modal-state', onModalState as EventListener);
     return () => {
       window.removeEventListener('qgpt:sidebar', onSidebar as EventListener);
-      window.removeEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
       window.removeEventListener('qgpt:open-chat', onOpenChat as EventListener);
       window.removeEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
       window.removeEventListener('qgpt:set-theme', onSetTheme as EventListener);
@@ -207,7 +188,7 @@ function HomeContent() {
       window.removeEventListener('qgpt:close-component', onCloseComponent as EventListener);
       window.removeEventListener('qgpt:modal-state', onModalState as EventListener);
     };
-  }, [onShowComponent, chatManager, showTimeDashboard, isMobile, setTheme, sidebarOffset]);
+  }, [onShowComponent, chatManager, isMobile, setTheme, sidebarOffset]);
 
   // Allow page to remain scrollable while chat input is fixed at the bottom
   useEffect(() => {
@@ -1075,21 +1056,8 @@ function HomeContent() {
     const hijriMonth = parseInt(islamicData.hijri.month.number);
     const hijriDay = parseInt(islamicData.hijri.day);
 
-    // Ramadan (Month 9)
-    if (hijriMonth === 9) {
-      return (
-        <div className="flex items-center justify-center gap-3">
-          <span className="text-4xl md:text-5xl" style={{ animation: 'gentle-float 2s ease-in-out infinite' }}>🌙</span>
-          <span className="text-xl md:text-2xl font-semibold ramadan-text-shimmer">
-            Ramadan Mubarak
-          </span>
-          <span className="text-4xl md:text-5xl" style={{ animation: 'gentle-float 2s ease-in-out infinite', animationDelay: '1s' }}>⭐</span>
-        </div>
-      );
-    }
-
     // Eid ul Fitr (Month 10, Day 1-3)
-    else if (hijriMonth === 10 && hijriDay >= 1 && hijriDay <= 3) {
+    if (hijriMonth === 10 && hijriDay >= 1 && hijriDay <= 3) {
       return (
         <div className="flex items-center justify-center gap-3">
           <span className="text-4xl md:text-4xl">🎉</span>
@@ -1184,7 +1152,7 @@ function HomeContent() {
 
 
       <div
-        className={`min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden transition-all duration-300 ramadan-bg ${isModalOpen ? 'blur-sm pointer-events-none' : ''}`}
+        className={`min-h-screen bg-gray-50 dark:bg-gray-950 relative overflow-hidden transition-all duration-300 ${isModalOpen ? 'blur-sm pointer-events-none' : ''}`}
         style={{
           paddingLeft: isMobile ? '0px' : `${sidebarOffset}px`
         }}
@@ -1211,7 +1179,7 @@ function HomeContent() {
 
 
         {/* Comprehensive Chat Section - Handles all states: hero, processing, and output */}
-        {!showTimeDashboard && !activeComponent && (
+        {!activeComponent && (
           <ChatSection
             getGreetingMessage={getGreetingMessage}
             content={chatManager.content}
@@ -1229,21 +1197,14 @@ function HomeContent() {
 
 
         {/* Component Display - Show when activeComponent is set (for non-native components) */}
-        {activeComponent && !showTimeDashboard && (
+        {activeComponent && (
           <div className="relative z-10 mt-16 sm:mt-0 pb-8">
             {activeComponent === 'read-quran' && <ReadQuran key="read-quran" />}
-            {activeComponent === 'mosque-finder' && <MosqueFinder key="mosque-finder" />}
-            {activeComponent === 'zakat-calculator' && <ZakatCalculator key="zakat-calculator" />}
           </div>
         )}
 
         {/* Main Content or Native Components */}
-        {showTimeDashboard ? (
-          <div className="relative z-10 mt-16 sm:mt-0 pb-8">
-            <TimeDashboard initialData={islamicData} />
-          </div>
-        ) : (
-          <main className={`relative z-10 sm:mt-0 ${!chatManager.content && !chatManager.isProcessing && !chatManager.showSummary ? 'hidden' : 'pb-56 mt-16'}`}>
+        <main className={`relative z-10 sm:mt-0 ${!chatManager.content && !chatManager.isProcessing && !chatManager.showSummary ? 'hidden' : 'pb-56 mt-16'}`}>
 
 
             <div className="w-full max-w-4xl mx-auto px-6 sm:px-0">
@@ -1469,10 +1430,8 @@ function HomeContent() {
               )}
 
               {/* Suggested Questions - Handled via content filtering in ResponseSection */}
-
             </div>
           </main>
-        )}
 
 
 

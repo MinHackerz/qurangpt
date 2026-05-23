@@ -5,48 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '../contexts/ThemeContext';
-import { ClockIcon, EyeIcon, UserIcon, SunIcon, MoonIcon, EnvelopeIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { Shield, Monitor } from 'lucide-react';
-
-interface IslamicData {
-  currentPrayer: {
-    name: string;
-    endTime: string;
-    endTimeString: string;
-    isActive: boolean;
-  } | null;
-  nextPrayer: {
-    name: string;
-    time: string;
-    timeString: string;
-    isActive: boolean;
-  };
-  location: {
-    city: string;
-    region: string;
-    country: string;
-    timezone: string;
-    timezoneAbbr: string;
-  };
-  eidFitr: {
-    date: string;
-    daysRemaining: number;
-    dateString: string;
-  };
-  eidAdha: {
-    date: string;
-    daysRemaining: number;
-    dateString: string;
-  };
-}
 
 export default function VerticalActionBar() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [islamicData, setIslamicData] = useState<IslamicData | null>(null);
-  const [now, setNow] = useState<Date>(new Date());
   const [activeButton, setActiveButton] = useState<string | null>('ask-quran');
 
   // Handle mounting and restore sidebar state from sessionStorage
@@ -60,10 +26,7 @@ export default function VerticalActionBar() {
     }
   }, []);
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+
 
   // Save sidebar state to sessionStorage whenever it changes
   useEffect(() => {
@@ -93,29 +56,7 @@ export default function VerticalActionBar() {
     requestAnimationFrame(dispatchLayoutEvent);
   }, [isExpanded]);
 
-  useEffect(() => {
-    const fetchIslamicData = async () => {
-      try {
-        const cachedData = localStorage.getItem('quran-gpt-islamic-data');
-        const cacheTime = localStorage.getItem('quran-gpt-islamic-data-time');
-        if (cachedData && cacheTime) {
-          const cacheAge = Date.now() - parseInt(cacheTime);
-          if (cacheAge < 5 * 60 * 1000) {
-            setIslamicData(JSON.parse(cachedData));
-            return;
-          }
-        }
-        const res = await fetch('/api/islamic-data');
-        if (res.ok) {
-          const data = await res.json();
-          setIslamicData(data);
-          localStorage.setItem('quran-gpt-islamic-data', JSON.stringify(data));
-          localStorage.setItem('quran-gpt-islamic-data-time', Date.now().toString());
-        }
-      } catch { }
-    };
-    fetchIslamicData();
-  }, []);
+
 
   // Listen to component switch events to update active button state
   useEffect(() => {
@@ -130,14 +71,6 @@ export default function VerticalActionBar() {
       setActiveButton('ask-quran');
     };
 
-    const onToggleTime = (e: any) => {
-      if (e?.detail?.open) {
-        setActiveButton('time-dashboard');
-      } else {
-        setActiveButton(null);
-      }
-    };
-
     const onRequestSidebarWidth = () => {
       const width = isExpanded ? 220 : 70;
       const event = new CustomEvent('qgpt:sidebar', { detail: { width } });
@@ -146,36 +79,20 @@ export default function VerticalActionBar() {
 
     window.addEventListener('qgpt:show-component', onShowComponent as EventListener);
     window.addEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
-    window.addEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
     window.addEventListener('qgpt:request-sidebar-width', onRequestSidebarWidth as EventListener);
 
     return () => {
       window.removeEventListener('qgpt:show-component', onShowComponent as EventListener);
       window.removeEventListener('qgpt:reset-to-default', onResetToDefault as EventListener);
-      window.removeEventListener('qgpt:toggle-time-dashboard', onToggleTime as EventListener);
       window.removeEventListener('qgpt:request-sidebar-width', onRequestSidebarWidth as EventListener);
     };
   }, [isExpanded]);
 
-  const MosqueIcon = ({ className }: { className?: string }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21H3V8.5L12 3L21 8.5V21Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21V12" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 21H21" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 21V15H15V21" />
-    </svg>
-  );
 
-  // Crescent moon icon for Ramadan branding
-  const CrescentIcon = ({ className }: { className?: string }) => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8c.34 0 .672.033 1 .08A6.987 7.0 0 0 0 10 12a6.987 7.0 0 0 0 3 5.92c-.328.047-.66.08-1 .08z" />
-    </svg>
-  );
 
   if (!isMounted) {
     return (
-      <div className="hidden sm:block fixed left-0 top-0 bottom-0 z-40 w-[70px] bg-white/50 dark:bg-black/20 backdrop-blur-xl">
+      <div className="hidden sm:block fixed left-0 top-0 bottom-0 z-[60] w-[70px] bg-gray-50/50 dark:bg-gray-950/50 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-800/50">
         <div className="h-full flex flex-col pt-8 items-center">
           <div className="w-10 h-10 rounded-2xl bg-gray-200/50 dark:bg-gray-800/50 animate-pulse"></div>
         </div>
@@ -190,16 +107,9 @@ export default function VerticalActionBar() {
         initial={false}
         animate={{ width: isExpanded ? 220 : 70 }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="hidden sm:flex fixed left-0 top-0 bottom-0 z-50 flex-col sidebar-ramadan sidebar-ramadan-accent"
+        className="hidden sm:flex fixed left-0 top-0 bottom-0 z-[60] flex-col bg-gray-50/80 dark:bg-gray-950/80 backdrop-blur-xl border-r border-gray-200/80 dark:border-gray-800/80"
       >
-        {/* Ramadan decorative top crescent */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="text-amber-400/60 dark:text-amber-300/40" style={{ animation: 'moon-glow 3s ease-in-out infinite' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-          </div>
-        </div>
+
 
         {/* Top: Toggle Button */}
         <div className={`h-20 flex items-center flex-shrink-0 pt-6 transition-all duration-300 ${isExpanded ? 'px-4 justify-start w-full' : 'justify-center w-full'}`}>
@@ -240,37 +150,22 @@ export default function VerticalActionBar() {
           />
 
           <NavButton
-            isActive={activeButton === 'mosque-finder'}
+            isActive={false}
             onClick={() => {
-              const event = new CustomEvent('qgpt:show-component', { detail: { component: 'mosque-finder' } });
-              window.dispatchEvent(event);
+              window.open('https://tadabbur-iota.vercel.app', '_blank');
             }}
-            icon={<MosqueIcon className="w-5 h-5" />}
-            label="Mosque Finder"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+              </svg>
+            }
+            label="Tadabbur"
             isExpanded={isExpanded}
+            isExternal={true}
           />
 
-          <NavButton
-            isActive={activeButton === 'time-dashboard'}
-            onClick={() => {
-              const event = new CustomEvent('qgpt:toggle-time-dashboard', { detail: { open: true } });
-              window.dispatchEvent(event);
-            }}
-            icon={<ClockIcon className="w-5 h-5" />}
-            label="Prayer Times"
-            isExpanded={isExpanded}
-          />
 
-          <NavButton
-            isActive={activeButton === 'zakat-calculator'}
-            onClick={() => {
-              const event = new CustomEvent('qgpt:show-component', { detail: { component: 'zakat-calculator' } });
-              window.dispatchEvent(event);
-            }}
-            icon={<CurrencyDollarIcon className="w-5 h-5" />}
-            label="Zakat Calculator"
-            isExpanded={isExpanded}
-          />
 
         </div>
 
@@ -291,48 +186,14 @@ export default function VerticalActionBar() {
             `}
           >
             <div className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12">
-              {theme === 'dark' ? <MoonIcon className="w-4.5 h-4.5" /> : <SunIcon className="w-4.5 h-4.5" />}
+              {theme === 'dark' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
             </div>
             {isExpanded && (
               <span className="text-xs font-medium tracking-wide whitespace-nowrap">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
             )}
           </button>
 
-          {/* Transparency Link */}
-          <Link
-            href="/transparency"
-            title={!isExpanded ? "Transparency" : undefined}
-            className={`
-              group flex items-center gap-3 rounded-xl transition-all duration-300
-              ${isExpanded ? 'w-full px-3 py-2.5' : 'w-10 h-10 justify-center'}
-              text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10
-            `}
-          >
-            <div className="transition-transform duration-300 group-hover:scale-110">
-              <EyeIcon className="w-4.5 h-4.5" />
-            </div>
-            {isExpanded && (
-              <span className="text-xs font-medium tracking-wide whitespace-nowrap">Transparency</span>
-            )}
-          </Link>
 
-          {/* Developer */}
-          <button
-            onClick={() => window.open('https://menajul.vercel.app', '_blank')}
-            title={!isExpanded ? "Developer" : undefined}
-            className={`
-              group flex items-center gap-3 rounded-xl transition-all duration-300
-              ${isExpanded ? 'w-full px-3 py-2.5' : 'w-10 h-10 justify-center'}
-              text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10
-            `}
-          >
-            <div className="transition-transform duration-300 group-hover:scale-110">
-              <UserIcon className="w-4.5 h-4.5" />
-            </div>
-            {isExpanded && (
-              <span className="text-xs font-medium tracking-wide whitespace-nowrap">Developer</span>
-            )}
-          </button>
 
           {/* Support - with warm glow */}
           <button
@@ -345,25 +206,14 @@ export default function VerticalActionBar() {
             `}
           >
             <div className="transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6">
-              <svg className="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.216 6.415l-.132-.666c-.119-.598-.388-1.163-1.001-1.379-.197-.069-.42-.098-.57-.241-.152-.143-.196-.366-.231-.572-.065-.378-.125-.756-.192-1.133-.057-.325-.102-.69-.25-.987-.195-.4-.597-.634-.996-.788a5.723 5.723 0 00-.626-.194c-1-.263-2.05-.36-3.077-.416a25.834 25.834 0 00-3.7.062c-.915.083-1.88.184-2.75.5-.318.116-.646.256-.888.501-.297.302-.393.77-.177 1.146.154.267.415.456.692.58.36.162.737.284 1.123.366 1.075.238 2.189.331 3.287.37 1.218.05 2.437.01 3.65-.118.299-.033.598-.073.896-.119.352-.054.578-.513.474-.834-.124-.383-.457-.531-.834-.473-.466.074-.96.108-1.382.146-1.177.08-2.358.082-3.536.006a22.228 22.228 0 01-1.157-.107c-.086-.01-.18-.025-.258-.036-.243-.036-.484-.08-.724-.13-.111-.027-.111-.185 0-.212h.005c.277-.06.557-.108.838-.147h.002c.131-.009.263-.032.394-.048a25.076 25.076 0 013.426-.12c.674.019 1.347.067 2.017.144l.228.031c.267.04.533.088.798.145.392.085.895.113 1.07.542.055.137.08.288.111.431l.319 1.484a.237.237 0 01-.199.284h-.003c-.037.006-.075.01-.112.015a36.704 36.704 0 01-4.743.295 37.059 37.059 0 01-4.699-.304c-.14-.017-.293-.042-.417-.06-.326-.048-.649-.108-.973-.161-.393-.065-.768-.032-1.123.161-.29.16-.527.404-.675.701-.154.316-.199.66-.267 1-.069.34-.176.707-.135 1.056.087.753.613 1.365 1.37 1.502a39.69 39.69 0 0011.343.376.483.483 0 01.535.53l-.071.697-1.018 9.907c-.041.41-.047.832-.125 1.237-.122.637-.553 1.028-1.182 1.171-.577.131-1.165.2-1.756.205-.656.004-1.31-.025-1.966-.022-.699.004-1.556-.06-2.095-.58-.475-.458-.54-1.174-.605-1.793l-.731-7.013-.322-3.094c-.037-.351-.286-.695-.678-.678-.336.015-.718.3-.678.679l.228 2.185.949 9.112c.147 1.344 1.174 2.068 2.446 2.272.742.12 1.503.144 2.257.156.966.016 1.942.053 2.892-.122 1.408-.258 2.465-1.198 2.616-2.657.34-3.332.683-6.663 1.024-9.995l.215-2.087a.484.484 0 01.39-.426c.402-.078.787-.212 1.074-.518.455-.488.546-1.124.385-1.766zm-1.478.772c-.145.137-.363.201-.578.233-2.416.359-4.866.54-7.308.46-1.748-.06-3.477-.254-5.207-.498-.17-.024-.353-.055-.47-.18-.22-.236-.111-.71-.054-.995.052-.26.152-.609.463-.646.484-.057 1.046.148 1.526.22.577.088 1.156.159 1.737.212 2.48.226 5.002.19 7.472-.14.45-.06.899-.13 1.345-.21.399-.072.84-.206 1.08.206.166.281.188.657.162.974a.544.544 0 01-.169.364z" /></svg>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.216 6.415l-.132-.666c-.119-.598-.388-1.163-1.001-1.379-.197-.069-.42-.098-.57-.241-.152-.143-.196-.366-.231-.572-.065-.378-.125-.756-.192-1.133-.057-.325-.102-.69-.25-.987-.195-.4-.597-.634-.996-.788a5.723 5.723 0 00-.626-.194c-1-.263-2.05-.36-3.077-.416a25.834 25.834 0 00-3.7.062c-.915.083-1.88.184-2.75.5-.318.116-.646.256-.888.501-.297.302-.393.77-.177 1.146.154.267.415.456.692.58.36.162.737.284 1.123.366 1.075.238 2.189.331 3.287.37 1.218.05 2.437.01 3.65-.118.299-.033.598-.073.896-.119.352-.054.578-.513.474-.834-.124-.383-.457-.531-.834-.473-.466.074-.96.108-1.382.146-1.177.08-2.358.082-3.536.006a22.228 22.228 0 01-1.157-.107c-.086-.01-.18-.025-.258-.036-.243-.036-.484-.08-.724-.13-.111-.027-.111-.185 0-.212h.005c.277-.06.557-.108.838-.147h.002c.131-.009.263-.032.394-.048a25.076 25.076 0 013.426-.12c.674.019 1.347.067 2.017.144l.228.031c.267.04.533.088.798.145.392.085.895.113 1.07.542.055.137.08.288.111.431l.319 1.484a.237.237 0 01-.199.284h-.003c-.037.006-.075.01-.112.015a36.704 36.704 0 01-4.743.295 37.059 37.059 0 01-4.699-.304c-.14-.017-.293-.042-.417-.06-.326-.048-.649-.108-.973-.161-.393-.065-.768-.032-1.123.161-.29.16-.527.404-.675.701-.154.316-.199.66-.267 1-.069.34-.176.707-.135 1.056.087.753.613 1.365 1.37 1.502a39.69 39.69 0 0011.343.376.483.483 0 01.535.53l-.071.697-1.018 9.907c-.041.41-.047.832-.125 1.237-.122.637-.553 1.028-1.182 1.171-.577.131-1.165.2-1.756.205-.656.004-1.31-.025-1.966-.022-.699.004-1.556-.06-2.095-.58-.475-.458-.54-1.174-.605-1.793l-.731-7.013-.322-3.094c-.037-.351-.286-.695-.678-.678-.336.015-.718.3-.678.679l.228 2.185.949 9.112c.147 1.344 1.174 2.068 2.446 2.272.742.12 1.503.144 2.257.156.966.016 1.942.053 2.892-.122 1.408-.258 2.465-1.198 2.616-2.657.34-3.332.683-6.663 1.024-9.995l.215-2.087a.484.484 0 01.39-.426c.402-.078.787-.212 1.074-.518.455-.488.546-1.124.385-1.766zm-1.478.772c-.145.137-.363.201-.578.233-2.416.359-4.866.54-7.308.46-1.748-.06-3.477-.254-5.207-.498-.17-.024-.353-.055-.47-.18-.22-.236-.111-.71-.054-.995.052-.26.152-.609.463-.646.484-.057 1.046.148 1.526.22.577.088 1.156.159 1.737.212 2.48.226 5.002.19 7.472-.14.45-.06.899-.13 1.345-.21.399-.072.84-.206 1.08.206.166.281.188.657.162.974a.544.544 0 01-.169.364z" /></svg>
             </div>
             {isExpanded && (
               <span className="text-xs font-medium tracking-wide whitespace-nowrap">Support</span>
             )}
           </button>
 
-          {/* Ramadan branding in sidebar - small crescent when expanded */}
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full flex items-center justify-center gap-2 pt-3 mt-1 border-t border-amber-200/20 dark:border-amber-700/15"
-            >
-              <span className="text-amber-400/50 dark:text-amber-300/30" style={{ animation: 'gentle-float 3s ease-in-out infinite' }}>☪</span>
-              <span className="text-[10px] text-amber-500/40 dark:text-amber-400/30 tracking-widest uppercase font-medium">Ramadan</span>
-              <span className="text-amber-400/50 dark:text-amber-300/30" style={{ animation: 'gentle-float 3s ease-in-out infinite', animationDelay: '1.5s' }}>✦</span>
-            </motion.div>
-          )}
+
 
         </div>
 
@@ -372,7 +222,7 @@ export default function VerticalActionBar() {
   );
 }
 
-function NavButton({ isActive, onClick, icon, label, isExpanded }: { isActive: boolean, onClick: () => void, icon: React.ReactNode, label: string, isExpanded: boolean }) {
+function NavButton({ isActive, onClick, icon, label, isExpanded, isExternal }: { isActive: boolean, onClick: () => void, icon: React.ReactNode, label: string, isExpanded: boolean, isExternal?: boolean }) {
   return (
     <button
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }}
@@ -390,8 +240,13 @@ function NavButton({ isActive, onClick, icon, label, isExpanded }: { isActive: b
       </div>
 
       {isExpanded && (
-        <span className={`text-sm tracking-wide whitespace-nowrap transition-colors ${isActive ? 'font-semibold' : 'font-normal'}`}>
+        <span className={`text-sm tracking-wide whitespace-nowrap transition-colors flex items-center gap-1.5 ${isActive ? 'font-semibold' : 'font-normal'}`}>
           {label}
+          {isExternal && (
+            <svg className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+          )}
         </span>
       )}
 

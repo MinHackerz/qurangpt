@@ -188,7 +188,7 @@ export default function ProgressIndicator({
         </div>
       </motion.div>
 
-      {/* Ramadan Dua - Rotating supplications while processing */}
+      {/* Quranic Verses / Quotes - Rotating supplications while processing */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -229,30 +229,6 @@ export default function ProgressIndicator({
 
           {/* Main Background (Transparent) */}
           <div className="absolute inset-0 bg-transparent z-0"></div>
-
-          {/* Ramadan decorative elements - Crescent + Stars */}
-          <div className="absolute top-3 right-4 z-30 pointer-events-none flex items-center gap-1.5">
-            <motion.span
-              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.6, 0.3] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="text-amber-400/40 dark:text-amber-300/25 text-[8px]"
-            >✦</motion.span>
-            <motion.span
-              animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-              className="text-amber-400/30 dark:text-amber-300/20 text-[6px]"
-            >✦</motion.span>
-            <motion.div
-              animate={{ opacity: [0.4, 0.7, 0.4] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="text-amber-400/50 dark:text-amber-300/30"
-              style={{ animation: 'moon-glow 4s ease-in-out infinite' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            </motion.div>
-          </div>
 
           {/* Golden Wave (Shimmer) */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
