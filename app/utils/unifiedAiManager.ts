@@ -1,9 +1,8 @@
 /**
- * Unified AI Manager - Orchestrates Gemini (primary) and OpenAI (fallback)
- * Uses Gemini first, falls back to OpenAI when Gemini fails
+ * Unified AI Manager - Orchestrates OpenAI requests exclusively
+ * Normalizes OpenAI response format to Gemini format for compatibility
  */
 
-import { GeminiApiManager } from './geminiApiManager';
 import { OpenAIApiManager } from './openaiApiManager';
 
 interface UnifiedApiResponse {
@@ -36,26 +35,11 @@ interface ApiKeyResult {
 }
 
 export class UnifiedAiManager {
-    private geminiManager: GeminiApiManager | null = null;
     private openaiManager: OpenAIApiManager | null = null;
-    private geminiAvailable: boolean = false;
     private openaiAvailable: boolean = false;
-    private static geminiFailureCount: number = 0;
-    private static lastGeminiFailureTime: number = 0;
-    private static readonly COOLDOWN_DURATION = 5 * 60 * 1000; // 5 minutes
-    private static readonly MAX_FAILURES = 3;
 
     constructor() {
-        // Try to initialize Gemini
-        try {
-            this.geminiManager = new GeminiApiManager();
-            this.geminiAvailable = true;
-        } catch {
-            // Gemini not configured, will use fallback
-            this.geminiAvailable = false;
-        }
-
-        // Try to initialize OpenAI as fallback
+        // Try to initialize OpenAI
         try {
             this.openaiManager = new OpenAIApiManager();
             this.openaiAvailable = true;
@@ -64,9 +48,9 @@ export class UnifiedAiManager {
             this.openaiAvailable = false;
         }
 
-        // At least one provider must be available
-        if (!this.geminiAvailable && !this.openaiAvailable) {
-            throw new Error('No AI provider configured. Please set either GEMINI_API_KEY or OPENAI_API_KEY environment variable.');
+        // At least OpenAI must be available
+        if (!this.openaiAvailable) {
+            throw new Error('No AI provider configured. Please set the OPENAI_API_KEY environment variable.');
         }
     }
 
@@ -95,40 +79,7 @@ export class UnifiedAiManager {
         return result;
     }
 
-    async generateContent(prompt: string, model: string = 'gemini-2.0-flash', temperature: number = 0.7): Promise<ApiKeyResult> {
-        // Check for Gemini cooldown
-        const isGeminiInCooldown =
-            UnifiedAiManager.geminiFailureCount >= UnifiedAiManager.MAX_FAILURES &&
-            (Date.now() - UnifiedAiManager.lastGeminiFailureTime) < UnifiedAiManager.COOLDOWN_DURATION;
-
-        // Try Gemini first if available and not in cooldown
-        if (this.geminiAvailable && this.geminiManager && !isGeminiInCooldown) {
-            const geminiResult = await this.geminiManager.generateContent(prompt, model, temperature);
-
-            // Improved validation: Check if Gemini returned actual content
-            const hasContent = !!(geminiResult.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim());
-
-            if (geminiResult.success && hasContent) {
-                // Reset failure count on success
-                UnifiedAiManager.geminiFailureCount = 0;
-                return {
-                    ...geminiResult,
-                    provider: 'gemini'
-                };
-            }
-
-            // Gemini failed or returned safety-blocked/empty content
-            UnifiedAiManager.geminiFailureCount++;
-            UnifiedAiManager.lastGeminiFailureTime = Date.now();
-            console.log(`[UnifiedAiManager] Gemini ${!geminiResult.success ? 'failed' : 'returned empty/blocked content'} (Attempt ${UnifiedAiManager.geminiFailureCount}), attempting OpenAI fallback...`);
-
-            if (UnifiedAiManager.geminiFailureCount >= UnifiedAiManager.MAX_FAILURES) {
-                console.warn('[UnifiedAiManager] Gemini reached max failure count. Entering 5-minute cooldown.');
-            }
-        } else if (isGeminiInCooldown) {
-            console.log('[UnifiedAiManager] Gemini is in cooldown, skipping to OpenAI...');
-        }
-
+    async generateContent(prompt: string, model: string = 'gpt-4o-mini', temperature: number = 0.7): Promise<ApiKeyResult> {
         // Try OpenAI fallback if available
         if (this.openaiAvailable && this.openaiManager) {
             const openaiResult = await this.openaiManager.generateContent(prompt, model, temperature);
@@ -147,13 +98,11 @@ export class UnifiedAiManager {
             };
         }
 
-        // Both providers failed or unavailable
+        // OpenAI unavailable
         return {
             success: false,
-            error: this.geminiAvailable
-                ? 'Both Gemini and OpenAI failed to generate content'
-                : 'OpenAI failed to generate content (Gemini not configured)',
-            provider: this.openaiAvailable ? 'openai' : 'gemini'
+            error: 'OpenAI is not configured',
+            provider: 'openai'
         };
     }
 
@@ -166,9 +115,8 @@ export class UnifiedAiManager {
         sourceLanguage: string = 'en',
         context: string = 'general',
         preserveFormatting: boolean = true,
-        model: string = 'gemini-2.0-flash'
+        model: string = 'gpt-4o-mini'
     ): Promise<ApiKeyResult> {
-        // Use the same translation logic as GeminiApiManager but through unified manager
         const prompt = this.createOptimizedTranslationPrompt(
             text,
             targetLanguage,
@@ -207,18 +155,15 @@ export class UnifiedAiManager {
      */
     getAvailableProviders(): { gemini: boolean; openai: boolean } {
         return {
-            gemini: this.geminiAvailable,
+            gemini: false,
             openai: this.openaiAvailable
         };
     }
 
     /**
-     * Get Gemini key count (for compatibility with existing code)
+     * Get key counts (for compatibility with existing code)
      */
     getKeyCount(): number {
-        if (this.geminiAvailable && this.geminiManager) {
-            return this.geminiManager.getKeyCount();
-        }
         if (this.openaiAvailable && this.openaiManager) {
             return this.openaiManager.getKeyCount();
         }
@@ -226,9 +171,6 @@ export class UnifiedAiManager {
     }
 
     getCurrentKeyIndex(): number {
-        if (this.geminiAvailable && this.geminiManager) {
-            return this.geminiManager.getCurrentKeyIndex();
-        }
         if (this.openaiAvailable && this.openaiManager) {
             return this.openaiManager.getCurrentKeyIndex();
         }
@@ -236,9 +178,6 @@ export class UnifiedAiManager {
     }
 
     getFailedKeyCount(): number {
-        if (this.geminiAvailable && this.geminiManager) {
-            return this.geminiManager.getFailedKeyCount();
-        }
         if (this.openaiAvailable && this.openaiManager) {
             return this.openaiManager.getFailedKeyCount();
         }

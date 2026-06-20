@@ -66,6 +66,7 @@ export default function SharePage() {
   // Process content based on selected content types
   const processContentBasedOnSelection = useCallback((content: string) => {
     if (!content) return content;
+    if (typeof document === 'undefined') return content;
 
     // Create a temporary DOM element to parse the content
     const tempDiv = document.createElement('div');

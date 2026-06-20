@@ -3,7 +3,7 @@
   publish = ".next"
 
 [functions]
-  directory = "app/api"
+  directory = "netlify/functions"
 
 # Note: Scheduled functions need to be configured in Netlify dashboard
 # The scheduled-cleanup.js function is in netlify/functions/ directory

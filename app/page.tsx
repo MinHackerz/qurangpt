@@ -1030,23 +1030,8 @@ function HomeContent() {
       }
     };
 
-    // Try browser geolocation first for accurate location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // Success - use browser coordinates
-          fetchIslamicData(position.coords.latitude, position.coords.longitude);
-        },
-        () => {
-          // Denied or error - fall back to IP-based detection
-          fetchIslamicData();
-        },
-        { timeout: 5000 } // 5 second timeout
-      );
-    } else {
-      // Geolocation not supported - fall back to IP-based detection
-      fetchIslamicData();
-    }
+    // Fetch Islamic data with location tracing disabled
+    fetchIslamicData();
   }, []);
 
   // Get greeting message
